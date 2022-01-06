@@ -1,0 +1,128 @@
+
+Skip to content
+Pull requests
+Issues
+Marketplace
+Explore
+@mehmetgoren
+github /
+gitignore
+
+3.2k
+120k
+
+    66k
+
+Code
+Pull requests 268
+Actions
+Security
+
+    Insights
+
+gitignore/Global/Images.gitignore
+@justinhartman
+justinhartman New template file for Images
+Latest commit 430b19e on Jan 4, 2018
+History
+1 contributor
+63 lines (48 sloc) 501 Bytes
+# JPEG
+*.jpg
+*.jpeg
+*.jpe
+*.jif
+*.jfif
+*.jfi
+
+# JPEG 2000
+*.jp2
+*.j2k
+*.jpf
+*.jpx
+*.jpm
+*.mj2
+
+# JPEG XR
+*.jxr
+*.hdp
+*.wdp
+
+# Graphics Interchange Format
+*.gif
+
+# RAW
+*.raw
+
+# Web P
+*.webp
+
+# Portable Network Graphics
+*.png
+
+# Animated Portable Network Graphics
+*.apng
+
+# Multiple-image Network Graphics
+*.mng
+
+# Tagged Image File Format
+*.tiff
+*.tif
+
+# Scalable Vector Graphics
+*.svg
+*.svgz
+
+# Portable Document Format
+*.pdf
+
+# X BitMap
+*.xbm
+
+# BMP
+*.bmp
+*.dib
+
+# ICO
+*.ico
+
+# 3D Images
+*.3dm
+*.max
+
+    © 2021 GitHub, Inc.
+    Terms
+    Privacy
+    Security
+    Status
+    Docs
+
+    Contact GitHub
+    Pricing
+    API
+    Training
+    Blog
+    About
+*.avi
+*.mov    
+*.xml
+*.h5
+*.pt
+*.zip
+*.7z
+__pycache__/
+*.pyc
+*__pycache__*
+delete_later
+*.idea
+.idea
+.xml
+
+
+
+
+
+
+
+
