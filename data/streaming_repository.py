@@ -1,33 +1,39 @@
 from redis import Redis
 from typing import List
 
-from common.utilities import crate_redis_connection, RedisDb
+from common.data.base_repository import BaseRepository
 from data.models import StreamingModel
 
 
-class StreamingRepository:
-    def __init__(self):
-        self.namespace = 'streaming:'
-        self.connection: Redis = crate_redis_connection(RedisDb.SOURCES, True)
+class StreamingRepository(BaseRepository):
+    def __init__(self, connection: Redis):
+        super().__init__(connection, 'streaming:')
 
-    def _get_key(self, model: StreamingModel):
-        key = model.id
+    def _get_key(self, key: str):
         return f'{self.namespace}{key}'
 
     def add(self, model: StreamingModel):
-        key = self._get_key(model)
+        key = self._get_key(model.name)
         dic = model.__dict__.copy()
         self.connection.hset(key, mapping=dic)
 
-    def clear(self):
-        self.connection.flushdb()
+    def get(self, name: str) -> StreamingModel:
+        key = self._get_key(name)
+        dic = self.connection.hgetall(key)
+        if not dic:
+            return None
+        dic = self.fix_bin_redis_dic(dic)
+        return StreamingModel().map_from(dic)
 
     def get_all(self) -> List[StreamingModel]:
         models: List[StreamingModel] = []
         keys = self.connection.keys()
         for key in keys:
             dic = self.connection.hgetall(key)
-            fixed_dic = {k.decode('utf-8'): v.decode('utf-8') for k, v in dic.items()}
-            model = StreamingModel().map_from(fixed_dic)
+            dic = self.fix_bin_redis_dic(dic)
+            model = StreamingModel().map_from(dic)
             models.append(model)
         return models
+
+    def clear(self):
+        self.connection.flushdb()

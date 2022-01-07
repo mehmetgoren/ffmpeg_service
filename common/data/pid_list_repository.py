@@ -2,11 +2,12 @@ import os
 from redis import Redis
 from typing import List
 
+from common.data.base_repository import BaseRepository
 
-class PidListRepository:
+
+class PidListRepository(BaseRepository):
     def __init__(self, connection: Redis):
-        self.namespace = 'pids:'
-        self.connection: Redis = connection
+        super().__init__(connection, 'pids:')
 
     def _get_key(self, key: str):
         return f'{self.namespace}{key}'

@@ -5,7 +5,7 @@ from common.data.service_repository import ServiceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
 # from streaming.hls_streaming import start_streaming, start_streaming_async
-from streaming.streaming_event_handler import StreamingEventHandler
+from streaming.start_streaming_event_handler import StartStreamingEventHandler
 
 # def start():
 #     start_streaming('rtsp://Admin1:Admin1@192.168.0.15/live0',
@@ -18,21 +18,22 @@ from streaming.streaming_event_handler import StreamingEventHandler
 
 
 if __name__ == '__main__':
-    connection = crate_redis_connection(RedisDb.SERVICE, False)
+    connectionService = crate_redis_connection(RedisDb.SERVICE, False)
     service_name = 'ffmpeg_service'
-    heartbeat = HeartbeatRepository(connection, service_name)
+    heartbeat = HeartbeatRepository(connectionService, service_name)
     heartbeat.start()
-    service_repository = ServiceRepository(connection)
+    service_repository = ServiceRepository(connectionService)
     service_repository.add(service_name)
-
-    loop = asyncio.get_event_loop()
 
     # start()
     # start_async()
+
+    connectionSource = crate_redis_connection(RedisDb.SOURCES, False)
+    handler = StartStreamingEventHandler(connectionSource)
+    event_bus = EventBus('start_streaming_request')
     logger.info('FFmpeg service has been started...')
-    handler = StreamingEventHandler()
-    event_bus = EventBus('streaming_request')
     event_bus.subscribe(handler)
 
+    loop = asyncio.get_event_loop()
     loop.run_forever()
     loop.close()

@@ -12,6 +12,8 @@ from ffmpeg_streaming import Formats, Bitrate, Representation, Size
 
 # ffprobe -v error -select_streams v:0 -show_entries stream=width,height,duration,bit_rate -i rtsp://Admin1:Admin1@192.168.0.15/live0 -print_format json
 # ffmpeg -v verbose -i rtsp://Admin1:Admin1@192.168.0.15/live0 -vcodec libx264 -acodec aac -f hls -hls_time 5 -g 5 -segment_time 3 -hls_list_size 3 -hls_flags delete_segments /mnt/super/ionix/node/mngr/static/live/stream.m3u8
+from redis.client import Redis
+
 from common.utilities import logger, datetime_now
 from data.models import StreamingModel
 from data.streaming_repository import StreamingRepository
@@ -57,7 +59,7 @@ def create_ffmpeg_hls_streaming_args(rtsp_address: str, output_file: str) -> Lis
             output_file]
 
 
-def start_streaming(model: StreamingModel):
+def start_streaming(model: StreamingModel, connection: Redis):
     rtsp_address, output_file = model.rtsp_address, model.output_file
 
     logger.info('starting streaming')
@@ -68,13 +70,13 @@ def start_streaming(model: StreamingModel):
         model.pid = p.pid
         model.created_at = datetime_now()
         model.args = ' '.join(args)
-        rep = StreamingRepository()
+        rep = StreamingRepository(connection)
         rep.add(model)
         logger.info('The  model has been saved by repository')
         logger.info('streaming subprocess has been opened')
         p.wait()
     except Exception as e:
-        print(e)
+        logger.error(f'An error occurred while starting FFmpeg sub-process, err: {e}')
     finally:
         p.terminate()
         logger.info('streaming subprocess has been terminated')

@@ -2,14 +2,14 @@ import threading
 from datetime import datetime
 from redis import Redis
 
+from common.data.base_repository import BaseRepository
 from common.utilities import logger, crate_redis_connection, RedisDb, config, datetime_now
 
 
-class HeartbeatRepository:
+class HeartbeatRepository(BaseRepository):
     def __init__(self, connection: Redis, service_name: str):
-        self.connection: Redis = connection
+        super().__init__(connection, 'services:')
         self.service_name = service_name
-        self.namespace = 'services:'
         self.interval = config.heartbeat.interval
 
     def start(self):
@@ -26,6 +26,7 @@ class HeartbeatRepository:
     def _tick(self):
         try:
             self.connection.hset(self.namespace + self.service_name, 'heartbeat', datetime_now())
-            logger.info(f'Heartbeat({self.service_name}) was beaten at ' + datetime.now().strftime("%Y-%m-%d %H:%M:%MS"))
+            logger.info(
+                f'Heartbeat({self.service_name}) was beaten at ' + datetime.now().strftime("%Y-%m-%d %H:%M:%MS"))
         except Exception as e:
             logger.error('Heartbeat failed: ' + str(e))

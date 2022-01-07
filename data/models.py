@@ -4,6 +4,7 @@ from typing import Dict
 class StreamingModel:
     def __init__(self):
         self.name: str = ''
+        # id is used to prevent invalid streaming folder name. The real identifier is presented by 'name' field.
         self.id: str = ''
         self.rtsp_address: str = ''
         self.brand: str = ''

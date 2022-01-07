@@ -1,13 +1,13 @@
 from typing import List
 from redis import Redis
 
+from common.data.base_repository import BaseRepository
 from common.data.models import ServiceModel
 
 
-class ServiceRepository:
+class ServiceRepository(BaseRepository):
     def __init__(self, connection: Redis):
-        self.connection: Redis = connection
-        self.namespace = 'services:'
+        super().__init__(connection, 'services:')
 
     def _get_key(self, service_name: str) -> str:
         return f'{self.namespace}{service_name}'
@@ -23,7 +23,7 @@ class ServiceRepository:
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            fixed_dic = {k.decode('utf-8'): v.decode('utf-8') for k, v in dic.items()}
+            fixed_dic = self.fix_bin_redis_dic(dic)
             model = ServiceModel(str(key).split(':')[1])
             model.__dict__.update(fixed_dic)
             models.append(model)
