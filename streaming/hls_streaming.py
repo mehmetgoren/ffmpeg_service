@@ -12,7 +12,9 @@ from ffmpeg_streaming import Formats, Bitrate, Representation, Size
 
 # ffprobe -v error -select_streams v:0 -show_entries stream=width,height,duration,bit_rate -i rtsp://Admin1:Admin1@192.168.0.15/live0 -print_format json
 # ffmpeg -v verbose -i rtsp://Admin1:Admin1@192.168.0.15/live0 -vcodec libx264 -acodec aac -f hls -hls_time 5 -g 5 -segment_time 3 -hls_list_size 3 -hls_flags delete_segments /mnt/super/ionix/node/mngr/static/live/stream.m3u8
-from common.utilities import logger
+from common.utilities import logger, datetime_now
+from data.models import StreamingModel
+from data.streaming_repository import StreamingRepository
 
 
 def start_streaming_with_ffmpeg_streaming(rtsp_address='rtsp://Admin1:Admin1@192.168.0.15/live0'):
@@ -41,18 +43,34 @@ def start_streaming_with_ffmpeg_streaming(rtsp_address='rtsp://Admin1:Admin1@192
     print()
 
 
+# def create_ffmpeg_hls_streaming_args(rtsp_address: str, output_file: str) -> List[str]:
+#     return ['ffmpeg', '-v', 'verbose', '-i', rtsp_address, '-vcodec', 'libx264', '-acodec', 'aac', '-f',
+#             'hls', '-hls_time', '5', '-g', '5', '-segment_time', '3', '-hls_list_size', '3', '-hls_flags',
+#             'delete_segments', output_file]
+
+
 def create_ffmpeg_hls_streaming_args(rtsp_address: str, output_file: str) -> List[str]:
-    return ['ffmpeg', '-v', 'verbose', '-i', rtsp_address, '-vcodec', 'libx264', '-acodec', 'aac', '-f',
-            'hls', '-hls_time', '5', '-g', '5', '-segment_time', '3', '-hls_list_size', '3', '-hls_flags',
-            'delete_segments', output_file]
+    return ['ffmpeg', '-i', rtsp_address, '-strict', '-2', '-an', '-c:v', 'copy',
+            '-preset', 'ultrafast', '-f', 'hls', '-hls_time', '2', '-hls_list_size', '3',
+            '-start_number', '0', '-hls_allow_cache', '0',
+            '-hls_flags', 'delete_segments+omit_endlist',
+            output_file]
 
 
-def start_streaming(rtsp_address: str, output_file: str):
+def start_streaming(model: StreamingModel):
+    rtsp_address, output_file = model.rtsp_address, model.output_file
+
     logger.info('starting streaming')
     args: List[str] = create_ffmpeg_hls_streaming_args(rtsp_address, output_file)
 
     p = subprocess.Popen(args)
     try:
+        model.pid = p.pid
+        model.created_at = datetime_now()
+        model.args = ' '.join(args)
+        rep = StreamingRepository()
+        rep.add(model)
+        logger.info('The  model has been saved by repository')
         logger.info('streaming subprocess has been opened')
         p.wait()
     except Exception as e:

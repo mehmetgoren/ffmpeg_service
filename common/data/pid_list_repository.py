@@ -3,9 +3,9 @@ from redis import Redis
 from typing import List
 
 
-class PidRepository:
+class PidListRepository:
     def __init__(self, connection: Redis):
-        self.namespace = 'pid:'
+        self.namespace = 'pids:'
         self.connection: Redis = connection
 
     def _get_key(self, key: str):

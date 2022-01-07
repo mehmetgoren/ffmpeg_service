@@ -5,6 +5,7 @@ from threading import Thread
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 # from data.events import StreamingStartedEvent
+from data.models import StreamingModel
 from streaming.hls_streaming import start_streaming
 
 
@@ -29,4 +30,5 @@ class StreamingEventHandler(EventHandler):
     def __handle(self, dic: dict):
         data: bytes = dic['data']
         dic = json.loads(data.decode(self.encoding))
-        start_streaming(dic['rtsp_address'], dic['folder_path'])
+        model = StreamingModel().map_from(dic)
+        start_streaming(model)
