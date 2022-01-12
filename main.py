@@ -1,39 +1,44 @@
-import asyncio
+import os
+import signal
+import psutil
 
 from common.data.heartbeat_repository import HeartbeatRepository
 from common.data.service_repository import ServiceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
-# from streaming.hls_streaming import start_streaming, start_streaming_async
+from utils.process_checker import ProcessChecker
+from data.streaming_repository import StreamingRepository
 from streaming.start_streaming_event_handler import StartStreamingEventHandler
 
-# def start():
-#     start_streaming('rtsp://Admin1:Admin1@192.168.0.15/live0',
-#                     '/mnt/super/ionix/node/mngr/static/live/stream.m3u8')
-#
-#
-# def start_async():
-#     asyncio.ensure_future(start_streaming_async('rtsp://Admin1:Admin1@192.168.0.15/live0',
-#                                                 '/mnt/super/ionix/node/mngr/static/live/stream.m3u8'))
+
+def kill_all_ffmpeg_process():
+    for proc in psutil.process_iter():
+        if proc.name() == "ffmpeg":
+            os.kill(proc.pid, signal.SIGKILL)
 
 
-if __name__ == '__main__':
-    connectionService = crate_redis_connection(RedisDb.SERVICE, False)
+def main():
+    kill_all_ffmpeg_process()
+
+    connection_service = crate_redis_connection(RedisDb.SERVICE, False)
     service_name = 'ffmpeg_service'
-    heartbeat = HeartbeatRepository(connectionService, service_name)
+    heartbeat = HeartbeatRepository(connection_service, service_name)
     heartbeat.start()
-    service_repository = ServiceRepository(connectionService)
+    service_repository = ServiceRepository(connection_service)
     service_repository.add(service_name)
 
-    # start()
-    # start_async()
+    connection_source = crate_redis_connection(RedisDb.SOURCES, False)
+    streaming_repository = StreamingRepository(connection_source)
+    streaming_repository.delete_by_namespace()
 
-    connectionSource = crate_redis_connection(RedisDb.SOURCES, False)
-    handler = StartStreamingEventHandler(connectionSource)
+    process_checker = ProcessChecker(streaming_repository)
+    process_checker.start()
+
+    handler = StartStreamingEventHandler(streaming_repository)
     event_bus = EventBus('start_streaming_request')
     logger.info('FFmpeg service has been started...')
     event_bus.subscribe(handler)
 
-    loop = asyncio.get_event_loop()
-    loop.run_forever()
-    loop.close()
+
+if __name__ == '__main__':
+    main()
