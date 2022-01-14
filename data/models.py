@@ -25,3 +25,15 @@ class StreamingModel:
         self.output_file = dic['output_file'] if 'output_file' in dic else ''
         self.failed_count = int(dic['failed_count']) if 'failed_count' in dic else 0
         return self
+
+
+class RecordingModel(StreamingModel):
+    def __init__(self):
+        super().__init__()
+        # todo: move to config later
+        self.duration: int = 3
+
+    def map_from(self, dic: Dict):
+        super().map_from(dic)
+        self.duration = int(dic['duration']) if 'duration' in dic else 15
+        return self

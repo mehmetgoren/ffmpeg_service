@@ -47,18 +47,23 @@ def start_streaming_with_ffmpeg_streaming(rtsp_address='rtsp://Admin1:Admin1@192
     print()
 
 
-# def create_ffmpeg_hls_streaming_args(rtsp_address: str, output_file: str) -> List[str]:
-#     return ['ffmpeg', '-v', 'verbose', '-i', rtsp_address, '-vcodec', 'libx264', '-acodec', 'aac', '-f',
-#             'hls', '-hls_time', '5', '-g', '5', '-segment_time', '3', '-hls_list_size', '3', '-hls_flags',
-#             'delete_segments', output_file]
-
-
-def _create_ffmpeg_hls_streaming_args(rtsp_address: str, output_file: str) -> List[str]:
+def _create_ffmpeg_hls_streaming_args_simple(rtsp_address: str, output_file: str) -> List[str]:
     return ['ffmpeg', '-i', rtsp_address, '-strict', '-2', '-an', '-c:v', 'copy',
             '-preset', 'ultrafast', '-f', 'hls', '-hls_time', '2', '-hls_list_size', '3',
             '-start_number', '0', '-hls_allow_cache', '0',
             '-hls_flags', 'delete_segments+omit_endlist',
             output_file]
+
+
+def _create_ffmpeg_hls_streaming_args(model: StreamingModel) -> List[str]:
+    rtsp_address, output_file = model.rtsp_address, model.output_file
+    return ['ffmpeg', '-progress', 'pipe:5', '-use_wallclock_as_timestamps', '1', '-analyzeduration',
+                      '1000000', '-probesize', '1000000', '-fflags', '+igndts', '-loglevel', 'info',
+                      '-rtsp_transport', 'tcp',
+                      '-i', rtsp_address, '-strict', '-2', '-an', '-c:v', 'copy',
+                      '-preset', 'ultrafast', '-f', 'hls', '-hls_time', '2', '-hls_list_size', '3',
+                      '-start_number', '0', '-hls_allow_cache', '0',
+                      '-hls_flags', '+delete_segments+omit_endlist', output_file]
 
 
 def _delete_files(folder: str):
@@ -74,10 +79,8 @@ def _delete_files(folder: str):
 
 
 def start_streaming(model: StreamingModel, connection: Redis):
-    rtsp_address, output_file = model.rtsp_address, model.output_file
-
     logger.info('starting streaming')
-    args: List[str] = _create_ffmpeg_hls_streaming_args(rtsp_address, output_file)
+    args: List[str] = _create_ffmpeg_hls_streaming_args(model)
 
     p = subprocess.Popen(args)
     try:
@@ -90,7 +93,7 @@ def start_streaming(model: StreamingModel, connection: Redis):
         _delete_files(os.path.dirname(model.output_file))
         p.wait()
     except Exception as e:
-        logger.error(f'An error occurred while starting FFmpeg sub-process, err: {e}')
+        logger.error(f'an error occurred while starting FFmpeg sub-process, err: {e}')
     finally:
         p.terminate()
         logger.info('streaming subprocess has been terminated')
@@ -99,24 +102,22 @@ def start_streaming(model: StreamingModel, connection: Redis):
 
 
 async def start_streaming_async(model: StreamingModel, connection: Redis):
-    rtsp_address, output_file = model.rtsp_address, model.output_file
-
-    logger.info('starting streaming')
-    args = ' '.join(_create_ffmpeg_hls_streaming_args(rtsp_address, output_file))
+    logger.info('async: starting streaming')
+    args = ' '.join(_create_ffmpeg_hls_streaming_args(model))
 
     p = await asyncio.create_subprocess_shell(args)
     try:
         model.pid = p.pid
-        model.args = ' '.join(args)
+        model.args = args
         rep = StreamingRepository(connection)
         rep.add(model)
-        logger.info('the model has been saved by repository')
-        logger.info('streaming subprocess has been opened')
+        logger.info('async: the model has been saved by repository')
+        logger.info('async: streaming subprocess has been opened')
         await p.wait()
     except Exception as e:
-        logger.error(f'An error occurred while starting FFmpeg sub-process, err: {e}')
+        logger.error(f'async: an error occurred while starting FFmpeg sub-process, err: {e}')
     finally:
         p.terminate()
-        logger.info('streaming subprocess has been terminated')
+        logger.info('async: streaming subprocess has been terminated')
 
     return p.returncode
