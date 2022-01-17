@@ -12,6 +12,7 @@ from common.utilities import logger, crate_redis_connection, RedisDb
 from data.recording_repository import RecordingRepository
 from recording.start_recording_event_handler import StartRecordingEventHandler
 from recording.stop_recording_event_handler import StopRecordingEventHandler
+from streaming.stop_streaming_event_handler import StopStreamingEventHandler
 from utils.process_checker import ProcessChecker
 from data.streaming_repository import StreamingRepository
 from streaming.start_streaming_event_handler import StartStreamingEventHandler
@@ -65,13 +66,24 @@ def listen_start_streaming(streaming_repository: StreamingRepository):
     th.start()
 
 
+def listen_stop_streaming(streaming_repository: StreamingRepository):
+    def stop_streaming(rep: StreamingRepository):
+        handler = StopStreamingEventHandler(rep)
+        event_bus = EventBus('stop_streaming_request')
+        event_bus.subscribe(handler)
+
+    th = Thread(target=stop_streaming, args=[streaming_repository])
+    th.daemon = True
+    th.start()
+
+
 def main():
     kill_all_ffmpeg_process()
     register_ffmpeg_service()
 
     connection_source = crate_redis_connection(RedisDb.SOURCES, False)
     streaming_repository = StreamingRepository(connection_source)
-    streaming_repository.delete_by_namespace()
+    # streaming_repository.delete_by_namespace()
     recording_repository = RecordingRepository(connection_source)
 
     process_checker = ProcessChecker(streaming_repository, recording_repository)
@@ -80,6 +92,7 @@ def main():
     listen_start_recording(recording_repository)
     listen_stop_recording(recording_repository)
     listen_start_streaming(streaming_repository)
+    listen_stop_streaming(streaming_repository)
 
     logger.info('FFmpeg service has been started...')
     loop = asyncio.get_event_loop()

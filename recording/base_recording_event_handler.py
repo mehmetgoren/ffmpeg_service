@@ -13,7 +13,7 @@ class BaseRecordingEventHandler(EventHandler, ABC):
         self.event_bus = EventBus(response_channel_name)
         self.recording_repository = recording_repository
 
-    def check_message(self, dic: dict) -> (bool, RecordingModel, RecordingModel, str):
+    def parse_message(self, dic: dict) -> (bool, RecordingModel, RecordingModel, str):
         if dic is None or dic['type'] != 'message':
             return False, None, None, ''
 

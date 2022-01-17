@@ -12,7 +12,7 @@ class StartRecordingEventHandler(BaseRecordingEventHandler):
         super().__init__(recording_repository, 'start_recording_response')
 
     def handle(self, dic: dict):
-        is_valid_msg, prev, model, json_str = self.check_message(dic)
+        is_valid_msg, prev, model, json_str = self.parse_message(dic)
         if not is_valid_msg:
             return
         if prev is None:
