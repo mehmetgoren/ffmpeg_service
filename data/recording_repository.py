@@ -25,6 +25,10 @@ class RecordingRepository(BaseRepository):
         dic = model.__dict__
         return self.connection.hset(key, field, dic[field])
 
+    def remove(self, id: str) -> int:
+        key = self._get_key(id)
+        return self.connection.delete(key)
+
     def get(self, id: str) -> RecordingModel:
         key = self._get_key(id)
         dic = self.connection.hgetall(key)
