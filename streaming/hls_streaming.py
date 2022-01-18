@@ -66,7 +66,8 @@ def _create_ffmpeg_hls_streaming_args(model: StreamingModel) -> List[str]:
                       '-hls_flags', '+delete_segments+omit_endlist', output_file]
 
 
-def _delete_files(folder: str):
+def _delete_pref_streaming_files(model: StreamingModel):
+    folder: str = os.path.dirname(model.output_file)
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
         try:
@@ -79,6 +80,7 @@ def _delete_files(folder: str):
 
 
 def start_streaming(model: StreamingModel, connection: Redis):
+    _delete_pref_streaming_files(model)
     logger.info('starting streaming')
     args: List[str] = _create_ffmpeg_hls_streaming_args(model)
 
@@ -90,7 +92,6 @@ def start_streaming(model: StreamingModel, connection: Redis):
         rep.add(model)
         logger.info('the model has been saved by repository')
         logger.info('streaming subprocess has been opened')
-        _delete_files(os.path.dirname(model.output_file))
         p.wait()
     except Exception as e:
         logger.error(f'an error occurred while starting FFmpeg sub-process, err: {e}')
@@ -102,6 +103,7 @@ def start_streaming(model: StreamingModel, connection: Redis):
 
 
 async def start_streaming_async(model: StreamingModel, connection: Redis):
+    _delete_pref_streaming_files(model)
     logger.info('async: starting streaming')
     args = ' '.join(_create_ffmpeg_hls_streaming_args(model))
 

@@ -24,7 +24,7 @@ class StartRecordingEventHandler(BaseRecordingEventHandler):
         th.daemon = True
         th.start()
         # todo: move to ml-config
-        time.sleep(10)
+        time.sleep(1)
 
     def __handle(self, model: RecordingModel):
         start_recording(self.recording_repository.get_connection(), model)

@@ -1,7 +1,9 @@
 import asyncio
+import os.path
 import time
 from threading import Thread
 
+from common.utilities import logger
 from data.models import StreamingModel
 from data.streaming_repository import StreamingRepository
 from streaming.base_streaming_event_handler import BaseStreamingEventHandler
@@ -27,7 +29,11 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         th.daemon = True
         th.start()
         # todo: move to ml-config
-        time.sleep(10)
+        while 1:
+            if os.path.exists(model.output_file):
+                logger.info('Streaming file created')
+                break
+            time.sleep(1)
 
     def __handle(self, model: StreamingModel):
         if self.use_async:
