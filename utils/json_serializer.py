@@ -5,7 +5,6 @@ from types import SimpleNamespace
 def serialize_json(obj):
     dic = {}
     dic.update(obj.__dict__)
-    del dic['_Config__connection']
     return json.dumps(dic, default=lambda o: o.__dict__,
                       sort_keys=True, indent=4)
 

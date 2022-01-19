@@ -1,6 +1,7 @@
 import time
 from threading import Thread
 
+from common.utilities import logger
 from data.models import RecordingModel
 from data.recording_repository import RecordingRepository
 from recording.base_recording_event_handler import BaseRecordingEventHandler
@@ -10,8 +11,10 @@ from recording.mp4_recording import start_recording
 class StartRecordingEventHandler(BaseRecordingEventHandler):
     def __init__(self, recording_repository: RecordingRepository):
         super().__init__(recording_repository, 'start_recording_response')
+        logger.info('StartRecordingEventHandler initialized')
 
     def handle(self, dic: dict):
+        logger.info('StartRecordingEventHandler handle called')
         is_valid_msg, prev, model, json_str = self.parse_message(dic)
         if not is_valid_msg:
             return

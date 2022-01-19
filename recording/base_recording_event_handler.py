@@ -1,10 +1,10 @@
-import json
 from abc import ABC
 
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 from data.models import RecordingModel
 from data.recording_repository import RecordingRepository
+from utils.redis import is_message_invalid, fix_redis_pubsub_dict
 
 
 class BaseRecordingEventHandler(EventHandler, ABC):
@@ -14,12 +14,10 @@ class BaseRecordingEventHandler(EventHandler, ABC):
         self.recording_repository = recording_repository
 
     def parse_message(self, dic: dict) -> (bool, RecordingModel, RecordingModel, str):
-        if dic is None or dic['type'] != 'message':
+        if is_message_invalid(dic):
             return False, None, None, ''
 
-        data: bytes = dic['data']
-        json_str = data.decode(self.encoding)
-        fixed_dic = json.loads(json_str)
+        fixed_dic, json_str = fix_redis_pubsub_dict(dic, self.encoding)
         model = RecordingModel().map_from(fixed_dic)
         prev = self.recording_repository.get(model.id)
 

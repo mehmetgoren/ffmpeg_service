@@ -9,8 +9,10 @@ from streaming.hls_streaming import _delete_pref_streaming_files
 class StopStreamingEventHandler(BaseStreamingEventHandler):
     def __init__(self, streaming_repository: StreamingRepository):
         super().__init__(streaming_repository, 'stop_streaming_response')
+        logger.info('StopStreamingEventHandler initialized')
 
     def handle(self, dic: dict):
+        logger.info('StopStreamingEventHandler handle called')
         is_valid_msg, prev, model, json_str = self.parse_message(dic)
         if not is_valid_msg:
             return

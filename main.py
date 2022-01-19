@@ -10,6 +10,8 @@ from common.data.service_repository import ServiceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
 from data.recording_repository import RecordingRepository
+from data.source_repository import SourceRepository
+from editor.editor_event_handler import EditorEventHandler
 from recording.start_recording_event_handler import StartRecordingEventHandler
 from recording.stop_recording_event_handler import StopRecordingEventHandler
 from streaming.stop_streaming_event_handler import StopStreamingEventHandler
@@ -31,6 +33,17 @@ def register_ffmpeg_service():
     heartbeat.start()
     service_repository = ServiceRepository(connection_service)
     service_repository.add(service_name)
+
+
+def listen_editor(source_repository: SourceRepository):
+    def start_editor_event(rep: SourceRepository):
+        handler = EditorEventHandler(rep)
+        event_bus = EventBus('editor_request')
+        event_bus.subscribe(handler)
+
+    th = Thread(target=start_editor_event, args=[source_repository])
+    th.daemon = True
+    th.start()
 
 
 def listen_start_recording(recording_repository: RecordingRepository):
@@ -85,10 +98,12 @@ def main():
     streaming_repository = StreamingRepository(connection_source)
     # streaming_repository.delete_by_namespace()
     recording_repository = RecordingRepository(connection_source)
+    source_repository = SourceRepository(connection_source)
 
     process_checker = ProcessChecker(streaming_repository, recording_repository)
     process_checker.start()
 
+    listen_editor(source_repository)
     listen_start_recording(recording_repository)
     listen_stop_recording(recording_repository)
     listen_start_streaming(streaming_repository)

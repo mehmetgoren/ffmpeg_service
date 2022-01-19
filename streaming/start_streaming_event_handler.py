@@ -15,8 +15,10 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         super().__init__(streaming_repository, 'start_streaming_response')
         # todo: move to ml_config
         self.use_async = False
+        logger.info('StartStreamingEventHandler initialized')
 
     def handle(self, dic: dict):
+        logger.info('StartStreamingEventHandler handle called')
         is_valid_msg, prev, model, json_str = self.parse_message(dic)
         if not is_valid_msg:
             return

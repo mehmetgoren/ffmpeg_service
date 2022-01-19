@@ -1,4 +1,7 @@
 from typing import Dict
+from enum import IntEnum
+
+from data.source_repository import Source
 
 
 class StreamingModel:
@@ -37,3 +40,28 @@ class RecordingModel(StreamingModel):
         super().map_from(dic)
         self.duration = int(dic['duration']) if 'duration' in dic else 15
         return self
+
+
+class EditorEventType(IntEnum):
+    NONE = 0
+    TAKE_SCREENSHOT = 1
+    GENERATE_THUMBNAIL = 2
+
+
+class EditorRequestModel:
+    def __init__(self):
+        self.source: Source = None
+        self.event_type: EditorEventType = EditorEventType.NONE
+        self.response_json: str = ''
+
+    def map_from(self, dic: Dict):
+        self.__dict__.update(dic)
+        self.source = Source()
+        self.source.__dict__.update(dic['source'])
+        return self
+
+
+class EditorImageResponseModel:
+    def __init__(self):
+        super().__init__()
+        self.image_base64: str = None
