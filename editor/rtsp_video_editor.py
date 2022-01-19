@@ -32,7 +32,7 @@ class RtspVideoEditor:
 
     def generate_thumbnail(self) -> str:
         image = self.__take_screenshot()
-        image.thumbnail((200, 200), Image.ANTIALIAS)
+        image.thumbnail((300, 300), Image.ANTIALIAS)
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='JPEG')
         img_str = base64.b64encode(image_bytes.getvalue())
