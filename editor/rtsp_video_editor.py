@@ -30,9 +30,10 @@ class RtspVideoEditor:
         img_str = base64.b64encode(image_bytes.getvalue())
         return img_str.decode('utf-8')
 
-    def generate_thumbnail(self) -> bytes:
+    def generate_thumbnail(self) -> str:
         image = self.__take_screenshot()
         image.thumbnail((200, 200), Image.ANTIALIAS)
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='JPEG')
-        return image_bytes.getvalue()
+        img_str = base64.b64encode(image_bytes.getvalue())
+        return img_str.decode('utf-8')
