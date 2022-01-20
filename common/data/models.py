@@ -30,6 +30,7 @@ class Source:
         self.brand = brand
         self.name = name
         self.rtsp_address = rtsp_address
+        self.description = ''
 
     def get_id(self):
         return self.id

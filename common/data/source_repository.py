@@ -32,7 +32,7 @@ class SourceRepository(BaseRepository):
 
     def get_all(self) -> List[Source]:
         models: List[Source] = []
-        keys = self.connection.keys()
+        keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
             dic = self.fix_bin_redis_dic(dic)
