@@ -22,9 +22,8 @@ class RedisDb(IntEnum):
     EVENTBUS = 3
 
 
-def crate_redis_connection(db: RedisDb, decode_responses: bool) -> Redis:
-    return Redis(host=config.redis.host, port=config.redis.port, charset='utf-8', db=int(db),
-                 decode_responses=decode_responses)
+def crate_redis_connection(db: RedisDb) -> Redis:
+    return Redis(host=config.redis.host, port=config.redis.port, charset='utf-8', db=int(db))
 
 
 # todo: it should replace with pids.

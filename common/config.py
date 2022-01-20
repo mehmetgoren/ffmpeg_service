@@ -70,7 +70,7 @@ class OnceDetectorConfig:
 
 class HandlerConfig:
     def __init__(self):
-        self.save_image_folder_path: str = '/home/gokalp/Pictures'
+        self.save_image_folder_path: str = '/mnt/sde1'
         self.save_image_extension: str = 'jpg'
         self.show_image_wait_key: int = 1
         self.show_image_caption: bool = False
@@ -88,6 +88,11 @@ class SourceReaderConfig:
         self.reader_type: RtspReaderType = RtspReaderType.OPENCV
 
 
+class RecordingConfig:
+    def __init__(self):
+        self.folder_path: str = '/mnt/sde1/playback'
+
+
 class Config:
     def __init__(self):
         self.device_config: DeviceConfig = DeviceConfig()
@@ -98,11 +103,12 @@ class Config:
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.handler: HandlerConfig = HandlerConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
+        self.recording: RecordingConfig = RecordingConfig()
         self.__connection: Redis = None
 
     @staticmethod
     def __get_redis_key():
-        return 'ml_config'
+        return 'config'
 
     @staticmethod
     def create():

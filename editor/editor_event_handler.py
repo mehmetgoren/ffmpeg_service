@@ -4,7 +4,7 @@ from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
 from data.models import EditorEventType, EditorRequestModel, EditorImageResponseModel
-from data.source_repository import SourceRepository
+from common.data.source_repository import SourceRepository
 from editor.rtsp_video_editor import RtspVideoEditor
 from utils.json_serializer import serialize_json
 from utils.redis import is_message_invalid, fix_redis_pubsub_dict

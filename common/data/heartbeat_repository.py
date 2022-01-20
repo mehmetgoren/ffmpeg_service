@@ -3,7 +3,7 @@ from datetime import datetime
 from redis import Redis
 
 from common.data.base_repository import BaseRepository
-from common.utilities import logger, crate_redis_connection, RedisDb, config, datetime_now
+from common.utilities import logger, config, datetime_now
 
 
 class HeartbeatRepository(BaseRepository):

@@ -1,7 +1,7 @@
 from typing import Dict
 from enum import IntEnum
 
-from data.source_repository import Source
+from common.data.models import Source
 
 
 class StreamingModel:

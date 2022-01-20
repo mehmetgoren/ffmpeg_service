@@ -4,7 +4,7 @@ from common.utilities import crate_redis_connection, RedisDb
 
 class EventBus:
     def __init__(self, channel: str):
-        self.connection = crate_redis_connection(RedisDb.EVENTBUS, False)
+        self.connection = crate_redis_connection(RedisDb.EVENTBUS)
         self.channel = channel
 
     def publish(self, event):

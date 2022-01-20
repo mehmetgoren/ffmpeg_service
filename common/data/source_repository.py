@@ -1,16 +1,8 @@
-# this section will move to the common package and ml_services will reorganize again.
 from typing import List
 from redis.client import Redis
 
 from common.data.base_repository import BaseRepository
-
-
-class Source:
-    def __init__(self, identifier: str = '', name: str = '', rtsp_address: str = ''):
-        self.id = identifier
-        self.name = name
-        self.rtsp_address = rtsp_address
-        self.brand = 'Generic'
+from common.data.models import Source
 
 
 class SourceRepository(BaseRepository):
@@ -25,6 +17,9 @@ class SourceRepository(BaseRepository):
         dic = model.__dict__
         self.connection.hset(key, mapping=dic)
 
+    def flush_db(self):
+        self.connection.flushdb()
+
     def get(self, identifier: str) -> Source:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
@@ -32,11 +27,7 @@ class SourceRepository(BaseRepository):
             return None
         dic = self.fix_bin_redis_dic(dic)
         model = Source()
-        # todo: replace it model.__dict__.update(dic) when 'pickle_data' and 'json_data' are removed
-        model.id = dic['id']
-        model.name = dic['name']
-        model.rtsp_address = dic['rtsp_address']
-        model.brand = dic['brand']
+        model.__dict__.update(dic)
         return model
 
     def get_all(self) -> List[Source]:
@@ -46,10 +37,6 @@ class SourceRepository(BaseRepository):
             dic = self.connection.hgetall(key)
             dic = self.fix_bin_redis_dic(dic)
             model = Source()
-            # todo: replace it model.__dict__.update(dic) when 'pickle_data' and 'json_data' are removed
-            model.id = dic['id']
-            model.name = dic['name']
-            model.rtsp_address = dic['rtsp_address']
-            model.brand = dic['brand']
+            model.__dict__.update(dic)
             models.append(model)
         return models

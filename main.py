@@ -10,7 +10,7 @@ from common.data.service_repository import ServiceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
 from data.recording_repository import RecordingRepository
-from data.source_repository import SourceRepository
+from common.data.source_repository import SourceRepository
 from editor.editor_event_handler import EditorEventHandler
 from recording.start_recording_event_handler import StartRecordingEventHandler
 from recording.stop_recording_event_handler import StopRecordingEventHandler
@@ -27,7 +27,7 @@ def kill_all_ffmpeg_process():
 
 
 def register_ffmpeg_service():
-    connection_service = crate_redis_connection(RedisDb.SERVICE, False)
+    connection_service = crate_redis_connection(RedisDb.SERVICE)
     service_name = 'ffmpeg_service'
     heartbeat = HeartbeatRepository(connection_service, service_name)
     heartbeat.start()
@@ -94,7 +94,7 @@ def main():
     kill_all_ffmpeg_process()
     register_ffmpeg_service()
 
-    connection_source = crate_redis_connection(RedisDb.SOURCES, False)
+    connection_source = crate_redis_connection(RedisDb.SOURCES)
     streaming_repository = StreamingRepository(connection_source)
     # streaming_repository.delete_by_namespace()
     recording_repository = RecordingRepository(connection_source)
