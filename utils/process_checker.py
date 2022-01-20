@@ -33,6 +33,7 @@ class ProcessChecker:
                 logger.warn(
                     f'a failed streaming FFmpeg process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {self.interval} seconds')
                 self.start_streaming_event_handler.start_streaming(streaming_model)
+                time.sleep(1)
             else:
                 logger.info(f'streaming process {streaming_model.name} - {streaming_model.pid} is running')
         recording_models = self.recording_repository.get_all()
@@ -43,6 +44,7 @@ class ProcessChecker:
                 logger.warn(
                     f'a failed recording FFmpeg process was detected for model {recording_model.name} - {recording_model.pid} and will be recovered in {self.interval} seconds')
                 self.start_recording_event_handler.start_recording(recording_model)
+                time.sleep(1)
             else:
                 logger.info(f'recording process {recording_model.name} - {recording_model.pid} is running')
 

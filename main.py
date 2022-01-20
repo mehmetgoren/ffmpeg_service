@@ -39,7 +39,12 @@ def listen_editor(source_repository: SourceRepository):
     def start_editor_event(rep: SourceRepository):
         handler = EditorEventHandler(rep)
         event_bus = EventBus('editor_request')
-        event_bus.subscribe(handler)
+        try:
+            event_bus.subscribe(handler)
+        except BaseException as e:
+            logger.error(f'Error while starting editor event handler: {e}')
+        finally:
+            listen_editor(source_repository)  # start again, otherwise event-listening will stop
 
     th = Thread(target=start_editor_event, args=[source_repository])
     th.daemon = True
