@@ -6,19 +6,15 @@ import psutil
 import schedule
 
 from common.utilities import logger
-from data.recording_repository import RecordingRepository
-from data.streaming_repository import StreamingRepository
-from recording.start_recording_event_handler import StartRecordingEventHandler
+from streaming.streaming_repository import StreamingRepository
 from streaming.start_streaming_event_handler import StartStreamingEventHandler
 
 
+# todo: activate leaky FFmpeg process checker
 class ProcessChecker:
-    def __init__(self, streaming_repository: StreamingRepository
-                 , recording_repository: RecordingRepository):
+    def __init__(self, streaming_repository: StreamingRepository):
         self.streaming_repository = streaming_repository
-        self.recording_repository = recording_repository
         self.start_streaming_event_handler = StartStreamingEventHandler(streaming_repository)
-        self.start_recording_event_handler = StartRecordingEventHandler(recording_repository)
         # todo: move to ml_config
         self.interval = 10
         self.leaky_ffmpeg_checker_interval = 300
@@ -36,17 +32,6 @@ class ProcessChecker:
                 time.sleep(1)
             else:
                 logger.info(f'streaming process {streaming_model.name} - {streaming_model.pid} is running')
-        recording_models = self.recording_repository.get_all()
-        for recording_model in recording_models:
-            if not psutil.pid_exists(recording_model.pid):
-                recording_model.failed_count += 1
-                self.recording_repository.update(recording_model, 'failed_count')
-                logger.warn(
-                    f'a failed recording FFmpeg process was detected for model {recording_model.name} - {recording_model.pid} and will be recovered in {self.interval} seconds')
-                self.start_recording_event_handler.start_recording(recording_model)
-                time.sleep(1)
-            else:
-                logger.info(f'recording process {recording_model.name} - {recording_model.pid} is running')
 
     # def __check_leaky_ffmpeg_process(self):
     #     logger.info('checking leaking ffmpeg processes')

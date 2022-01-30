@@ -2,7 +2,7 @@ from typing import List
 from redis import Redis
 
 from common.data.base_repository import BaseRepository
-from common.data.models import ServiceModel
+from common.data.service_model import ServiceModel
 
 
 class ServiceRepository(BaseRepository):
@@ -24,7 +24,6 @@ class ServiceRepository(BaseRepository):
         for key in keys:
             dic = self.connection.hgetall(key)
             fixed_dic = self.fix_bin_redis_dic(dic)
-            model = ServiceModel(str(key).split(':')[1])
-            model.__dict__.update(fixed_dic)
+            model = ServiceModel(str(key).split(':')[1]).map_from(fixed_dic)
             models.append(model)
         return models

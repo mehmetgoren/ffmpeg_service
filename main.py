@@ -9,14 +9,11 @@ from common.data.heartbeat_repository import HeartbeatRepository
 from common.data.service_repository import ServiceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
-from data.recording_repository import RecordingRepository
-from common.data.source_repository import SourceRepository
 from editor.editor_event_handler import EditorEventHandler
-from recording.start_recording_event_handler import StartRecordingEventHandler
-from recording.stop_recording_event_handler import StopRecordingEventHandler
+from streaming.restart_streaming_event_handler import RestartStreamingEventHandler
 from streaming.stop_streaming_event_handler import StopStreamingEventHandler
-from utils.process_checker import ProcessChecker
-from data.streaming_repository import StreamingRepository
+# from utils.process_checker import ProcessChecker
+from streaming.streaming_repository import StreamingRepository
 from streaming.start_streaming_event_handler import StartStreamingEventHandler
 
 
@@ -35,44 +32,24 @@ def register_ffmpeg_service():
     service_repository.add(service_name)
 
 
-def listen_editor(source_repository: SourceRepository):
-    def start_editor_event(rep: SourceRepository):
-        handler = EditorEventHandler(rep)
+# todo: move to stable version powered by Redis-RQ
+def listen_editor():
+    def start_editor_event():
+        handler = EditorEventHandler()
         event_bus = EventBus('editor_request')
         try:
             event_bus.subscribe(handler)
         except BaseException as e:
             logger.error(f'Error while starting editor event handler: {e}')
         finally:
-            listen_editor(source_repository)  # start again, otherwise event-listening will stop
+            listen_editor()  # start again, otherwise event-listening will stop
 
-    th = Thread(target=start_editor_event, args=[source_repository])
+    th = Thread(target=start_editor_event)
     th.daemon = True
     th.start()
 
 
-def listen_start_recording(recording_repository: RecordingRepository):
-    def start_recording(rep: RecordingRepository):
-        handler = StartRecordingEventHandler(rep)
-        event_bus = EventBus('start_recording_request')
-        event_bus.subscribe(handler)
-
-    th = Thread(target=start_recording, args=[recording_repository])
-    th.daemon = True
-    th.start()
-
-
-def listen_stop_recording(recording_repository: RecordingRepository):
-    def stop_recording(rep: RecordingRepository):
-        handler = StopRecordingEventHandler(rep)
-        event_bus = EventBus('stop_recording_request')
-        event_bus.subscribe(handler)
-
-    th = Thread(target=stop_recording, args=[recording_repository])
-    th.daemon = True
-    th.start()
-
-
+# todo: move to stable version powered by Redis-RQ
 def listen_start_streaming(streaming_repository: StreamingRepository):
     def start_streaming(rep: StreamingRepository):
         handler = StartStreamingEventHandler(rep)
@@ -84,6 +61,7 @@ def listen_start_streaming(streaming_repository: StreamingRepository):
     th.start()
 
 
+# todo: move to stable version powered by Redis-RQ
 def listen_stop_streaming(streaming_repository: StreamingRepository):
     def stop_streaming(rep: StreamingRepository):
         handler = StopStreamingEventHandler(rep)
@@ -95,24 +73,34 @@ def listen_stop_streaming(streaming_repository: StreamingRepository):
     th.start()
 
 
+# todo: move to stable version powered by Redis-RQ
+def listen_restart_streaming(streaming_repository: StreamingRepository):
+    def restart_streaming(rep: StreamingRepository):
+        handler = RestartStreamingEventHandler(rep)
+        event_bus = EventBus('restart_streaming_request')
+        event_bus.subscribe(handler)
+
+    th = Thread(target=restart_streaming, args=[streaming_repository])
+    th.daemon = True
+    th.start()
+
+
 def main():
-    kill_all_ffmpeg_process()
+    # kill_all_ffmpeg_process()
     register_ffmpeg_service()
 
     connection_source = crate_redis_connection(RedisDb.SOURCES)
     streaming_repository = StreamingRepository(connection_source)
     # streaming_repository.delete_by_namespace()
-    recording_repository = RecordingRepository(connection_source)
-    source_repository = SourceRepository(connection_source)
+    # source_repository = SourceRepository(connection_source)
 
-    process_checker = ProcessChecker(streaming_repository, recording_repository)
-    process_checker.start()
+    # process_checker = ProcessChecker(streaming_repository)
+    # process_checker.start()
 
-    listen_editor(source_repository)
-    listen_start_recording(recording_repository)
-    listen_stop_recording(recording_repository)
+    listen_editor()
     listen_start_streaming(streaming_repository)
     listen_stop_streaming(streaming_repository)
+    listen_restart_streaming(streaming_repository)
 
     logger.info('FFmpeg service has been started...')
     loop = asyncio.get_event_loop()

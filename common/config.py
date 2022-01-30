@@ -17,12 +17,9 @@ class DeviceServices(IntEnum):
     READ = 1
     DETECTION = 2
     CLOUD_INTEGRATION = 4
-    ALL = READ | DETECTION | CLOUD_INTEGRATION
-
-
-class RtspReaderType(IntEnum):
-    OPENCV = 0
-    FFMPEG = 1
+    FFMPEG = 8
+    MNGR = 16
+    ALL = READ | DETECTION | CLOUD_INTEGRATION | FFMPEG | MNGR
 
 
 # todo: mngr should auto-decide config fields. Implement it later by heartbeat infos.
@@ -31,10 +28,11 @@ class DeviceConfig:
         self.device_name = platform.node()
         _, _, _, _, machine, _ = platform.uname()
         self.device_type = DeviceType.PC if 'x86' in machine else DeviceType.IOT
-        self.device_services = [DeviceServices.READ, DeviceServices.DETECTION, DeviceServices.CLOUD_INTEGRATION]
+        self.device_services = [DeviceServices.READ, DeviceServices.DETECTION, DeviceServices.CLOUD_INTEGRATION,
+                                DeviceServices.FFMPEG, DeviceServices.MNGR]
 
 
-class ConfigHeartbeat:
+class HeartbeatConfig:
     def __init__(self):
         self.interval: int = 5
 
@@ -75,7 +73,7 @@ class HandlerConfig:
         self.show_image_wait_key: int = 1
         self.show_image_caption: bool = False
         self.show_image_fullscreen: bool = False
-        self.read_service_overlay: bool = False
+        self.read_service_overlay: bool = True
 
 
 class SourceReaderConfig:
@@ -84,26 +82,28 @@ class SourceReaderConfig:
         self.buffer_size: int = 2
         self.max_retry: int = 150
         self.max_retry_in: int = 6  # hours
+        # todo: remove it.
         self.kill_starter_proc: bool = True
-        self.reader_type: RtspReaderType = RtspReaderType.OPENCV
 
 
-class RecordingConfig:
+class PathConfig:
     def __init__(self):
-        self.folder_path: str = '/mnt/sde1/playback'
+        self.streaming: str = '/mnt/sde1/live'
+        self.recording: str = '/mnt/sde1/playback'
+        self.reading: str = '/mnt/sde1/read'
 
 
 class Config:
     def __init__(self):
-        self.device_config: DeviceConfig = DeviceConfig()
-        self.heartbeat: ConfigHeartbeat = ConfigHeartbeat()
+        self.device: DeviceConfig = DeviceConfig()
+        self.heartbeat: HeartbeatConfig = HeartbeatConfig()
         self.redis: ConfigRedis = ConfigRedis()
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.handler: HandlerConfig = HandlerConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
-        self.recording: RecordingConfig = RecordingConfig()
+        self.path: PathConfig = PathConfig()
         self.__connection: Redis = None
 
     @staticmethod

@@ -1,9 +1,8 @@
 import os
 
 from common.utilities import logger
-from data.streaming_repository import StreamingRepository
+from streaming.streaming_repository import StreamingRepository
 from streaming.base_streaming_event_handler import BaseStreamingEventHandler
-from streaming.hls_streaming import _delete_pref_streaming_files
 
 
 class StopStreamingEventHandler(BaseStreamingEventHandler):
@@ -11,22 +10,23 @@ class StopStreamingEventHandler(BaseStreamingEventHandler):
         super().__init__(streaming_repository, 'stop_streaming_response')
         logger.info('StopStreamingEventHandler initialized')
 
+    # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
         logger.info('StopStreamingEventHandler handle called')
-        is_valid_msg, prev, model, json_str = self.parse_message(dic)
+        is_valid_msg, streaming_model, request_model, dic_json = self.parse_message(dic)  # dic is request model with id.
         if not is_valid_msg:
             return
-        if prev is not None:
+        if streaming_model is not None:
             try:
-                self.streaming_repository.remove(prev.id)
+                self.streaming_repository.remove(streaming_model.id)
             except BaseException as e:
-                logger.error(f'Error while removing streaming {prev.id} from repository: {e}')
+                logger.error(f'Error while removing streaming {streaming_model.id} from repository: {e}')
             try:
-                os.kill(prev.pid, 9)
+                os.kill(streaming_model.pid, 9)
             except BaseException as e:
-                logger.error(f'Error while killing process {prev.pid}')
+                logger.error(f'Error while killing process {streaming_model.pid}, err: {e}')
             try:
-                _delete_pref_streaming_files(prev)
+                self._delete_pref_streaming_files(streaming_model.id)
             except BaseException as e:
-                logger.error(f'Error while deleting streaming files for {prev.id}')
-        self.event_bus.publish(json_str)
+                logger.error(f'Error while deleting streaming files for {streaming_model.id}, err: {e}')
+        self.event_bus.publish(dic_json)
