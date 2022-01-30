@@ -47,10 +47,10 @@ class CommandBuilder:
         if s.input_type == InputType.H264_H265 and s.rtsp_transport != RtspTransport.Auto:
             args.extend(['-rtsp_transport', RtspTransport.str(s.rtsp_transport)])
         if s.use_hwaccel:
-            args.extend(['hwaccel', AccelerationEngine.str(s.hwaccel_engine)])
+            args.extend(['-hwaccel', AccelerationEngine.str(s.hwaccel_engine)])
             if s.video_decoder != VideoDecoder.Auto:
                 args.extend(['-c:v', VideoDecoder.str(s.video_decoder)])
-            if not s.hwaccel_device:
+            if len(s.hwaccel_device) > 0:
                 args.extend(['-hwaccel_device', s.hwaccel_device])
         if s.log_level != LogLevel.none:
             args.extend(['-loglevel', LogLevel.str(s.log_level)])
@@ -177,6 +177,6 @@ class CommandBuilder:
                 s.record_segment_interval = 15
             args.extend(['-segment_time', str(s.record_segment_interval * 60)])
             args.append(self.__add_double_quotes(os.path.join(get_recording_output_folder_path(s.id),
-                                                              f'%Y_%m_%d_%H_%M_%S.{RecordFileTypes.str(s.record_file_type)}')))
+                                                              f'%Y-%m-%d-%H-%M-%S.{RecordFileTypes.str(s.record_file_type)}')))
         # Recording ends
         return args
