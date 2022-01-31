@@ -26,7 +26,8 @@ class StopStreamingEventHandler(BaseStreamingEventHandler):
             except BaseException as e:
                 logger.error(f'Error while killing process {streaming_model.pid}, err: {e}')
             try:
-                self._delete_pref_streaming_files(streaming_model.id)
+                self.delete_pref_streaming_files(streaming_model.id)
             except BaseException as e:
                 logger.error(f'Error while deleting streaming files for {streaming_model.id}, err: {e}')
+            # todo: remove container it its stream type is FLV.
         self.event_bus.publish(dic_json)

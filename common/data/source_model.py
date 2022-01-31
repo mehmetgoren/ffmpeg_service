@@ -15,6 +15,11 @@ class InputType(IntEnum):
     HLS = 2
 
 
+class FlvPlayerConnectionType(IntEnum):
+    HTTP = 0
+    WEBSOCKET = 1
+
+
 class RtspTransport(IntEnum):
     Auto = 0
     TCP = 1
@@ -433,7 +438,9 @@ class SourceModel:
         self.hwaccel_device = ''
 
         self.stream_type: StreamType = StreamType.HLS
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS  # this one is not used by the command builder.
+        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS  # this one is not used by the command builder but StartStreamingEventHandler
+        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
+        self.rtmp_server_address: str = ''  # this one is to be set from streaming model.
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
@@ -448,7 +455,6 @@ class SourceModel:
         self.stream_audio_quality: AudioQuality = AudioQuality.Auto
         self.stream_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.stream_audio_volume: int = 100
-        self.flv_address: str = ''
 
         self.jpeg_enabled: bool = False
         self.jpeg_frame_rate: int = 0

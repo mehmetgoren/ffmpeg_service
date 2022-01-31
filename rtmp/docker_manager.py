@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Any
 
 import docker
 from redis.client import Redis
@@ -15,7 +15,6 @@ class DockerManager:
     def __init__(self, connection: Redis):
         self.connection: Redis = connection
         self.client = docker.from_env()
-        self.containers: list = []
 
     def create_rtmp_model(self, type: RmtpServerType, unique_name: str) -> BaseRtmpModel:
         if type == RmtpServerType.SRS:
@@ -26,51 +25,54 @@ class DockerManager:
             return NodeMediaServerRtmpModel(unique_name, self.connection)
         raise NotImplementedError('RmtpServerType was not match')
 
-    def run(self):
-        rep = StreamingRepository(self.connection)
-        models = rep.get_all()
+    def __create_rtmp_model(self, rtmp_server_type: RmtpServerType, streaming_id: str) -> BaseRtmpModel:
+        rtmp_model = self.create_rtmp_model(rtmp_server_type, streaming_id)
+
+        rtmp_model.int_ports()
+
+        return rtmp_model
+
+    def __init_container(self, rtmp_model: BaseRtmpModel, all_containers: List):
+        container_name = rtmp_model.get_container_name()
+        for container in all_containers:
+            if container.name == container_name:
+                container.stop()
+                container.remove()
+                break
+        container = self.client.containers.run(rtmp_model.get_image_name(), detach=True,
+                                               command=rtmp_model.get_commands(),
+                                               # auto_remove=True, remove=True,
+                                               restart_policy={'Name': 'unless-stopped'},
+                                               name=container_name,
+                                               ports=rtmp_model.get_ports())
+        return container
+
+    def run(self, rtmp_server_type: RmtpServerType, streaming_id: str) -> (BaseRtmpModel, Any):
+        rtmp_model = self.__create_rtmp_model(rtmp_server_type, streaming_id)
+        all_containers = self.client.containers.list(all=True)
+        container = self.__init_container(rtmp_model, all_containers)
+        return rtmp_model, container
+
+    # todo: run at startup
+    def run_all(self, streaming_repository: StreamingRepository):
+        all_containers = self.client.containers.list(all=True)
+        models = streaming_repository.get_all()
         filtered_models: List[StreamingModel] = []
         for model in models:
             if model.rtmp_server_type == StreamType.FLV:
                 filtered_models.append(model)
         for streaming_model in filtered_models:
             if not streaming_model.rtmp_server_initialized:
-                rtmp_model = self.create_rtmp_model(streaming_model.rtmp_server_type, streaming_model.id)
-
-                ports = rtmp_model.int_ports()
-                streaming_model.rtmp_container_ports = json.dumps(ports)
-
-                streaming_model.rtmp_image_name = rtmp_model.get_image_name()
-                streaming_model.rtmp_container_name = rtmp_model.get_container_name()
-                streaming_model.rtmp_address = rtmp_model.get_rtmp_address()
-                streaming_model.rtmp_flv_address = rtmp_model.get_flv_address()
-                streaming_model.rtmp_container_commands = ','.join(rtmp_model.get_commands())
-
-                streaming_model.rtmp_server_initialized = True
-                rep.replace(streaming_model)
-
-            all_containers = self.client.containers.list(all=True)
-            found = False
-            _container = None
-            for container in all_containers:
-                if container.name == streaming_model.rtmp_container_name:
-                    if container.status != 'running':
-                        container.start()  # check it if it blocks the thread
-                    _container = container
-                    found = True
-            if not found:
-                _container = self.client.containers.run(streaming_model.rtmp_image_name, detach=True,
-                                                        command=streaming_model.rtmp_container_commands.split(','),
-                                                        # auto_remove=True, remove=True,
-                                                        restart_policy={'Name': 'unless-stopped'},
-                                                        name=streaming_model.rtmp_container_name,
-                                                        ports=json.loads(streaming_model.rtmp_container_ports))
-            self.containers.append(_container)
+                rtmp_model = self.__create_rtmp_model(streaming_model.rtmp_server_type, streaming_model.id)
+                self.__init_container(rtmp_model, all_containers)
+                rtmp_model.map_to(streaming_model)
+                streaming_repository.add(streaming_model)
 
     # call this method when a source was deleted
     def remove(self, model: StreamingModel):
         container_name = model.rtmp_container_name
-        for container in self.containers:
+        containers = self.client.containers.list(all=True)
+        for container in containers:
             if container.name == container_name:
                 container.remove()
                 break

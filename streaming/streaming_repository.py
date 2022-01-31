@@ -21,14 +21,11 @@ class StreamingRepository(BaseRepository):
         fix_dic_fields_bool_to_int(dic)
         return self.connection.hset(key, mapping=dic)
 
-    def update(self, model: StreamingModel, field: str) -> int:
+    def update(self, model: StreamingModel, fields: List[str]) -> int:
         key = self._get_key(model.id)
-        dic = model.__dict__
-        return self.connection.hset(key, field, dic[field])
-
-    def replace(self, model: StreamingModel) -> int:
-        key = self._get_key(model.id)
-        dic = model.__dict__
+        dic = {}
+        for field in fields:
+            dic[field] = model.__dict__[field]
         return self.connection.hset(key, mapping=dic)
 
     def remove(self, id: str) -> int:

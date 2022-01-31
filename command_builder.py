@@ -57,8 +57,7 @@ class CommandBuilder:
         if s.input_type == InputType.MPEG4:
             args.append('-re')
 
-        # args.extend(['-i', '"' + s.rtsp_address + '"'])
-        args.extend(['-i', s.rtsp_address])
+        args.extend(['-i', self.__add_double_quotes(s.rtsp_address)])
 
         args.extend(['-strict', '-2'])
         # input ends
@@ -117,7 +116,7 @@ class CommandBuilder:
 
         elif s.stream_type == StreamType.FLV:
             args.extend(['-f', 'flv'])
-            args.append('"' + s.flv_address + '"')
+            args.append(self.__add_double_quotes(s.rtmp_server_address))
         # stream ends
 
         # JPEG Snapshot starts

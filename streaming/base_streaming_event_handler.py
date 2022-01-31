@@ -23,13 +23,13 @@ class BaseStreamingEventHandler(EventHandler, ABC):
             return False, None, None, ''
 
         fixed_dic, dic_json = fix_redis_pubsub_dict(dic, self.encoding)
-        model = SourceModel().map_from(fixed_dic)
-        prev = self.streaming_repository.get(model.id)
+        source_model = SourceModel().map_from(fixed_dic)
+        prev_streaming_model = self.streaming_repository.get(source_model.id)
 
-        return True, prev, model, dic_json
+        return True, prev_streaming_model, source_model, dic_json
 
     @staticmethod
-    def _delete_pref_streaming_files(source_id: str):
+    def delete_pref_streaming_files(source_id: str):
         hls_output_file_path = get_hls_output_path(source_id)
         folder: str = os.path.dirname(hls_output_file_path)
         for filename in os.listdir(folder):

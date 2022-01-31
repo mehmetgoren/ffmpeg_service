@@ -7,6 +7,7 @@ import psutil
 
 from common.data.heartbeat_repository import HeartbeatRepository
 from common.data.service_repository import ServiceRepository
+from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb
 from editor.editor_event_handler import EditorEventHandler
@@ -50,13 +51,13 @@ def listen_editor():
 
 
 # todo: move to stable version powered by Redis-RQ
-def listen_start_streaming(streaming_repository: StreamingRepository):
-    def start_streaming(rep: StreamingRepository):
-        handler = StartStreamingEventHandler(rep)
+def listen_start_streaming(source_repository: SourceRepository, streaming_repository: StreamingRepository):
+    def start_streaming(reps: SourceRepository, repst: StreamingRepository):
+        handler = StartStreamingEventHandler(reps, repst)
         event_bus = EventBus('start_streaming_request')
         event_bus.subscribe(handler)
 
-    th = Thread(target=start_streaming, args=[streaming_repository])
+    th = Thread(target=start_streaming, args=[source_repository, streaming_repository])
     th.daemon = True
     th.start()
 
@@ -74,13 +75,13 @@ def listen_stop_streaming(streaming_repository: StreamingRepository):
 
 
 # todo: move to stable version powered by Redis-RQ
-def listen_restart_streaming(streaming_repository: StreamingRepository):
-    def restart_streaming(rep: StreamingRepository):
-        handler = RestartStreamingEventHandler(rep)
+def listen_restart_streaming(source_repository: SourceRepository, streaming_repository: StreamingRepository):
+    def restart_streaming(reps: SourceRepository, repst: StreamingRepository):
+        handler = RestartStreamingEventHandler(reps, repst)
         event_bus = EventBus('restart_streaming_request')
         event_bus.subscribe(handler)
 
-    th = Thread(target=restart_streaming, args=[streaming_repository])
+    th = Thread(target=restart_streaming, args=[source_repository, streaming_repository])
     th.daemon = True
     th.start()
 
@@ -90,17 +91,17 @@ def main():
     register_ffmpeg_service()
 
     connection_source = crate_redis_connection(RedisDb.SOURCES)
+    source_repository = SourceRepository(connection_source)
     streaming_repository = StreamingRepository(connection_source)
     # streaming_repository.delete_by_namespace()
-    # source_repository = SourceRepository(connection_source)
 
     # process_checker = ProcessChecker(streaming_repository)
     # process_checker.start()
 
     listen_editor()
-    listen_start_streaming(streaming_repository)
+    listen_start_streaming(source_repository, streaming_repository)
     listen_stop_streaming(streaming_repository)
-    listen_restart_streaming(streaming_repository)
+    listen_restart_streaming(source_repository, streaming_repository)
 
     logger.info('FFmpeg service has been started...')
     loop = asyncio.get_event_loop()

@@ -1,3 +1,4 @@
+import json
 import time
 
 import requests
@@ -5,12 +6,15 @@ from abc import ABC, abstractmethod
 
 from redis.client import Redis
 
+from common.utilities import logger
+from streaming.streaming_model import StreamingModel
+
 
 class BaseRtmpModel(ABC):
     def __init__(self, container_name: str, connection: Redis):
         self.container_name = container_name
         self.connection: Redis = connection
-        self.inc_namespace = 'rtmpmodels:'
+        self.inc_namespace = 'rtmpports'
         self.inc_starting_port = 8999
         self.increment_by = 1
         self.host = '127.0.0.1'
@@ -18,6 +22,15 @@ class BaseRtmpModel(ABC):
         self.port_dic = {}
         self.rtmp_port: int = 0
         self.flv_port: int = 0
+
+    def map_to(self, streaming_model: StreamingModel):
+        streaming_model.rtmp_container_ports = json.dumps(self.get_ports())
+        streaming_model.rtmp_image_name = self.get_image_name()
+        streaming_model.rtmp_container_name = self.get_container_name()
+        streaming_model.rtmp_address = self.get_rtmp_address()
+        streaming_model.rtmp_flv_address = self.get_flv_address()
+        streaming_model.rtmp_container_commands = ','.join(self.get_commands())
+        streaming_model.rtmp_server_initialized = True
 
     def port_inc(self) -> int:
         return self.inc_starting_port + self.connection.hincrby(self.inc_namespace, 'ports_count', self.increment_by)
@@ -34,8 +47,11 @@ class BaseRtmpModel(ABC):
         raise NotImplementedError('get_commands() must be implemented')
 
     @abstractmethod
-    def int_ports(self) -> dict:
+    def int_ports(self):
         raise NotImplementedError('get_ports() must be implemented')
+
+    def get_ports(self) -> dict:
+        return self.port_dic
 
     @abstractmethod
     def init_channel_key(self) -> str:
@@ -60,13 +76,12 @@ class SrsRtmpModel(BaseRtmpModel):
     def get_commands(self) -> list:
         return ['./objs/srs', '-c', 'conf/docker.conf']
 
-    def int_ports(self) -> dict:
+    def int_ports(self):
         if not self.port_dic:
             self.rtmp_port = self.port_inc()
             other_port = self.port_inc()
             self.flv_port = self.port_inc()
-            self.port_dic = {str(self.rtmp_port): '1935', str(other_port): '1985', str(self.flv_port): '8080'}
-        return self.port_dic
+            self.port_dic = {'1935': str(self.rtmp_port), '1985': str(other_port), '8080': str(self.flv_port)}
 
     def init_channel_key(self) -> str:
         return ''
@@ -90,30 +105,36 @@ class LiveGoRtmpModel(BaseRtmpModel):
     def get_commands(self) -> list:
         return []
 
-    def int_ports(self) -> dict:
+    def int_ports(self):
         if not self.port_dic:
             self.rtmp_port = self.port_inc()
             self.flv_port = self.port_inc()
             other_port = self.port_inc()
             self.web_api_port = self.port_inc()
-            self.port_dic = {str(self.rtmp_port): '1935', str(self.flv_port): '7001', str(other_port): '7002',
-                             str(self.web_api_port): '8090'}
-        return self.port_dic
+            self.port_dic = {'1935': str(self.rtmp_port), '7001': str(self.flv_port), '7002': str(other_port),
+                             '8090': str(self.web_api_port)}
 
     def init_channel_key(self) -> str:
         if not self.channel_key:
-            time.sleep(5)  # give the container a time to initialized web api on even an IoT device.
-            if not self.channel_key:
-                self.channel_key = requests.get(
-                    f'{self.http_protocol}://{self.host}:{self.web_api_port}/control/get?room=livestream').json()[
-                    'data'].decode('utf-8')
-        return self.channel_key
+            # todo: add operation timeout
+            # time.sleep(5)  # give the container a time to initialized web api on even an IoT device.
+            while not self.channel_key:
+                try:
+                    resp = requests.get(
+                        f'{self.http_protocol}://{self.host}:{self.web_api_port}/control/get?room=livestream')
+                    resp.raise_for_status()
+                    self.channel_key = resp.json()['data']
+                except BaseException as e:
+                    logger.error(e)
+                    time.sleep(1)
+            return self.channel_key
 
     def get_rtmp_address(self) -> str:
         return f'rtmp://{self.host}:{self.rtmp_port}/live/livestream'
 
     def get_flv_address(self) -> str:
-        return f'{self.http_protocol}://{self.host}:{self.flv_port}/live/{self.channel_key}.flv'
+        # livestream default channel key is rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk
+        return f'{self.http_protocol}://{self.host}:{self.flv_port}/live/{("rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk" if not self.channel_key else self.channel_key)}.flv'
 
 
 class NodeMediaServerRtmpModel(BaseRtmpModel):
@@ -126,13 +147,12 @@ class NodeMediaServerRtmpModel(BaseRtmpModel):
     def get_commands(self) -> list:
         return []
 
-    def int_ports(self) -> dict:
+    def int_ports(self):
         if not self.port_dic:
             self.rtmp_port = self.port_inc()
             self.flv_port = self.port_inc()
             other_port = self.port_inc()
-            self.port_dic = {str(self.rtmp_port): '1935', str(self.flv_port): '8000', str(other_port): '8443'}
-        return self.port_dic
+            self.port_dic = {'1935': str(self.rtmp_port), '8000': str(self.flv_port), '8443': str(other_port)}
 
     def init_channel_key(self) -> str:
         return ''
