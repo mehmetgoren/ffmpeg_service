@@ -111,36 +111,36 @@ def _read_ffmpeg():
 
 # _read_ffmpeg()
 
-x = AudioQuality.Auto
-b = False
-print(isinstance(b, bool))
-print(isinstance(b, int))
-print(isinstance(x, int))
+# x = AudioQuality.Auto
+# b = False
+# print(isinstance(b, bool))
+# print(isinstance(b, int))
+# print(isinstance(x, int))
 
-# config = Config.create()
-# # config.handler.read_service_overlay = True
-# # config.handler.show_image_caption = True
-# # config.handler.show_image_fullscreen = True
-# # config.handler.show_image_wait_key = -1000000
-# # config.heartbeat.interval = -100000
-# # config.redis.host = 'fcuk'
-# # config.redis.port = -100000
-# # config.jetson.model_name = 'fcuk'
-# # config.jetson.threshold = -100000
-# # config.jetson.white_list = [-100000]
-# # config.torch.model_repo_name = 'fcuk'
-# # config.torch.model_name = 'fcuk'
-# # config.torch.threshold = -100000
-# # config.torch.white_list = [-100000]
-# # config.once_detector.imagehash_threshold = -100000
-# # config.once_detector.psnr_threshold = -100000
-# # config.once_detector.ssim_threshold = -100000
-# # config.source_hub.fps = -100000
-# # config.source_hub.source_hub_buffer_size = -100000
-# # config.source_hub.max_retry = -100000
-# # config.source_hub.max_retry_in = -100000
-# # config.source_hub.kill_starter_proc = True
-#
-# config.save()
-#
-# print(config.to_json())
+config = Config.create()
+# config.handler.read_service_overlay = True
+# config.handler.show_image_caption = True
+# config.handler.show_image_fullscreen = True
+# config.handler.show_image_wait_key = -1000000
+# config.heartbeat.interval = -100000
+# config.redis.host = 'fcuk'
+# config.redis.port = -100000
+# config.jetson.model_name = 'fcuk'
+# config.jetson.threshold = -100000
+# config.jetson.white_list = [-100000]
+# config.torch.model_repo_name = 'fcuk'
+# config.torch.model_name = 'fcuk'
+# config.torch.threshold = -100000
+# config.torch.white_list = [-100000]
+# config.once_detector.imagehash_threshold = -100000
+# config.once_detector.psnr_threshold = -100000
+# config.once_detector.ssim_threshold = -100000
+# config.source_hub.fps = -100000
+# config.source_hub.source_hub_buffer_size = -100000
+# config.source_hub.max_retry = -100000
+# config.source_hub.max_retry_in = -100000
+# config.source_hub.kill_starter_proc = True
+
+config.save()
+
+print(config.to_json())

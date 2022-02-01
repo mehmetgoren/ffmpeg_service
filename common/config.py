@@ -93,6 +93,11 @@ class PathConfig:
         self.reading: str = '/mnt/sde1/read'
 
 
+class FFmpegConfig:
+    def __init__(self):
+        self.use_double_quotes_for_path: bool = False
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -104,6 +109,7 @@ class Config:
         self.handler: HandlerConfig = HandlerConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.path: PathConfig = PathConfig()
+        self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.__connection: Redis = None
 
     @staticmethod
