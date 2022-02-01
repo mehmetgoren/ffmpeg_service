@@ -1,6 +1,6 @@
 from command_builder import get_hls_output_path, get_read_jpeg_output_path, get_recording_output_folder_path
 from common.data.base_repository import map_from
-from common.data.source_model import RmtpServerType, SourceModel, StreamType
+from common.data.source_model import RmtpServerType, SourceModel, StreamType, FlvPlayerConnectionType
 
 
 class StreamingModel:
@@ -23,6 +23,7 @@ class StreamingModel:
         self.streaming_type: StreamType = StreamType.HLS
         self.rtmp_server_initialized: bool = False
         self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS
+        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP
         self.rtmp_image_name: str = ''
         self.rtmp_container_name: str = ''
         self.rtmp_address: str = ''
@@ -58,6 +59,7 @@ class StreamingModel:
 
         self.streaming_type = source.stream_type
         self.rtmp_server_type = source.rtmp_server_type
+        self.flv_player_connection_type = source.flv_player_connection_type
 
         self.recording = source.recording
         self.record_duration = source.record_segment_interval
