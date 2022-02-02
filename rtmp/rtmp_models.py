@@ -34,7 +34,9 @@ class BaseRtmpModel(ABC):
         streaming_model.rtmp_server_initialized = True
 
     def port_inc(self) -> int:
-        return self.inc_starting_port + self.connection.hincrby(self.inc_namespace, 'ports_count', self.increment_by)
+        max_port_num = 65535
+        inc = self.connection.hincrby(self.inc_namespace, 'ports_count', self.increment_by)
+        return (self.inc_starting_port + inc) % max_port_num
 
     def get_container_name(self) -> str:
         return self.container_name

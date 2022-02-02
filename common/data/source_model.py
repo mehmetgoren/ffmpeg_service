@@ -441,6 +441,7 @@ class SourceModel:
         self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS  # this one is not used by the command builder but StartStreamingEventHandler
         self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
         self.rtmp_server_address: str = ''  # this one is to be set from streaming model.
+        self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
