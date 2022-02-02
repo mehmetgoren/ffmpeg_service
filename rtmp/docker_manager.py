@@ -53,7 +53,7 @@ class DockerManager:
         container = self.__init_container(rtmp_model, all_containers)
         return rtmp_model, container
 
-    # todo: run at startup
+    # Use it if you decide to use auto_remove on containers. Otherwise, 'unless stopped' can restore de container and don't use it on the process checker.
     def run_all(self, streaming_repository: StreamingRepository):
         all_containers = self.client.containers.list(all=True)
         models = streaming_repository.get_all()
@@ -68,11 +68,11 @@ class DockerManager:
                 rtmp_model.map_to(streaming_model)
                 streaming_repository.add(streaming_model)
 
-    # call this method when a source was deleted
     def remove(self, model: StreamingModel):
         container_name = model.rtmp_container_name
         containers = self.client.containers.list(all=True)
         for container in containers:
             if container.name == container_name:
+                container.stop()
                 container.remove()
                 break

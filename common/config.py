@@ -96,6 +96,7 @@ class PathConfig:
 class FFmpegConfig:
     def __init__(self):
         self.use_double_quotes_for_path: bool = False
+        self.max_operation_retry_count: int = 20
 
 
 class Config:

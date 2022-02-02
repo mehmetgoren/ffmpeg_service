@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from redis.client import Redis
 
 from common.data.source_model import FlvPlayerConnectionType
-from common.utilities import logger
+from common.utilities import logger, config
 from streaming.streaming_model import StreamingModel
 
 
@@ -117,9 +117,9 @@ class LiveGoRtmpModel(BaseRtmpModel):
 
     def init_channel_key(self) -> str:
         if not self.channel_key:
-            # todo: add operation timeout
-            # time.sleep(5)  # give the container a time to initialized web api on even an IoT device.
-            while not self.channel_key:
+            max_retry = config.ffmpeg.max_operation_retry_count
+            retry_count = 0
+            while not self.channel_key and retry_count < max_retry:
                 try:
                     resp = requests.get(
                         f'{self.protocol}://{self.host}:{self.web_api_port}/control/get?room=livestream')
@@ -128,6 +128,9 @@ class LiveGoRtmpModel(BaseRtmpModel):
                 except BaseException as e:
                     logger.error(e)
                     time.sleep(1)
+                retry_count += 1
+            if retry_count == max_retry:
+                logger.error('init_channel_key max retry count has been exceeded.')
             return self.channel_key
 
     def get_rtmp_address(self) -> str:

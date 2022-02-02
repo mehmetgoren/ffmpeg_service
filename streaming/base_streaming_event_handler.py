@@ -24,6 +24,9 @@ class BaseStreamingEventHandler(EventHandler, ABC):
 
         fixed_dic, dic_json = fix_redis_pubsub_dict(dic, self.encoding)
         source_model = SourceModel().map_from(fixed_dic)
+        if not source_model.id:
+            logger.warn('invalid source model was requested but the streaming will not be  started.')
+            return False, None, None, ''
         prev_streaming_model = self.streaming_repository.get(source_model.id)
 
         return True, prev_streaming_model, source_model, dic_json

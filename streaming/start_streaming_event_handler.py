@@ -7,7 +7,7 @@ from threading import Thread
 
 from command_builder import CommandBuilder, get_hls_output_path
 from common.data.source_repository import SourceRepository
-from common.utilities import logger
+from common.utilities import logger, config
 from rtmp.docker_manager import DockerManager
 from streaming.req_resp import StartStreamingRequestEvent
 from streaming.streaming_model import StreamingModel, StreamType
@@ -82,12 +82,14 @@ class StartHlsStreamingEventHandler:
 
     @staticmethod
     def wait_for(streaming_model: StreamingModel):
-        # todo: need a timeout to cancel the infinite operation here.
-        while 1:
+        max_retry = config.ffmpeg.max_operation_retry_count
+        retry_count = 0
+        while retry_count < max_retry:
             if os.path.exists(streaming_model.hls_output_path):
-                logger.info('Streaming file created')
+                logger.info('HLS streaming file created')
                 break
             time.sleep(1)
+            retry_count += 1
 
 
 class StartFlvStreamingHandler:

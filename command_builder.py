@@ -22,7 +22,6 @@ def get_recording_output_folder_path(source_id: str):
 class CommandBuilder:
     def __init__(self, source_model: SourceModel):
         self.source_model: SourceModel = source_model
-        # todo: remove to Config
         self.use_double_quotes_for_path: bool = False
 
     def __add_double_quotes(self, path: str):
