@@ -451,6 +451,8 @@ class FFmpegModel:
 
         self.jpeg_enabled: bool = False
         self.jpeg_frame_rate: int = 0
+        self.jpeg_use_vsync: bool = False
+        self.jpeg_quality: int = 2
         self.jpeg_width: int = 0
         self.jpeg_height: int = 0
 
@@ -483,6 +485,8 @@ class SourceModel(FFmpegModel):
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamingEventHandler
         self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
         self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
+
+        self.use_disk_image_reader_service: bool = True
 
         self.direct_read_frame_rate: int = 1
         self.direct_read_width: int = 640

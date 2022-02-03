@@ -8,7 +8,8 @@ from threading import Thread
 from command_builder import CommandBuilder, get_hls_output_path
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
-from readers.ffmpeg_reader import FFmpegReader, PushMethodOptions
+from readers.disk_image_reader import DiskImageReader, DiskImageReaderOptions
+from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions
 from rtmp.docker_manager import DockerManager
 from streaming.req_resp import StartStreamingRequestEvent
 from streaming.streaming_model import StreamingModel, StreamType
@@ -64,6 +65,7 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         args: List[str] = cmd_builder.build()
 
         p = None
+        image_reader = None
         try:
             logger.info('streaming subprocess has been opened')
             p = subprocess.Popen(args)
@@ -71,13 +73,28 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
             streaming_model.args = ' '.join(args)
             self.streaming_repository.update(streaming_model, ['pid', 'args'])
             logger.info('the model has been saved by repository')
+            if streaming_model.jpeg_enabled and streaming_model.use_disk_image_reader_service:
+                image_reader = self.__start_disk_image_reader(streaming_model)
             p.wait()
         except Exception as e:
             logger.error(f'an error occurred while starting FFmpeg sub-process, err: {e}')
         finally:
             if p is not None:
                 p.terminate()
+            if image_reader is not None:
+                image_reader.close()
             logger.info('streaming subprocess has been terminated')
+
+    @staticmethod
+    def __start_disk_image_reader(streaming_model: StreamingModel) -> DiskImageReader:
+        options = DiskImageReaderOptions()
+        options.id = streaming_model.id
+        options.name = streaming_model.name
+        options.frame_rate = streaming_model.jpeg_frame_rate
+        options.image_path = streaming_model.read_jpeg_output_path
+        image_reader = DiskImageReader(options)
+        image_reader.read_async()
+        return image_reader
 
 
 class StartHlsStreamingEventHandler:
@@ -118,7 +135,7 @@ class DirectReadHandler:
     def __init__(self, streaming_model: StreamingModel, streaming_repository: StreamingRepository):
         self.streaming_model = streaming_model
         self.streaming_repository = streaming_repository
-        self.options = PushMethodOptions()
+        self.options = FFmpegReaderOptions()
         self.options.id = streaming_model.id
         self.options.name = streaming_model.name
         self.options.rtsp_address = streaming_model.rtsp_address

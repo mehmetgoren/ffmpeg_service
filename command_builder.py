@@ -120,12 +120,16 @@ class CommandBuilder:
 
         # JPEG Snapshot starts
         if f.jpeg_enabled:
-            args.extend(['-vf', f'fps={1 if f.jpeg_frame_rate < 1 else f.jpeg_frame_rate}'])
+            jpeg_fps = 1 if f.jpeg_frame_rate < 1 else f.jpeg_frame_rate
+            args.extend(['-vf', f'fps={jpeg_fps}'])
             if f.jpeg_width > 0 and f.jpeg_height > 0:
                 args.extend(['-s', f'{f.jpeg_width}x{f.jpeg_height}'])
-                args.extend(
-                    ['-update', '1', self.__add_double_quotes(os.path.join(get_read_jpeg_output_path(f.id), 's.jpg')),
-                     '-y'])
+            if 1 < f.jpeg_quality < 32:
+                args.extend(['-q:v', str(f.jpeg_quality)])
+            args.extend(['-r', str(jpeg_fps)])
+            if f.jpeg_use_vsync:
+                args.extend(['-vsync', 'vfr'])
+            args.extend(['-update', '1', self.__add_double_quotes(get_read_jpeg_output_path(f.id)), '-y'])
         # JPEG Snapshot ends
 
         # Recording starts

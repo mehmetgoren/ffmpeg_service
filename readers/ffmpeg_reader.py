@@ -25,7 +25,7 @@ class ImageConverterType(IntEnum):
     PIL = 1
 
 
-class PushMethodOptions:
+class FFmpegReaderOptions:
     id: str = ''
     name: str = ''
     rtsp_address: str = ''
@@ -39,8 +39,8 @@ class PushMethodOptions:
 
 
 class FFmpegReader:
-    def __init__(self, options: PushMethodOptions):
-        self.options: PushMethodOptions = options
+    def __init__(self, options: FFmpegReaderOptions):
+        self.options: FFmpegReaderOptions = options
         self.event_bus = EventBus(options.pubsub_channel)
         has_external_scale = options.width > 0 and options.height > 0
         if not has_external_scale:
@@ -73,12 +73,14 @@ class FFmpegReader:
     def is_closed(self) -> bool:
         return self.process.poll() is not None
 
+    # todo: move to stable version powered by Redis-RQ
     def close(self):
         self.process.terminate()
 
     def get_pid(self) -> int:
         return self.process.pid
 
+    # todo: move to stable version powered by Redis-RQ
     def read(self):
         while not self.is_closed():
             np_img = self.get_img()
@@ -86,6 +88,7 @@ class FFmpegReader:
                 # _close_stream(source, name, 1)
                 break
             dic = self.__create_model_dic(np_img)
+            # noinspection DuplicatedCode
             if self.options.method == PushMethod.REDIS_PUBSUB:
                 def _pub():
                     self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))

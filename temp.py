@@ -14,11 +14,11 @@ import cv2
 from common.config import Config
 from common.data.source_model import AudioQuality
 from common.utilities import logger
-from readers.ffmpeg_reader import FFmpegReader, PushMethodOptions, PushMethod, ImageConverterType
+from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
 
 
 def read_test():
-    opts = PushMethodOptions()
+    opts = FFmpegReaderOptions()
     opts.id = 'ayufisdvbuw'
     opts.name = 'eufy'
     opts.rtsp_address = 'rtsp://Admin1:Admin1@192.168.1.183/live0'

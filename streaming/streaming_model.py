@@ -36,6 +36,10 @@ class StreamingModel:
         self.direct_read_width: int = 640
         self.direct_read_height: int = 360
 
+        self.jpeg_enabled: bool = False
+        self.jpeg_frame_rate: int = 0
+        self.use_disk_image_reader_service: bool = False
+
         self.recording: bool = False
         self.record_duration: int = 15
 
@@ -56,6 +60,7 @@ class StreamingModel:
         return self
 
     def map_from_source(self, source: SourceModel):
+        # noinspection DuplicatedCode
         self.id = source.id
         self.name = source.name
         self.rtsp_address = source.rtsp_address
@@ -67,11 +72,17 @@ class StreamingModel:
         self.flv_player_connection_type = source.flv_player_connection_type
         self.need_reload_interval = source.need_reload_interval
 
+        # noinspection DuplicatedCode
         self.direct_read_frame_rate = source.direct_read_frame_rate
         self.direct_read_width = source.direct_read_width
         self.direct_read_height = source.direct_read_height
 
+        self.jpeg_enabled = source.jpeg_enabled
+        self.jpeg_frame_rate = source.jpeg_frame_rate
+        self.use_disk_image_reader_service = source.use_disk_image_reader_service
+
         self.recording = source.recording
         self.record_duration = source.record_segment_interval
+
         self.__set_paths(self)
         return self
