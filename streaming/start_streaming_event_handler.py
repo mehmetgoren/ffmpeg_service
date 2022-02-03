@@ -8,6 +8,7 @@ from threading import Thread
 from command_builder import CommandBuilder, get_hls_output_path
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
+from readers.ffmpeg_reader import FFmpegReader, PushMethodOptions
 from rtmp.docker_manager import DockerManager
 from streaming.req_resp import StartStreamingRequestEvent
 from streaming.streaming_model import StreamingModel, StreamType
@@ -22,25 +23,32 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         self.source_repository = source_repository
         logger.info('StartStreamingEventHandler initialized')
 
+    @staticmethod
+    def __start_thread(target, args):
+        th = Thread(target=target, args=args)
+        th.daemon = True
+        th.start()
+
     def handle(self, dic: dict):
         is_valid_msg, prev_streaming_model, source_model, _ = self.parse_message(dic)
         if not is_valid_msg:
             return
         logger.info('StartHlsStreamingEventHandler handle called')
         if prev_streaming_model is None:
-            if source_model.stream_type == StreamType.HLS:
-                concrete = StartHlsStreamingEventHandler(self)
-            elif source_model.stream_type == StreamType.FLV:
-                concrete = StartFlvStreamingHandler(self)
-            else:
-                raise NotImplementedError('fuck you bitchi this one hasnt been implemented yet')
-
             streaming_model = StreamingModel().map_from_source(source_model)
-            concrete.set_values(streaming_model)
-            th = Thread(target=self.__start_ffmpeg_process, args=[source_model, streaming_model])
-            th.daemon = True
-            th.start()
-            concrete.wait_for(streaming_model)
+            if source_model.stream_type == StreamType.DirectRead:
+                direct = DirectReadHandler(streaming_model, self.streaming_repository)
+                self.__start_thread(direct.start_ffmpeg_process, [])
+            else:
+                if source_model.stream_type == StreamType.HLS:
+                    concrete = StartHlsStreamingEventHandler(self)
+                elif source_model.stream_type == StreamType.FLV:
+                    concrete = StartFlvStreamingHandler(self)
+                else:
+                    raise NotImplementedError(f'StreamType of {source_model.stream_type} is not supported')
+                concrete.set_values(streaming_model)
+                self.__start_thread(self.__start_ffmpeg_process, [source_model, streaming_model])
+                concrete.wait_for(streaming_model)
             self.streaming_repository.add(streaming_model)
             prev_streaming_model = streaming_model
 
@@ -104,3 +112,31 @@ class StartFlvStreamingHandler:
 
     def wait_for(self, streaming_model: StreamingModel):
         self.rtmp_model.init_channel_key()
+
+
+class DirectReadHandler:
+    def __init__(self, streaming_model: StreamingModel, streaming_repository: StreamingRepository):
+        self.streaming_model = streaming_model
+        self.streaming_repository = streaming_repository
+        self.options = PushMethodOptions()
+        self.options.id = streaming_model.id
+        self.options.name = streaming_model.name
+        self.options.rtsp_address = streaming_model.rtsp_address
+        self.options.frame_rate = streaming_model.direct_read_frame_rate
+        self.options.width = streaming_model.direct_read_width
+        self.options.height = streaming_model.direct_read_height
+        self.ffmpeg_reader = FFmpegReader(self.options)
+
+    def start_ffmpeg_process(self):
+        logger.info('starting FFmpeg direct read streaming')
+        try:
+            logger.info('FFmpeg direct read streaming subprocess has been opened')
+            self.streaming_model.pid = self.ffmpeg_reader.get_pid()
+            self.streaming_repository.update(self.streaming_model, ['pid'])
+            logger.info('the model has been saved by repository')
+            self.ffmpeg_reader.read()
+        except Exception as e:
+            logger.error(f'an error occurred while starting FFmpeg direct read sub-process, err: {e}')
+        finally:
+            self.ffmpeg_reader.close()
+            logger.info('FFmpeg direct read streaming subprocess has been terminated')

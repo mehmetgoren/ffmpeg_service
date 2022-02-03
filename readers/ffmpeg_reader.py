@@ -2,10 +2,13 @@ import base64
 import json
 from datetime import datetime
 from enum import IntEnum
+from io import BytesIO
+from threading import Thread
 
 import ffmpeg
 import numpy as np
 import requests
+from PIL import Image
 from cv2 import cv2
 
 from common.event_bus.event_bus import EventBus
@@ -17,24 +20,30 @@ class PushMethod(IntEnum):
     REST_API = 1
 
 
+class ImageConverterType(IntEnum):
+    OPEN_CV = 0
+    PIL = 1
+
+
 class PushMethodOptions:
     id: str = ''
     name: str = ''
     rtsp_address: str = ''
-    frame_rate: int = 1
     method: PushMethod = PushMethod.REDIS_PUBSUB
-    pubsub_channel: str = 'redis'
-    api_address: str = 'localhost/ffmpegreader'
-    width: int = -1
-    height: int = -1
+    pubsub_channel: str = 'read_service'
+    api_address: str = 'http://localhost:2072/ffmpegreader'
+    frame_rate: int = 1
+    width: int = 0
+    height: int = 0
+    image_converter_type: ImageConverterType = ImageConverterType.PIL
 
 
 class FFmpegReader:
     def __init__(self, options: PushMethodOptions):
         self.options: PushMethodOptions = options
-        self.event_bus = EventBus('read')
-        has_external_scale = options.width > 0 or options.height > 0
-        if has_external_scale:
+        self.event_bus = EventBus(options.pubsub_channel)
+        has_external_scale = options.width > 0 and options.height > 0
+        if not has_external_scale:
             probe = ffmpeg.probe(options.rtsp_address)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
             options.width = int(video_stream['width'])
@@ -67,6 +76,9 @@ class FFmpegReader:
     def close(self):
         self.process.terminate()
 
+    def get_pid(self) -> int:
+        return self.process.pid
+
     def read(self):
         while not self.is_closed():
             np_img = self.get_img()
@@ -75,16 +87,30 @@ class FFmpegReader:
                 break
             dic = self.__create_model_dic(np_img)
             if self.options.method == PushMethod.REDIS_PUBSUB:
-                self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
-                logger.info(
-                    f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
+                def _pub():
+                    self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+                    logger.info(
+                        f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
+                fn = _pub
             else:
-                requests.post(self.options.api_address, data=dic)
-                logger.info(
-                    f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
+                def _post():
+                    data = json.dumps(dic).encode("utf-8")
+                    requests.post(self.options.api_address, data=data)
+                    logger.info(
+                        f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
+                fn = _post
+            th = Thread(target=fn)
+            th.daemon = True
+            th.start()
 
     def __create_model_dic(self, numpy_img: np.array):
-        # To convert RGB to BGR
-        # numpy_img = numpy_img[:, :, ::-1]
-        img_str = base64.b64encode(cv2.imencode('.jpg', numpy_img)[1]).decode()
+        if self.options.image_converter_type == ImageConverterType.OPEN_CV:
+            # To convert RGB to BGR
+            # numpy_img = numpy_img[:, :, ::-1]
+            img_str = base64.b64encode(cv2.imencode('.jpg', numpy_img)[1]).decode()
+        else:
+            img = Image.fromarray(numpy_img)
+            buffered = BytesIO()
+            img.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
         return {'name': self.options.name, 'img': img_str, 'source': self.options.id}

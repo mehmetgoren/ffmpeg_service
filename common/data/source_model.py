@@ -415,15 +415,10 @@ class LogLevel(IntEnum):
         return LogLevel.create_dict()[value]
 
 
-class SourceModel:
-    def __init__(self, identifier: str = '', brand: str = '', name: str = '', rtsp_address: str = ''):
+class FFmpegModel:
+    def __init__(self, identifier: str = '', rtsp_address: str = ''):
         self.id: str = identifier
-        self.brand: str = brand
-        self.name: str = name
         self.rtsp_address: str = rtsp_address
-        self.description: str = ''
-
-        self.enabled: bool = True
         self.recording: bool = False
         self.input_type: InputType = InputType.H264_H265
         self.rtsp_transport: RtspTransport = RtspTransport.Auto
@@ -438,10 +433,7 @@ class SourceModel:
         self.hwaccel_device = ''
 
         self.stream_type: StreamType = StreamType.HLS
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS  # this one is not used by the command builder but StartStreamingEventHandler
-        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
-        self.rtmp_server_address: str = ''  # this one is to be set from streaming model.
-        self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
+        self.rtmp_server_address: str = ''  # this one is meant to be set from streaming model.
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
@@ -478,6 +470,23 @@ class SourceModel:
         self.record_audio_volume: int = 100
 
         self.log_level: LogLevel = LogLevel.none
+
+
+class SourceModel(FFmpegModel):
+    def __init__(self, identifier: str = '', brand: str = '', name: str = '', rtsp_address: str = ''):
+        super().__init__(identifier, rtsp_address)
+        self.brand: str = brand
+        self.name: str = name
+        self.description: str = ''
+
+        self.enabled: bool = True
+        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamingEventHandler
+        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
+        self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
+
+        self.direct_read_frame_rate: int = 1
+        self.direct_read_width: int = 640
+        self.direct_read_height: int = 360
 
     def map_from(self, fixed_dic: dict):
         return map_from(fixed_dic, SourceModel(), self)

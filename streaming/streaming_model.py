@@ -32,6 +32,10 @@ class StreamingModel:
         self.rtmp_container_ports: str = ''
         self.rtmp_container_commands: str = ''
 
+        self.direct_read_frame_rate: int = 1
+        self.direct_read_width: int = 640
+        self.direct_read_height: int = 360
+
         self.recording: bool = False
         self.record_duration: int = 15
 
@@ -62,6 +66,10 @@ class StreamingModel:
         self.rtmp_server_type = source.rtmp_server_type
         self.flv_player_connection_type = source.flv_player_connection_type
         self.need_reload_interval = source.need_reload_interval
+
+        self.direct_read_frame_rate = source.direct_read_frame_rate
+        self.direct_read_width = source.direct_read_width
+        self.direct_read_height = source.direct_read_height
 
         self.recording = source.recording
         self.record_duration = source.record_segment_interval
