@@ -32,6 +32,8 @@ class CommandBuilder:
     # noinspection DuplicatedCode
     def build(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
+        if f.stream_type == StreamType.DirectRead:
+            return []
 
         args: List[str] = ['ffmpeg', '-progress', 'pipe:5']
 
@@ -142,7 +144,7 @@ class CommandBuilder:
                     [f'{"-crf" if f.record_file_type == RecordFileTypes.MP4 else "-q:v"}', str(f.record_quality)])
 
             # audio starts
-            if f.record_video_codec == AudioCodec.NoAudio or f.record_video_codec == AudioCodec.Auto:
+            if f.record_audio_codec == AudioCodec.NoAudio or f.record_audio_codec == AudioCodec.Auto:
                 args.append('-an')
             else:
                 args.extend(['-acodec', AudioCodec.str(f.record_audio_codec)])

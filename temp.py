@@ -4,9 +4,12 @@ import io
 import math
 import time
 import subprocess
+from threading import Thread
+
 import numpy as np
 
 import ffmpeg
+import psutil
 from PIL import Image
 
 import cv2
@@ -32,7 +35,23 @@ def read_test():
     reader.read()
 
 
-read_test()
+# read_test()
+args = 'ffmpeg -re -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -i rtsp://Admin1:Admin1@192.168.0.15:554/live0 -strict -2 -c:a copy -c:v copy -preset ultrafast -f flv rtmp://127.0.0.1:9000/live/livestream | ffmpeg -i rtmp://127.0.0.1:9000/live/livestream -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/xughkkrqhqe/%Y-%m-%d-%H-%M-%S.mp4'
+args = args.split(' ')
+p = subprocess.Popen(args)
+pid = p.pid
+
+th = Thread(target=p.wait)
+# th.daemon = True
+th.start()
+
+print(pid)
+parent = psutil.Process(pid)
+children = parent.children(recursive=True)
+for process in children:
+    print(process.pid)
+loop = asyncio.get_event_loop()
+loop.run_forever()
 
 # class FFmpegRtspSource:
 #     def __init__(self, name: str, rtsp_address: str):
