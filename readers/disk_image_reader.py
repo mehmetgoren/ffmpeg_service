@@ -67,6 +67,7 @@ class DiskImageReader:
                 await asyncio.sleep(1. / frame_rate)
             except BaseException as e:
                 logger.error('An error occurred during thr reading image from disk')
+                await asyncio.sleep(1)
         logger.info('Disk Image Service has been closed')
 
     # todo: move to stable version powered by Redis-RQ
