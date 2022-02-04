@@ -6,6 +6,7 @@ from typing import List
 from threading import Thread
 
 from command_builder import CommandBuilder, get_hls_output_path
+from common.data.source_model import SourceModel, RmtpServerType
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
 from readers.disk_image_reader import DiskImageReader, DiskImageReaderOptions
@@ -30,6 +31,7 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         th.daemon = True
         th.start()
 
+    # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
         is_valid_msg, prev_streaming_model, source_model, _ = self.parse_message(dic)
         if not is_valid_msg:
@@ -50,6 +52,7 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
                 concrete.set_values(streaming_model)
                 self.__start_thread(self.__start_ffmpeg_process, [source_model, streaming_model])
                 concrete.wait_for(streaming_model)
+                self.__start_thread(concrete.create_piped_ffmpeg_process, [source_model, streaming_model])
             self.streaming_repository.add(streaming_model)
             prev_streaming_model = streaming_model
 
@@ -77,7 +80,7 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
                 image_reader = self.__start_disk_image_reader(streaming_model)
             p.wait()
         except Exception as e:
-            logger.error(f'an error occurred while starting FFmpeg sub-process, err: {e}')
+            logger.error(f'an error occurred during FFmpeg sub-process, err: {e}')
         finally:
             if p is not None:
                 p.terminate()
@@ -116,6 +119,9 @@ class StartHlsStreamingEventHandler:
             time.sleep(1)
             retry_count += 1
 
+    def create_piped_ffmpeg_process(self, source_model: SourceModel, streaming_model: StreamingModel):
+        pass  # HLS recording handled without any problem.
+
 
 class StartFlvStreamingHandler:
     def __init__(self, proxy: StartStreamingEventHandler):
@@ -129,6 +135,41 @@ class StartFlvStreamingHandler:
 
     def wait_for(self, streaming_model: StreamingModel):
         self.rtmp_model.init_channel_key()
+
+    def create_piped_ffmpeg_process(self, source_model: SourceModel, streaming_model: StreamingModel):
+        if streaming_model.streaming_type != StreamType.FLV or not streaming_model.recording:
+            return
+
+        if streaming_model.rtmp_server_type == RmtpServerType.LIVEGO:
+            local_rtmp_pipe_input_address = streaming_model.rtmp_address.replace('livestream',
+                                                                               'rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk')
+        else:
+            local_rtmp_pipe_input_address = streaming_model.rtmp_address
+        args: List[str] = ['ffmpeg', '-i',
+                           local_rtmp_pipe_input_address]  # this one have to be local address (Loopback). Otherwise, it costs double network usage!..
+        # container = self.docker_manager.get_container(streaming_model)
+        # while 1:
+        #     if container.status == 'running':
+        #         break
+        # todo:move it to config
+        time.sleep(3)
+        cmd_builder = CommandBuilder(source_model)
+        cmd_builder.extend_recording(args)
+        p = None
+        try:
+            logger.info('streaming FLV Recording subprocess has been opened')
+            p = subprocess.Popen(args)
+            streaming_model.record_flv_pid = p.pid
+            streaming_model.record_flv_args = ' '.join(args)
+            self.proxy.streaming_repository.update(streaming_model, ['record_flv_pid', 'record_flv_args'])
+            logger.info('the model has been saved by repository')
+            p.wait()
+        except Exception as e:
+            logger.error(f'an error occurred during FFmpeg FLV recording subprocess, err: {e}')
+        finally:
+            if p is not None:
+                p.terminate()
+            logger.info('streaming FLV recording subprocess has been terminated')
 
 
 class DirectReadHandler:

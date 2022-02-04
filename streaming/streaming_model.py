@@ -42,6 +42,8 @@ class StreamingModel:
 
         self.recording: bool = False
         self.record_duration: int = 15
+        self.record_flv_pid: int = 0
+        self.record_flv_args: str = ''
 
         # paths
         self.hls_output_path: str = ''

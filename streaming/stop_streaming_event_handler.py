@@ -37,10 +37,16 @@ class StopStreamingEventHandler(BaseStreamingEventHandler):
                     logger.error(f'Error while deleting streaming files for {streaming_model.id}, err: {e}')
 
             if streaming_model.streaming_type == StreamType.FLV:
+                if streaming_model.recording:
+                    try:
+                        os.kill(streaming_model.record_flv_pid, 9)
+                    except BaseException as e:
+                        logger.error(f'Error while killing recording FFmpeg process for {streaming_model.id}, err: {e}')
+
                 try:
                     docker_manager = DockerManager(self.streaming_repository.connection)
                     docker_manager.remove(streaming_model)
                 except BaseException as e:
-                    logger.error(f'Error while removing FLC container for {streaming_model.id}, err: {e}')
+                    logger.error(f'Error while removing FLV container for {streaming_model.id}, err: {e}')
 
         self.event_bus.publish(dic_json)

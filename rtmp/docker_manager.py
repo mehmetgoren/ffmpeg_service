@@ -1,4 +1,3 @@
-import json
 from typing import List, Any
 
 import docker
@@ -69,10 +68,15 @@ class DockerManager:
                 streaming_repository.add(streaming_model)
 
     def remove(self, model: StreamingModel):
+        container = self.get_container(model)
+        if container is not None:
+            container.stop()
+            container.remove()
+
+    def get_container(self, model: StreamingModel):
         container_name = model.rtmp_container_name
         containers = self.client.containers.list(all=True)
         for container in containers:
             if container.name == container_name:
-                container.stop()
-                container.remove()
-                break
+                return container
+        return None

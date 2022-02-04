@@ -135,52 +135,57 @@ class CommandBuilder:
         # JPEG Snapshot ends
 
         # Recording starts
-        if f.recording:
-            if f.record_width != 0 and f.record_height != 0:
-                args.extend(['-s', f'{f.record_width}x{f.record_height}'])
-            if f.record_quality != 0:
-                # Constant Rate Factor (CRF). Use this rate control if you want to keep the best quality and care less about the file size.
-                args.extend(
-                    [f'{"-crf" if f.record_file_type == RecordFileTypes.MP4 else "-q:v"}', str(f.record_quality)])
-
-            # audio starts
-            if f.record_audio_codec == AudioCodec.NoAudio or f.record_audio_codec == AudioCodec.Auto:
-                args.append('-an')
-            else:
-                args.extend(['-acodec', AudioCodec.str(f.record_audio_codec)])
-                if f.record_audio_sample_rate != AudioSampleRate.Auto:
-                    args.extend(['-ar', AudioSampleRate.str(f.record_audio_sample_rate)])
-                if f.record_audio_channel != AudioChannel.SOURCE:
-                    args.extend(['-rematrix_maxval', '1.0', '-ac', AudioChannel.str(f.record_audio_channel)])
-                if f.record_audio_quality != AudioQuality.Auto:
-                    args.extend(['-b:a', AudioQuality.str(f.record_audio_quality)])
-                if 0 < f.record_audio_volume < 100:
-                    args.extend(['-af', f'"volume={(f.record_audio_volume / 100.0)}"'])
-            # audio ends
-
-            if f.record_video_codec != RecordVideoCodec.Auto:
-                args.extend(['-vcodec', RecordVideoCodec.str(f.record_video_codec)])
-                vf_commands = []
-                if f.record_frame_rate > 0:
-                    vf_commands.append(f'fps={f.record_frame_rate}')
-                if f.record_rotate != Rotate.No:
-                    vf_commands.append(Rotate.str(f.record_rotate))
-                if f.record_video_codec == RecordVideoCodec.H264_VAAPI:
-                    vf_commands.extend(['format=nv12', 'hwupload'])
-                if len(vf_commands) > 0:
-                    vf_str = '"' + ', '.join(vf_commands) + '"'
-                    args.extend(['-vf', vf_str])
-            if f.record_file_type == RecordFileTypes.MP4 and f.record_preset != Preset.Auto:
-                args.extend(['-preset', Preset.str(f.record_preset)])
-            args.extend(['-strict', '-2'])
-            if f.record_file_type == RecordFileTypes.MP4:
-                args.extend(['-movflags', '+faststart'])
-            args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1',
-                         '-segment_list', 'pipe:8'])
-            if f.record_segment_interval < 1:
-                f.record_segment_interval = 15
-            args.extend(['-segment_time', str(f.record_segment_interval * 60)])
-            args.append(self.__add_double_quotes(os.path.join(get_recording_output_folder_path(f.id),
-                                                              f'%Y-%m-%d-%H-%M-%S.{RecordFileTypes.str(f.record_file_type)}')))
+        if f.recording and f.stream_type == StreamType.HLS:
+            self.extend_recording(args)
         # Recording ends
         return args
+
+    def extend_recording(self, args: List[str]):
+        f: FFmpegModel = self.ffmpeg_model
+        if f.record_width != 0 and f.record_height != 0:
+            args.extend(['-s', f'{f.record_width}x{f.record_height}'])
+        if f.record_quality != 0:
+            # Constant Rate Factor (CRF). Use this rate control if you want to keep the best quality and care less about the file size.
+            args.extend(
+                [f'{"-crf" if f.record_file_type == RecordFileTypes.MP4 else "-q:v"}', str(f.record_quality)])
+
+        # audio starts
+        if f.record_audio_codec == AudioCodec.NoAudio or f.record_audio_codec == AudioCodec.Auto:
+            args.append('-an')
+        else:
+            args.extend(['-acodec', AudioCodec.str(f.record_audio_codec)])
+            # noinspection DuplicatedCode
+            if f.record_audio_sample_rate != AudioSampleRate.Auto:
+                args.extend(['-ar', AudioSampleRate.str(f.record_audio_sample_rate)])
+            if f.record_audio_channel != AudioChannel.SOURCE:
+                args.extend(['-rematrix_maxval', '1.0', '-ac', AudioChannel.str(f.record_audio_channel)])
+            if f.record_audio_quality != AudioQuality.Auto:
+                args.extend(['-b:a', AudioQuality.str(f.record_audio_quality)])
+            if 0 < f.record_audio_volume < 100:
+                args.extend(['-af', f'"volume={(f.record_audio_volume / 100.0)}"'])
+        # audio ends
+
+        if f.record_video_codec != RecordVideoCodec.Auto:
+            args.extend(['-vcodec', RecordVideoCodec.str(f.record_video_codec)])
+            vf_commands = []
+            if f.record_frame_rate > 0:
+                vf_commands.append(f'fps={f.record_frame_rate}')
+            if f.record_rotate != Rotate.No:
+                vf_commands.append(Rotate.str(f.record_rotate))
+            if f.record_video_codec == RecordVideoCodec.H264_VAAPI:
+                vf_commands.extend(['format=nv12', 'hwupload'])
+            if len(vf_commands) > 0:
+                vf_str = '"' + ', '.join(vf_commands) + '"'
+                args.extend(['-vf', vf_str])
+        if f.record_file_type == RecordFileTypes.MP4 and f.record_preset != Preset.Auto:
+            args.extend(['-preset', Preset.str(f.record_preset)])
+        args.extend(['-strict', '-2'])
+        if f.record_file_type == RecordFileTypes.MP4:
+            args.extend(['-movflags', '+faststart'])
+        args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1',
+                     '-segment_list', 'pipe:8'])
+        if f.record_segment_interval < 1:
+            f.record_segment_interval = 15
+        args.extend(['-segment_time', str(f.record_segment_interval * 60)])
+        args.append(self.__add_double_quotes(os.path.join(get_recording_output_folder_path(f.id),
+                                                          f'%Y-%m-%d-%H-%M-%S.{RecordFileTypes.str(f.record_file_type)}')))
