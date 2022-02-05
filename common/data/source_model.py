@@ -130,7 +130,7 @@ class StreamVideoCodec(IntEnum):
             StreamVideoCodec.H264_OMX: 'h264_omx',
             StreamVideoCodec.AV1: 'libaom-av1',
             StreamVideoCodec.VP8: 'libvpx',
-            StreamVideoCodec.VP9: 'ibvpx-vp9'
+            StreamVideoCodec.VP9: 'libvpx-vp9'
         }
 
     @staticmethod
