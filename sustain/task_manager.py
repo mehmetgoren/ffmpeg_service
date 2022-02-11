@@ -127,22 +127,22 @@ def clean_previous():
 def add_tasks():
     task = Task()
     # noinspection DuplicatedCode
-    task.op = TaskOp.listen_start_streaming_event
+    task.set_op(TaskOp.listen_start_streaming_event)
     __task_repository.add(task)
-    task.op = TaskOp.listen_stop_streaming_event
+    task.set_op(TaskOp.listen_stop_streaming_event)
     __task_repository.add(task)
-    task.op = TaskOp.listen_restart_streaming_event
+    task.set_op(TaskOp.listen_restart_streaming_event)
     __task_repository.add(task)
-    task.op = TaskOp.listen_editor_event
+    task.set_op(TaskOp.listen_editor_event)
     __task_repository.add(task)
     # noinspection DuplicatedCode
-    task.op = TaskOp.check_leaky_ffmpeg_processes
+    task.set_op(TaskOp.check_leaky_ffmpeg_processes)
     __task_repository.add(task)
-    task.op = TaskOp.check_unstopped_rtmp_server_containers
+    task.set_op(TaskOp.check_unstopped_rtmp_server_containers)
     __task_repository.add(task)
-    task.op = TaskOp.check_ffmpeg_streaming_running_process
+    task.set_op(TaskOp.check_ffmpeg_streaming_running_process)
     __task_repository.add(task)
-    task.op = TaskOp.check_ffmpeg_recording_running_process
+    task.set_op(TaskOp.check_ffmpeg_recording_running_process)
     __task_repository.add(task)
 
 

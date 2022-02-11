@@ -35,6 +35,7 @@ class TaskOp(IntEnum):
 class Task:
     def __init__(self):
         self.op: TaskOp = TaskOp.none
+        self.op_name: str = ''
 
         self.job_id: str = ''
         self.worker_name: str = ''
@@ -43,6 +44,10 @@ class Task:
 
         self.exception_msg: str = ''
         self.failed_count: int = 0
+
+    def set_op(self, op: TaskOp):
+        self.op = op
+        self.op_name = TaskOp.str(op)
 
     def map_from(self, fixed_dic: dict):
         return map_from(fixed_dic, Task(), self)

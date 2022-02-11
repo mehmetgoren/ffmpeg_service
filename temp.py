@@ -190,7 +190,10 @@ def config_save():
 
     print(config.to_json())
 
+
 config_save()
+
+
 def add_rtsp_templates():
     connection = crate_redis_connection(RedisDb.MAIN)
     rep = RtspTemplateRepository(connection)
