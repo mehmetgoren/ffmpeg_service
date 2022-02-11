@@ -12,6 +12,7 @@ from common.utilities import datetime_now
 class ServiceModel:
     def __init__(self, name: str):
         self.name = name
+        self.description: str = ''
         self.platform = ''
         self.platform_version = ''
         self.hostname = ''

@@ -1,4 +1,5 @@
 import json
+from typing import List
 
 from redis import Redis
 
@@ -19,6 +20,13 @@ def fix_dic_fields_bool_to_int(dic: dict) -> dict:
         value = dic[field]
         if isinstance(value, bool):
             dic[field] = 1 if value else 0
+    return dic
+
+
+def fix_dic_field_enum_to_int(dic: dict, enum_fields: List[str]) -> dict:
+    for enum_field in enum_fields:
+        if enum_field in dic:
+            dic[enum_field] = int(dic[enum_field])
     return dic
 
 

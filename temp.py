@@ -15,10 +15,17 @@ from PIL import Image
 import cv2
 
 from common.config import Config
-from common.data.source_model import AudioQuality
-from common.utilities import logger
+from common.data.rtsp_template_model import RtspTemplateModel
+from common.data.rtsp_template_repository import RtspTemplateRepository
+from common.utilities import crate_redis_connection, RedisDb
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
 
+
+# def test():
+#     print('xxx')
+#
+#
+# print(test.__name__)
 
 def read_test():
     opts = FFmpegReaderOptions()
@@ -36,22 +43,22 @@ def read_test():
 
 
 # read_test()
-args = 'ffmpeg -re -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -i rtsp://Admin1:Admin1@192.168.0.15:554/live0 -strict -2 -c:a copy -c:v copy -preset ultrafast -f flv rtmp://127.0.0.1:9000/live/livestream | ffmpeg -i rtmp://127.0.0.1:9000/live/livestream -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/xughkkrqhqe/%Y-%m-%d-%H-%M-%S.mp4'
-args = args.split(' ')
-p = subprocess.Popen(args)
-pid = p.pid
-
-th = Thread(target=p.wait)
-# th.daemon = True
-th.start()
-
-print(pid)
-parent = psutil.Process(pid)
-children = parent.children(recursive=True)
-for process in children:
-    print(process.pid)
-loop = asyncio.get_event_loop()
-loop.run_forever()
+# args = 'ffmpeg -re -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -i rtsp://Admin1:Admin1@192.168.0.15:554/live0 -strict -2 -c:a copy -c:v copy -preset ultrafast -f flv rtmp://127.0.0.1:9000/live/livestream | ffmpeg -i rtmp://127.0.0.1:9000/live/livestream -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/xughkkrqhqe/%Y-%m-%d-%H-%M-%S.mp4'
+# args = args.split(' ')
+# p = subprocess.Popen(args)
+# pid = p.pid
+#
+# th = Thread(target=p.wait)
+# # th.daemon = True
+# th.start()
+#
+# print(pid)
+# parent = psutil.Process(pid)
+# children = parent.children(recursive=True)
+# for process in children:
+#     print(process.pid)
+# loop = asyncio.get_event_loop()
+# loop.run_forever()
 
 # class FFmpegRtspSource:
 #     def __init__(self, name: str, rtsp_address: str):
@@ -154,31 +161,74 @@ loop.run_forever()
 # print(isinstance(b, int))
 # print(isinstance(x, int))
 
+def config_save():
+    config = Config.create()
+    # config.handler.read_service_overlay = True
+    # config.handler.show_image_caption = True
+    # config.handler.show_image_fullscreen = True
+    # config.handler.show_image_wait_key = -1000000
+    # config.heartbeat.interval = -100000
+    # config.redis.host = 'fcuk'
+    # config.redis.port = -100000
+    # config.jetson.model_name = 'fcuk'
+    # config.jetson.threshold = -100000
+    # config.jetson.white_list = [-100000]
+    # config.torch.model_repo_name = 'fcuk'
+    # config.torch.model_name = 'fcuk'
+    # config.torch.threshold = -100000
+    # config.torch.white_list = [-100000]
+    # config.once_detector.imagehash_threshold = -100000
+    # config.once_detector.psnr_threshold = -100000
+    # config.once_detector.ssim_threshold = -100000
+    # config.source_hub.fps = -100000
+    # config.source_hub.source_hub_buffer_size = -100000
+    # config.source_hub.max_retry = -100000
+    # config.source_hub.max_retry_in = -100000
+    # config.source_hub.kill_starter_proc = True
 
-# config = Config.create()
-# # config.handler.read_service_overlay = True
-# # config.handler.show_image_caption = True
-# # config.handler.show_image_fullscreen = True
-# # config.handler.show_image_wait_key = -1000000
-# # config.heartbeat.interval = -100000
-# # config.redis.host = 'fcuk'
-# # config.redis.port = -100000
-# # config.jetson.model_name = 'fcuk'
-# # config.jetson.threshold = -100000
-# # config.jetson.white_list = [-100000]
-# # config.torch.model_repo_name = 'fcuk'
-# # config.torch.model_name = 'fcuk'
-# # config.torch.threshold = -100000
-# # config.torch.white_list = [-100000]
-# # config.once_detector.imagehash_threshold = -100000
-# # config.once_detector.psnr_threshold = -100000
-# # config.once_detector.ssim_threshold = -100000
-# # config.source_hub.fps = -100000
-# # config.source_hub.source_hub_buffer_size = -100000
-# # config.source_hub.max_retry = -100000
-# # config.source_hub.max_retry_in = -100000
-# # config.source_hub.kill_starter_proc = True
-#
-# config.save()
-#
-# print(config.to_json())
+    config.save()
+
+    print(config.to_json())
+
+config_save()
+def add_rtsp_templates():
+    connection = crate_redis_connection(RedisDb.MAIN)
+    rep = RtspTemplateRepository(connection)
+
+    template = RtspTemplateModel()
+    template.name = "Dahua DVR"
+    template.brand = "Dahua"
+    template.default_user = 'admin'
+    template.default_port = '554'
+    template.address = f'rtsp://{template.default_user}:' + '{password}@{ip}:{port}'
+    template.route = '/cam/realmonitor?channel={camera_no}&subtype={subtype}'
+    template.templates = '{password},{ip},{port},{camera_no},{subtype}'
+    rep.add(template)
+
+    template = RtspTemplateModel()
+    template.name = 'ConcordIpc'
+    template.brand = 'Concord'
+    template.default_user = 'admin'
+    template.default_password = 'admin123456'
+    template.default_port = '8554'
+    template.address = f'rtsp://{template.default_user}:{template.default_password}' + '@{ip}:' + f'{template.default_port}'
+    template.route = '/profile0'
+    template.templates = '{ip}'
+    rep.add(template)
+
+    template = RtspTemplateModel()
+    template.name = 'Anker Eufy Security 2K'
+    template.brand = 'Anker'
+    template.address = 'rtsp://{user}:{password}@{ip}'
+    template.route = '/live0'
+    template.templates = '{user},{password},{ip}'
+    rep.add(template)
+
+    template = RtspTemplateModel()
+    template.name = 'TP Link Tapo C200 1080P'
+    template.brand = 'TP Link'
+    template.default_port = '554'
+    template.address = 'rtsp://{user}:{password}@{ip}:' + f'{template.default_port}'
+    template.route = 'stream1'
+    template.templates = '{user},{password},{ip}'
+    rep.add(template)

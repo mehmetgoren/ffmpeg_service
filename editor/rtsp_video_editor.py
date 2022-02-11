@@ -13,12 +13,10 @@ class RtspVideoEditor:
         self.rtsp_address = rtsp_address
 
     def __take_screenshot(self) -> Image:
-        x = (ffmpeg
-             .input(self.rtsp_address)
-             .output('pipe:', vframes=1, format='image2'))
-        out, _ = (
-            x.run(capture_stdout=True)
-        )
+        x = ffmpeg.input(self.rtsp_address)
+        x = ffmpeg.output(x, 'pipe:', vframes=1, format='image2')
+        # args = x.get_args()
+        out, _ = x.run(capture_stdout=True)
         img = Image.open(io.BytesIO(out))
         return img
 

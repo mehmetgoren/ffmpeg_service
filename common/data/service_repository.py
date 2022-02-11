@@ -12,9 +12,10 @@ class ServiceRepository(BaseRepository):
     def _get_key(self, service_name: str) -> str:
         return f'{self.namespace}{service_name}'
 
-    def add(self, service_name: str):
+    def add(self, service_name: str, description: str = ''):
         key = self._get_key(service_name)
         model = ServiceModel(service_name)
+        model.description = description
         model.detect_values()
         self.connection.hset(key, mapping=model.__dict__)
 

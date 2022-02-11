@@ -17,7 +17,6 @@ class StreamingModel:
         self.pid: int = -1
         self.created_at: str = ''
         self.args: str = ''
-        self.failed_count: int = 0
 
         # extended
         self.streaming_type: StreamType = StreamType.HLS
@@ -44,6 +43,7 @@ class StreamingModel:
         self.record_duration: int = 15
         self.record_flv_pid: int = 0
         self.record_flv_args: str = ''
+        self.record_flv_failed_count: int = 0
 
         # paths
         self.hls_output_path: str = ''

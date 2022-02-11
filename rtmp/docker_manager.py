@@ -70,8 +70,7 @@ class DockerManager:
     def remove(self, model: StreamingModel):
         container = self.get_container(model)
         if container is not None:
-            container.stop()
-            container.remove()
+            self.stop_container(container)
 
     def get_container(self, model: StreamingModel):
         container_name = model.rtmp_container_name
@@ -80,3 +79,11 @@ class DockerManager:
             if container.name == container_name:
                 return container
         return None
+
+    def get_all_containers(self):
+        return self.client.containers.list(all=True)
+
+    @staticmethod
+    def stop_container(container):
+        container.stop()
+        container.remove()
