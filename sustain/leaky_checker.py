@@ -39,7 +39,6 @@ def __check_leaky_ffmpeg_processes():
                 logger.error(f'an error occurred during killing a leaked FFmpeg process, ex: {e} at {datetime.now()}')
 
 
-# todo: test it
 def __check_unstopped_rtmp_server_containers():
     models = _streaming_repository.get_all()
     if len(models) == 0:

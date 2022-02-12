@@ -33,7 +33,6 @@ def __check_ffmpeg_streaming_running_process():
             logger.warn(
                 f'a failed streaming FFmpeg process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {_interval_streaming} seconds')
             source_model = _source_repository.get(streaming_model.id)
-            # todo: need tobe tested carefully with fix_redis_pubsub_dict bytes data
             dic = source_model.__dict__
             _event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
             time.sleep(1)
@@ -41,7 +40,6 @@ def __check_ffmpeg_streaming_running_process():
             logger.info(f'FFmpeg streaming process {streaming_model.name} - {streaming_model.pid} is running')
 
 
-# todo: test it
 def __check_ffmpeg_recording_running_process():
     logger.info('checking FFmpeg running RTMP server recording processes')
     streaming_models = _streaming_repository.get_all()
@@ -53,7 +51,6 @@ def __check_ffmpeg_recording_running_process():
             logger.warn(
                 f'a failed streaming FFmpeg recording process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {_interval_recording} seconds')
             source_model = _source_repository.get(streaming_model.id)
-            # todo: need tobe tested carefully with fix_redis_pubsub_dict bytes data
             _start_flv_streaming_handler.create_piped_ffmpeg_process(source_model, streaming_model)
             time.sleep(1)
         else:

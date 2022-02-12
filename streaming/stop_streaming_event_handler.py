@@ -12,7 +12,6 @@ class StopStreamingEventHandler(BaseStreamingEventHandler):
         super().__init__(streaming_repository, 'stop_streaming_response')
         logger.info('StopStreamingEventHandler initialized')
 
-    # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
         logger.info('StopStreamingEventHandler handle called')
         # dic is request model with id

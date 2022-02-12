@@ -70,7 +70,6 @@ class DiskImageReader:
                 await asyncio.sleep(1)
         logger.info('Disk Image Service has been closed')
 
-    # todo: move to stable version powered by Redis-RQ
     def read_async(self):
         def fn():
             asyncio.run(self.__read())
@@ -79,6 +78,5 @@ class DiskImageReader:
         th.daemon = True
         th.start()
 
-    # todo: move to stable version powered by Redis-RQ
     def close(self):
         self.closed = True
