@@ -6,8 +6,8 @@ from datetime import datetime
 from common.config import Config
 
 logger = logging.getLogger('logger')
-logger.setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO)
+logger.setLevel(logging.WARNING)
+logging.basicConfig(level=logging.WARNING)
 
 config: Config = Config.create()
 

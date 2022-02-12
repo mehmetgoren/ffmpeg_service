@@ -29,8 +29,7 @@ def __check_ffmpeg_streaming_running_process():
     streaming_models = _streaming_repository.get_all()
     for streaming_model in streaming_models:
         if not psutil.pid_exists(streaming_model.pid):
-            # remove to make prev_streaming_model is None
-            _streaming_repository.remove(streaming_model.id)
+            _streaming_repository.remove(streaming_model.id)  # remove to make prev_streaming_model is None
             logger.warn(
                 f'a failed streaming FFmpeg process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {_interval_streaming} seconds')
             source_model = _source_repository.get(streaming_model.id)
@@ -48,7 +47,7 @@ def __check_ffmpeg_recording_running_process():
     streaming_models = _streaming_repository.get_all()
     for streaming_model in streaming_models:
         pipe_recording_enabled = streaming_model.streaming_type == StreamType.FLV and streaming_model.recording
-        if pipe_recording_enabled and not psutil.pid_exists(streaming_model.pid):
+        if pipe_recording_enabled and not psutil.pid_exists(streaming_model.record_flv_pid):
             streaming_model.record_flv_failed_count += 1
             _streaming_repository.update(streaming_model, ['record_flv_failed_count'])
             logger.warn(

@@ -36,7 +36,7 @@ class StartStreamingEventHandler(BaseStreamingEventHandler):
         is_valid_msg, prev_streaming_model, source_model, _ = self.parse_message(dic)
         if not is_valid_msg:
             return
-        logger.info('StartHlsStreamingEventHandler handle called')
+        logger.info('StartStreamingEventHandler handle called')
         if prev_streaming_model is None:
             streaming_model = StreamingModel().map_from_source(source_model)
             if source_model.stream_type == StreamType.DirectRead:
