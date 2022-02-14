@@ -10,11 +10,11 @@ from rq.command import send_stop_job_command, send_kill_horse_command, send_shut
 from rq.job import Job, get_current_job, Retry
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
-from event_listeners import listen_editor_event, listen_start_streaming_event, listen_stop_streaming_event, listen_restart_streaming_event
+from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event
 from sustain.data.task import Task, TaskOp
 from sustain.data.task_repository import TaskRepository
 from sustain.leaky_checker import check_leaky_ffmpeg_processes, check_unstopped_rtmp_server_containers
-from sustain.process_checker import check_ffmpeg_streaming_running_process, check_ffmpeg_recording_running_process
+from sustain.process_checker import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __connection_rq = crate_redis_connection(RedisDb.RQ)
@@ -23,14 +23,14 @@ __queue = Queue(connection=__connection_rq)
 
 __max_retry = Retry(max=sys.maxsize)
 __func_dic = {
-    TaskOp.listen_start_streaming_event: listen_start_streaming_event,
-    TaskOp.listen_stop_streaming_event: listen_stop_streaming_event,
-    TaskOp.listen_restart_streaming_event: listen_restart_streaming_event,
+    TaskOp.listen_start_stream_event: listen_start_stream_event,
+    TaskOp.listen_stop_stream_event: listen_stop_stream_event,
+    TaskOp.listen_restart_stream_event: listen_restart_stream_event,
     TaskOp.listen_editor_event: listen_editor_event,
     TaskOp.check_leaky_ffmpeg_processes: check_leaky_ffmpeg_processes,
     TaskOp.check_unstopped_rtmp_server_containers: check_unstopped_rtmp_server_containers,
-    TaskOp.check_ffmpeg_streaming_running_process: check_ffmpeg_streaming_running_process,
-    TaskOp.check_ffmpeg_recording_running_process: check_ffmpeg_recording_running_process,
+    TaskOp.check_ffmpeg_stream_running_process: check_ffmpeg_stream_running_process,
+    TaskOp.check_ffmpeg_record_running_process: check_ffmpeg_record_running_process,
 }
 __wait_for = config.ffmpeg.start_task_wait_for_interval
 
@@ -103,17 +103,17 @@ def __kill_all_previous_jobs():
             if len(task.job_id) > 0:
                 send_stop_job_command(__connection_rq, task.job_id)
         except BaseException as e:
-            logger.error(f'an error occurred during the stopping rq command, op: {TaskOp.str(task.op)}')
+            logger.error(f'an error occurred during the stopping rq command, op: {TaskOp.str(task.op)}, err: {e}')
         try:
             if len(task.worker_name) > 0:
                 send_kill_horse_command(__connection_rq, task.worker_name)
         except BaseException as e:
-            logger.error(f'an error occurred during the killing rq command, op: {TaskOp.str(task.op)}')
+            logger.error(f'an error occurred during the killing rq command, op: {TaskOp.str(task.op)}, err: {e}')
         try:
             if len(task.worker_name) > 0:
                 send_shutdown_command(__connection_rq, task.worker_name)
         except BaseException as e:
-            logger.error(f'an error occurred during the shutting-down rq command, op: {TaskOp.str(task.op)}')
+            logger.error(f'an error occurred during the shutting-down rq command, op: {TaskOp.str(task.op)}, err: {e}')
         __kil_process('task process', task.pid)
         __kil_process('worker process', task.worker_pid)
 
@@ -122,16 +122,17 @@ def clean_previous():
     __kill_all_previous_jobs()
     __delete_all_rq()
     __task_repository.remove_all()
+    __connection_main.hset('rtmpports', 'ports_count', 0)
 
 
 def add_tasks():
     task = Task()
     # noinspection DuplicatedCode
-    task.set_op(TaskOp.listen_start_streaming_event)
+    task.set_op(TaskOp.listen_start_stream_event)
     __task_repository.add(task)
-    task.set_op(TaskOp.listen_stop_streaming_event)
+    task.set_op(TaskOp.listen_stop_stream_event)
     __task_repository.add(task)
-    task.set_op(TaskOp.listen_restart_streaming_event)
+    task.set_op(TaskOp.listen_restart_stream_event)
     __task_repository.add(task)
     task.set_op(TaskOp.listen_editor_event)
     __task_repository.add(task)
@@ -140,9 +141,9 @@ def add_tasks():
     __task_repository.add(task)
     task.set_op(TaskOp.check_unstopped_rtmp_server_containers)
     __task_repository.add(task)
-    task.set_op(TaskOp.check_ffmpeg_streaming_running_process)
+    task.set_op(TaskOp.check_ffmpeg_stream_running_process)
     __task_repository.add(task)
-    task.set_op(TaskOp.check_ffmpeg_recording_running_process)
+    task.set_op(TaskOp.check_ffmpeg_record_running_process)
     __task_repository.add(task)
 
 

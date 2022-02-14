@@ -86,9 +86,9 @@ class SourceReaderConfig:
 
 class PathConfig:
     def __init__(self):
-        self.streaming: str = '/mnt/sde1/live'
-        self.recording: str = '/mnt/sde1/playback'
-        self.reading: str = '/mnt/sde1/read'
+        self.stream: str = '/mnt/sde1/live'
+        self.record: str = '/mnt/sde1/playback'
+        self.read: str = '/mnt/sde1/read'
 
 
 class FFmpegConfig:
@@ -97,8 +97,8 @@ class FFmpegConfig:
         self.max_operation_retry_count: int = 10000000
         self.check_leaky_ffmpeg_processes_interval: int = 600
         self.check_unstopped_containers_interval: int = 600
-        self.check_ffmpeg_streaming_running_process_interval: int = 10
-        self.check_ffmpeg_recording_running_process_interval: int = 30
+        self.check_ffmpeg_stream_running_process_interval: int = 10
+        self.check_ffmpeg_record_running_process_interval: int = 30
         self.start_task_wait_for_interval: float = 3.
 
 

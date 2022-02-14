@@ -419,7 +419,7 @@ class FFmpegModel:
     def __init__(self, identifier: str = '', rtsp_address: str = ''):
         self.id: str = identifier
         self.rtsp_address: str = rtsp_address
-        self.recording: bool = False
+        self.record: bool = False
         self.input_type: InputType = InputType.H264_H265
         self.rtsp_transport: RtspTransport = RtspTransport.Auto
 
@@ -433,7 +433,7 @@ class FFmpegModel:
         self.hwaccel_device = ''
 
         self.stream_type: StreamType = StreamType.HLS
-        self.rtmp_server_address: str = ''  # this one is meant to be set from streaming model.
+        self.rtmp_server_address: str = ''  # this one is meant to be set from stream model.
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
@@ -482,7 +482,7 @@ class SourceModel(FFmpegModel):
         self.description: str = ''
 
         self.enabled: bool = True
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamingEventHandler
+        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
         self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
         self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
 

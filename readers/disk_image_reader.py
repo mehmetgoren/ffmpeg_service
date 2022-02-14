@@ -5,7 +5,6 @@ from datetime import datetime
 from enum import IntEnum
 from io import BytesIO
 from threading import Thread
-
 import requests
 
 from common.event_bus.event_bus import EventBus
@@ -66,7 +65,7 @@ class DiskImageReader:
                 self.__send(dic)
                 await asyncio.sleep(1. / frame_rate)
             except BaseException as e:
-                logger.error('An error occurred during thr reading image from disk')
+                logger.error(f'An error occurred during the reading image from disk, err: {e}')
                 await asyncio.sleep(1)
         logger.info('Disk Image Service has been closed')
 

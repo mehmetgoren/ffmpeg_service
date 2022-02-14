@@ -1,14 +1,12 @@
 import json
 import time
-
 import requests
 from abc import ABC, abstractmethod
-
 from redis.client import Redis
 
 from common.data.source_model import FlvPlayerConnectionType
 from common.utilities import logger, config
-from streaming.streaming_model import StreamingModel
+from stream.stream_model import StreamModel
 
 
 class BaseRtmpModel(ABC):
@@ -24,14 +22,14 @@ class BaseRtmpModel(ABC):
         self.rtmp_port: int = 0
         self.flv_port: int = 0
 
-    def map_to(self, streaming_model: StreamingModel):
-        streaming_model.rtmp_container_ports = json.dumps(self.get_ports())
-        streaming_model.rtmp_image_name = self.get_image_name()
-        streaming_model.rtmp_container_name = self.get_container_name()
-        streaming_model.rtmp_address = self.get_rtmp_address()
-        streaming_model.rtmp_flv_address = self.get_flv_address(streaming_model)
-        streaming_model.rtmp_container_commands = ','.join(self.get_commands())
-        streaming_model.rtmp_server_initialized = True
+    def map_to(self, stream_model: StreamModel):
+        stream_model.rtmp_container_ports = json.dumps(self.get_ports())
+        stream_model.rtmp_image_name = self.get_image_name()
+        stream_model.rtmp_container_name = self.get_container_name()
+        stream_model.rtmp_address = self.get_rtmp_address()
+        stream_model.rtmp_flv_address = self.get_flv_address(stream_model)
+        stream_model.rtmp_container_commands = ','.join(self.get_commands())
+        stream_model.rtmp_server_initialized = True
 
     def port_inc(self) -> int:
         max_port_num = 65535
@@ -65,7 +63,7 @@ class BaseRtmpModel(ABC):
         raise NotImplementedError('get_rtmp_address() must be implemented')
 
     @abstractmethod
-    def get_flv_address(self, streaming_model: StreamingModel) -> str:
+    def get_flv_address(self, stream_model: StreamModel) -> str:
         raise NotImplementedError('get_flv_address() must be implemented')
 
 
@@ -92,7 +90,7 @@ class SrsRtmpModel(BaseRtmpModel):
     def get_rtmp_address(self) -> str:
         return f'rtmp://{self.host}:{self.rtmp_port}/live/livestream'
 
-    def get_flv_address(self, streaming_model: StreamingModel) -> str:
+    def get_flv_address(self, stream_model: StreamModel) -> str:
         return f'{self.protocol}://{self.host}:{self.flv_port}/live/livestream.flv'
 
 
@@ -138,7 +136,7 @@ class LiveGoRtmpModel(BaseRtmpModel):
     def get_rtmp_address(self) -> str:
         return f'rtmp://{self.host}:{self.rtmp_port}/live/livestream'
 
-    def get_flv_address(self, streaming_model: StreamingModel) -> str:
+    def get_flv_address(self, stream_model: StreamModel) -> str:
         # livestream default channel key is rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk
         return f'{self.protocol}://{self.host}:{self.flv_port}/live/{("rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk" if not self.channel_key else self.channel_key)}.flv'
 
@@ -166,6 +164,6 @@ class NodeMediaServerRtmpModel(BaseRtmpModel):
     def get_rtmp_address(self) -> str:
         return f'rtmp://{self.host}:{self.rtmp_port}/live/STREAM_NAME'
 
-    def get_flv_address(self, streaming_model: StreamingModel) -> str:
-        protocol = 'http' if streaming_model.flv_player_connection_type == FlvPlayerConnectionType.HTTP else 'ws'
+    def get_flv_address(self, stream_model: StreamModel) -> str:
+        protocol = 'http' if stream_model.flv_player_connection_type == FlvPlayerConnectionType.HTTP else 'ws'
         return f'{protocol}://{self.host}:{self.flv_port}/live/STREAM_NAME.flv'

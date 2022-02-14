@@ -1,22 +1,21 @@
 import os
 from typing import List
 
-from common.data.source_model import FFmpegModel, InputType, RtspTransport, VideoDecoder, StreamType, \
-    StreamVideoCodec, Preset, Rotate, AudioCodec, LogLevel, AudioChannel, AudioQuality, AudioSampleRate, \
-    RecordFileTypes, RecordVideoCodec, AccelerationEngine
+from common.data.source_model import FFmpegModel, InputType, RtspTransport, VideoDecoder, StreamType, StreamVideoCodec, Preset, Rotate, AudioCodec, \
+    LogLevel, AudioChannel, AudioQuality, AudioSampleRate, RecordFileTypes, RecordVideoCodec, AccelerationEngine
 from common.utilities import config
 
 
 def get_hls_output_path(source_id: str):
-    return os.path.join(config.path.streaming, source_id, 'stream.m3u8')
+    return os.path.join(config.path.stream, source_id, 'stream.m3u8')
 
 
 def get_read_jpeg_output_path(source_id: str):
-    return os.path.join(config.path.reading, source_id, 's.jpeg')
+    return os.path.join(config.path.read, source_id, 's.jpeg')
 
 
-def get_recording_output_folder_path(source_id: str):
-    return os.path.join(config.path.recording, source_id)
+def get_record_output_folder_path(source_id: str):
+    return os.path.join(config.path.record, source_id)
 
 
 class CommandBuilder:
@@ -134,13 +133,13 @@ class CommandBuilder:
             args.extend(['-update', '1', self.__add_double_quotes(get_read_jpeg_output_path(f.id)), '-y'])
         # JPEG Snapshot ends
 
-        # Recording starts
-        if f.recording and f.stream_type == StreamType.HLS:
-            self.extend_recording(args)
-        # Recording ends
+        # Record starts
+        if f.record and f.stream_type == StreamType.HLS:
+            self.extend_record(args)
+        # Record ends
         return args
 
-    def extend_recording(self, args: List[str]):
+    def extend_record(self, args: List[str]):
         f: FFmpegModel = self.ffmpeg_model
         if f.record_width != 0 and f.record_height != 0:
             args.extend(['-s', f'{f.record_width}x{f.record_height}'])
@@ -187,5 +186,5 @@ class CommandBuilder:
         if f.record_segment_interval < 1:
             f.record_segment_interval = 15
         args.extend(['-segment_time', str(f.record_segment_interval * 60)])
-        args.append(self.__add_double_quotes(os.path.join(get_recording_output_folder_path(f.id),
+        args.append(self.__add_double_quotes(os.path.join(get_record_output_folder_path(f.id),
                                                           f'%Y-%m-%d-%H-%M-%S.{RecordFileTypes.str(f.record_file_type)}')))

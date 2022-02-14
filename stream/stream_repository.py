@@ -2,12 +2,12 @@ from redis import Redis
 from typing import List
 
 from common.data.base_repository import BaseRepository, fix_dic_fields_bool_to_int
-from streaming.streaming_model import StreamingModel
+from stream.stream_model import StreamModel
 
 
-class StreamingRepository(BaseRepository):
+class StreamRepository(BaseRepository):
     def __init__(self, connection: Redis):
-        super().__init__(connection, 'streaming:')
+        super().__init__(connection, 'stream:')
 
     def get_connection(self) -> Redis:
         return self.connection
@@ -15,38 +15,38 @@ class StreamingRepository(BaseRepository):
     def _get_key(self, key: str):
         return f'{self.namespace}{key}'
 
-    def add(self, model: StreamingModel) -> int:
+    def add(self, model: StreamModel) -> int:
         key = self._get_key(model.id)
         dic = model.__dict__
         fix_dic_fields_bool_to_int(dic)
         return self.connection.hset(key, mapping=dic)
 
-    def update(self, model: StreamingModel, fields: List[str]) -> int:
+    def update(self, model: StreamModel, fields: List[str]) -> int:
         key = self._get_key(model.id)
         dic = {}
         for field in fields:
             dic[field] = model.__dict__[field]
         return self.connection.hset(key, mapping=dic)
 
-    def remove(self, id: str) -> int:
-        key = self._get_key(id)
+    def remove(self, identifier: str) -> int:
+        key = self._get_key(identifier)
         return self.connection.delete(key)
 
-    def get(self, id: str) -> StreamingModel:
-        key = self._get_key(id)
+    def get(self, identifier: str) -> StreamModel:
+        key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:
             return None
         dic = self.fix_bin_redis_dic(dic)
-        return StreamingModel().map_from(dic)
+        return StreamModel().map_from(dic)
 
-    def get_all(self) -> List[StreamingModel]:
-        models: List[StreamingModel] = []
+    def get_all(self) -> List[StreamModel]:
+        models: List[StreamModel] = []
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
             dic = self.fix_bin_redis_dic(dic)
-            model = StreamingModel().map_from(dic)
+            model = StreamModel().map_from(dic)
 
             models.append(model)
         return models

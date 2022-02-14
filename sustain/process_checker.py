@@ -7,67 +7,67 @@ from common.data.source_model import StreamType
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb, config
-from streaming.streaming_repository import StreamingRepository
-from streaming.start_streaming_event_handler import StartStreamingEventHandler, StartFlvStreamingHandler
+from stream.stream_repository import StreamRepository
+from stream.start_stream_event_handler import StartStreamEventHandler, StartFlvStreamHandler
 
-_connection_main = crate_redis_connection(RedisDb.MAIN)
-_source_repository = SourceRepository(_connection_main)
-_streaming_repository = StreamingRepository(_connection_main)
+__connection_main = crate_redis_connection(RedisDb.MAIN)
+__source_repository = SourceRepository(__connection_main)
+__stream_repository = StreamRepository(__connection_main)
 
-_interval_streaming = config.ffmpeg.check_ffmpeg_streaming_running_process_interval
-_event_bus = EventBus('start_streaming_request')
+__interval_stream = config.ffmpeg.check_ffmpeg_stream_running_process_interval
+__event_bus = EventBus('start_stream_request')
 
-_interval_recording = config.ffmpeg.check_ffmpeg_recording_running_process_interval
-_start_streaming_event_handler = StartStreamingEventHandler(_source_repository, _streaming_repository)
-_start_flv_streaming_handler = StartFlvStreamingHandler(_start_streaming_event_handler)
+__interval_record = config.ffmpeg.check_ffmpeg_record_running_process_interval
+__start_stream_event_handler = StartStreamEventHandler(__source_repository, __stream_repository)
+__start_flv_stream_handler = StartFlvStreamHandler(__start_stream_event_handler)
 
 
 # containers are not to be checked since they are handled by Docker's unless-stop policy itself.
 # todo: add max fail count
-def __check_ffmpeg_streaming_running_process():
-    logger.info('checking FFmpeg running streaming processes')
-    streaming_models = _streaming_repository.get_all()
-    for streaming_model in streaming_models:
-        if not psutil.pid_exists(streaming_model.pid):
-            _streaming_repository.remove(streaming_model.id)  # remove to make prev_streaming_model is None
+def __check_ffmpeg_stream_running_process():
+    logger.info('checking FFmpeg running stream processes')
+    stream_models = __stream_repository.get_all()
+    for stream_model in stream_models:
+        if not psutil.pid_exists(stream_model.pid):
+            __stream_repository.remove(stream_model.id)  # remove to make prev_stream_model is None
             logger.warn(
-                f'a failed streaming FFmpeg process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {_interval_streaming} seconds')
-            source_model = _source_repository.get(streaming_model.id)
+                f'a failed stream FFmpeg process was detected for model {stream_model.name} - {stream_model.pid} and will be recovered in {__interval_stream} seconds')
+            source_model = __source_repository.get(stream_model.id)
             dic = source_model.__dict__
-            _event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+            __event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
             time.sleep(1)
         else:
-            logger.info(f'FFmpeg streaming process {streaming_model.name} - {streaming_model.pid} is running')
+            logger.info(f'FFmpeg stream process {stream_model.name} - {stream_model.pid} is running')
 
 
-def __check_ffmpeg_recording_running_process():
-    logger.info('checking FFmpeg running RTMP server recording processes')
-    streaming_models = _streaming_repository.get_all()
-    for streaming_model in streaming_models:
-        pipe_recording_enabled = streaming_model.streaming_type == StreamType.FLV and streaming_model.recording
-        if pipe_recording_enabled and not psutil.pid_exists(streaming_model.record_flv_pid):
-            streaming_model.record_flv_failed_count += 1
-            _streaming_repository.update(streaming_model, ['record_flv_failed_count'])
+def __check_ffmpeg_record_running_process():
+    logger.info('checking FFmpeg running RTMP server record processes')
+    stream_models = __stream_repository.get_all()
+    for stream_model in stream_models:
+        pipe_record_enabled = stream_model.stream_type == StreamType.FLV and stream_model.record
+        if pipe_record_enabled and not psutil.pid_exists(stream_model.record_flv_pid):
+            stream_model.record_flv_failed_count += 1
+            __stream_repository.update(stream_model, ['record_flv_failed_count'])
             logger.warn(
-                f'a failed streaming FFmpeg recording process was detected for model {streaming_model.name} - {streaming_model.pid} and will be recovered in {_interval_recording} seconds')
-            source_model = _source_repository.get(streaming_model.id)
-            _start_flv_streaming_handler.create_piped_ffmpeg_process(source_model, streaming_model)
+                f'a failed stream FFmpeg record process was detected for model {stream_model.name} - {stream_model.pid} and will be recovered in {__interval_record} seconds')
+            source_model = __source_repository.get(stream_model.id)
+            __start_flv_stream_handler.create_piped_ffmpeg_process(source_model, stream_model)
             time.sleep(1)
         else:
-            logger.info(f'FFmpeg recording process {streaming_model.name} - {streaming_model.pid} is running')
+            logger.info(f'FFmpeg record process {stream_model.name} - {stream_model.pid} is running')
 
 
-def check_ffmpeg_streaming_running_process():
+def check_ffmpeg_stream_running_process():
     scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(_interval_streaming).seconds.do(__check_ffmpeg_streaming_running_process)
+    scheduler_instance.every(__interval_stream).seconds.do(__check_ffmpeg_stream_running_process)
     while True:
         scheduler_instance.run_pending()
         time.sleep(1)
 
 
-def check_ffmpeg_recording_running_process():
+def check_ffmpeg_record_running_process():
     scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(_interval_recording).seconds.do(__check_ffmpeg_recording_running_process)
+    scheduler_instance.every(__interval_record).seconds.do(__check_ffmpeg_record_running_process)
     while True:
         scheduler_instance.run_pending()
         time.sleep(1)

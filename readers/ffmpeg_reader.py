@@ -4,7 +4,6 @@ from datetime import datetime
 from enum import IntEnum
 from io import BytesIO
 from threading import Thread
-
 import ffmpeg
 import numpy as np
 import requests
@@ -94,6 +93,7 @@ class FFmpegReader:
                     self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
                     logger.info(
                         f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
+
                 fn = _pub
             else:
                 def _post():
@@ -101,6 +101,7 @@ class FFmpegReader:
                     requests.post(self.options.api_address, data=data)
                     logger.info(
                         f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
+
                 fn = _post
             th = Thread(target=fn)
             th.daemon = True

@@ -1,23 +1,21 @@
-import json
 import os
 import signal
 import time
 from datetime import datetime
-
 import psutil
 import schedule
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
 from rtmp.docker_manager import DockerManager
-from streaming.streaming_repository import StreamingRepository
+from stream.stream_repository import StreamRepository
 
-_connection_main = crate_redis_connection(RedisDb.MAIN)
-_streaming_repository = StreamingRepository(_connection_main)
+__connection_main = crate_redis_connection(RedisDb.MAIN)
+__stream_repository = StreamRepository(__connection_main)
 
 
 def __check_leaky_ffmpeg_processes():
     logger.info(f'checking leaking ffmpeg processes at {datetime.now()}')
-    models = _streaming_repository.get_all()
+    models = __stream_repository.get_all()
     if len(models) == 0:
         logger.info(f'no stream operation exists, checking leaky FFmpeg process operation is now exiting at {datetime.now()}')
         return
@@ -40,7 +38,7 @@ def __check_leaky_ffmpeg_processes():
 
 
 def __check_unstopped_rtmp_server_containers():
-    models = _streaming_repository.get_all()
+    models = __stream_repository.get_all()
     if len(models) == 0:
         logger.info(f'no stream operation exists, checking leaky RTMP server container operation is now exiting at {datetime.now()}')
         return
@@ -54,7 +52,7 @@ def __check_unstopped_rtmp_server_containers():
     if count == 0:
         logger.info(f'no set container for rtmp server, checking unstopped rtmp server container is now exiting at {datetime.now()}')
         return
-    docker_manager = DockerManager(_connection_main)
+    docker_manager = DockerManager(__connection_main)
     containers = docker_manager.get_all_containers()
     prefixes = tuple(['srs_', 'livego_', 'nms_'])
     for container in containers:

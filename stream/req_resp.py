@@ -1,8 +1,8 @@
 from common.data.source_model import SourceModel
-from streaming.streaming_model import StreamingModel
+from stream.stream_model import StreamModel
 
 
-class StartStreamingRequestEvent(SourceModel):
+class StartStreamRequestEvent(SourceModel):
     def __init__(self):
         super().__init__()
 
@@ -11,20 +11,20 @@ class StartStreamingRequestEvent(SourceModel):
         return self
 
 
-class StartStreamingResponseEvent(StreamingModel):
+class StartStreamResponseEvent(StreamModel):
     def __init__(self):
         super().__init__()
 
-    def map_from_super(self, streaming_model: StreamingModel):
-        self.__dict__.update(streaming_model.__dict__)
+    def map_from_super(self, stream_model: StreamModel):
+        self.__dict__.update(stream_model.__dict__)
         return self
 
 
-class StopStreamingRequestEvent:
+class StopStreamRequestEvent:
     def __init__(self):
         self.id: str = ''
 
 
-class StopStreamingResponse(StopStreamingRequestEvent):
+class StopStreamResponse(StopStreamRequestEvent):
     def __init__(self):
         super().__init__()

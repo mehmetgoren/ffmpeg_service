@@ -1,5 +1,3 @@
-import json
-
 from common.data.base_repository import is_message_invalid, fix_redis_pubsub_dict
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler

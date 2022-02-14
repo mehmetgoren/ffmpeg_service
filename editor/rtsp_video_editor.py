@@ -1,6 +1,5 @@
 import base64
 import io
-
 import ffmpeg
 import PIL.Image as Image
 
