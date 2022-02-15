@@ -1,5 +1,6 @@
 from command_builder import get_hls_output_path, get_read_jpeg_output_path, get_record_output_folder_path
 from common.data.source_model import RmtpServerType, SourceModel, StreamType, FlvPlayerConnectionType
+from common.utilities import datetime_now
 
 
 class StreamModel:
@@ -48,6 +49,8 @@ class StreamModel:
         self.hls_output_path: str = ''
         self.read_jpeg_output_path: str = ''
         self.record_output_folder_path: str = ''
+
+        self.created_at: str = datetime_now()
 
     def set_paths(self):
         self.hls_output_path = get_hls_output_path(self.id)

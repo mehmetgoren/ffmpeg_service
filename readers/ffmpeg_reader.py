@@ -40,7 +40,7 @@ class FFmpegReaderOptions:
 class FFmpegReader:
     def __init__(self, options: FFmpegReaderOptions):
         self.options: FFmpegReaderOptions = options
-        self.event_bus = EventBus(options.pubsub_channel)
+        self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
         has_external_scale = options.width > 0 and options.height > 0
         if not has_external_scale:
             probe = ffmpeg.probe(options.rtsp_address)
@@ -89,23 +89,18 @@ class FFmpegReader:
             dic = self.__create_model_dic(np_img)
             # noinspection DuplicatedCode
             if self.options.method == PushMethod.REDIS_PUBSUB:
-                def _pub():
-                    self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
-                    logger.info(
-                        f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
-
-                fn = _pub
+                self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+                logger.info(
+                    f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
             else:
                 def _post():
                     data = json.dumps(dic).encode("utf-8")
                     requests.post(self.options.api_address, data=data)
                     logger.info(
                         f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
-
-                fn = _post
-            th = Thread(target=fn)
-            th.daemon = True
-            th.start()
+                th = Thread(target=_post)
+                th.daemon = True
+                th.start()
 
     def __create_model_dic(self, numpy_img: np.array):
         if self.options.image_converter_type == ImageConverterType.OPEN_CV:

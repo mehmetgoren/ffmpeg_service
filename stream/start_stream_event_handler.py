@@ -4,6 +4,7 @@ import time
 import subprocess
 from typing import List
 from threading import Thread
+import psutil
 
 from command_builder import CommandBuilder, get_hls_output_path
 from common.data.source_model import SourceModel, RmtpServerType
@@ -25,6 +26,22 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         self.source_repository = source_repository
         logger.info('StartStreamEventHandler initialized')
 
+    def handle_operation_error(self, source_model: SourceModel, err, sub_proc):
+        msg: str = 'unknown'
+        if err is not None:
+            msg = str(err)
+        elif sub_proc is not None:
+            if sub_proc.stderr is not None:
+                try:
+                    data: bytes = sub_proc.stderr.read()
+                    msg = data.decode('utf-8')
+                except BaseException as e:
+                    msg = str(e)
+                    logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
+        source_model.last_exception_msg = msg
+        source_model.failed_count += 1
+        self.source_repository.update(source_model, ['last_exception_msg', 'failed_count'])
+
     @staticmethod
     def __start_thread(target, args):
         th = Thread(target=target, args=args)
@@ -37,10 +54,12 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         if not is_valid_msg:
             return
         logger.info('StartStreamEventHandler handle called')
-        if prev_stream_model is None:
+        need_reload = prev_stream_model is None or not psutil.pid_exists(prev_stream_model.pid)
+        if need_reload:
             stream_model = StreamModel().map_from_source(source_model)
+            self.stream_repository.add(stream_model)  # to prevent missing fields because of the update operation.
             if source_model.stream_type == StreamType.DirectRead:
-                direct = DirectReadHandler(stream_model, self.stream_repository)
+                direct = DirectReadHandler(stream_model, self)
                 self.__start_thread(direct.start_ffmpeg_process, [])
             else:
                 if source_model.stream_type == StreamType.HLS:
@@ -53,7 +72,6 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 self.__start_thread(self.__start_ffmpeg_process, [source_model, stream_model])
                 concrete.wait_for(stream_model)
                 self.__start_thread(concrete.create_piped_ffmpeg_process, [source_model, stream_model])
-            self.stream_repository.add(stream_model)
             prev_stream_model = stream_model
 
         stream_model_json = serialize_json(prev_stream_model)
@@ -71,7 +89,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         image_reader = None
         try:
             logger.info('stream subprocess has been opened')
-            p = subprocess.Popen(args)
+            p = subprocess.Popen(args, stderr=subprocess.PIPE)
             stream_model.pid = p.pid
             stream_model.args = ' '.join(args)
             self.stream_repository.update(stream_model, ['pid', 'args'])
@@ -79,9 +97,11 @@ class StartStreamEventHandler(BaseStreamEventHandler):
             if stream_model.jpeg_enabled and stream_model.use_disk_image_reader_service:
                 image_reader = self.__start_disk_image_reader(stream_model)
             p.wait()
-        except Exception as e:
+        except BaseException as e:
+            self.handle_operation_error(request, e, p)
             logger.error(f'an error occurred during FFmpeg sub-process, err: {e}')
         finally:
+            self.handle_operation_error(request, None, p)
             if p is not None:
                 p.terminate()
             if image_reader is not None:
@@ -158,24 +178,27 @@ class StartFlvStreamHandler:
         p = None
         try:
             logger.info('stream FLV Record subprocess has been opened')
-            p = subprocess.Popen(args)
+            p = subprocess.Popen(args, stderr=subprocess.PIPE)
             stream_model.record_flv_pid = p.pid
             stream_model.record_flv_args = ' '.join(args)
             self.proxy.stream_repository.update(stream_model, ['record_flv_pid', 'record_flv_args'])
             logger.info('the model has been saved by repository')
             p.wait()
-        except Exception as e:
+        except BaseException as e:
+            self.proxy.handle_operation_error(source_model, e, p)
             logger.error(f'an error occurred during FFmpeg FLV record subprocess, err: {e}')
         finally:
+            self.proxy.handle_operation_error(source_model, None, p)
             if p is not None:
                 p.terminate()
             logger.info('stream FLV record subprocess has been terminated')
 
 
 class DirectReadHandler:
-    def __init__(self, stream_model: StreamModel, stream_repository: StreamRepository):
+    def __init__(self, stream_model: StreamModel, proxy: StartStreamEventHandler):
         self.stream_model = stream_model
-        self.stream_repository = stream_repository
+        self.proxy = proxy
+        self.stream_repository = proxy.stream_repository
         self.options = FFmpegReaderOptions()
         self.options.id = stream_model.id
         self.options.name = stream_model.name
@@ -193,7 +216,8 @@ class DirectReadHandler:
             self.stream_repository.update(self.stream_model, ['pid'])
             logger.info('the model has been saved by repository')
             self.ffmpeg_reader.read()
-        except Exception as e:
+        except BaseException as e:
+            self.proxy.handle_operation_error(self.proxy.source_repository.get(self.stream_model.id), e, self.ffmpeg_reader.process)
             logger.error(f'an error occurred while starting FFmpeg direct read sub-process, err: {e}')
         finally:
             self.ffmpeg_reader.close()

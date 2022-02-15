@@ -13,7 +13,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
         super().__init__(stream_repository, 'stop_stream_response')
         logger.info('StopStreamEventHandler initialized')
 
-    def handle(self, dic: dict):
+    def handle(self, dic: dict):  # which means operation is being stopped by a ruler, not by FFmpeg service itself.
         logger.info('StopStreamEventHandler handle called')
         # dic is request model with id
         is_valid_msg, stream_model, source_model = self.parse_message(dic)
@@ -21,7 +21,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             return
         if stream_model is not None:
             try:
-                self.stream_repository.remove(stream_model.id)
+                self.stream_repository.remove(stream_model.id)  # remove it to prevent the process checker give it a life again.
             except BaseException as e:
                 logger.error(f'Error while removing stream {stream_model.id} from repository: {e}')
 

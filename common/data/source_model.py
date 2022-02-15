@@ -1,5 +1,7 @@
 from enum import IntEnum
 
+from common.utilities import datetime_now
+
 
 class RmtpServerType(IntEnum):
     SRS = 0
@@ -489,6 +491,11 @@ class SourceModel(FFmpegModel):
         self.direct_read_frame_rate: int = 1
         self.direct_read_width: int = 640
         self.direct_read_height: int = 360
+
+        # for error messages
+        self.last_exception_msg: str = ''
+        self.failed_count: int = 0
+        self.created_at: str = datetime_now()
 
     def get_id(self):
         return self.id

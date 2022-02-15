@@ -29,7 +29,6 @@ def __check_ffmpeg_stream_running_process():
     stream_models = __stream_repository.get_all()
     for stream_model in stream_models:
         if not psutil.pid_exists(stream_model.pid):
-            __stream_repository.remove(stream_model.id)  # remove to make prev_stream_model is None
             logger.warn(
                 f'a failed stream FFmpeg process was detected for model {stream_model.name} - {stream_model.pid} and will be recovered in {__interval_stream} seconds')
             source_model = __source_repository.get(stream_model.id)

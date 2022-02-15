@@ -14,14 +14,32 @@
 #
 # import cv2
 # import json
+import subprocess
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
 # from common.data.source_repository import SourceRepository
-from common.utilities import crate_redis_connection, RedisDb
+from common.utilities import crate_redis_connection, RedisDb, logger
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
-import numpy as np
+# import numpy as np
+
+args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8 -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/m7kdwupjdvw/%Y-%m-%d-%H-%M-%S.mp4'
+# args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8'
+# args = 'ffprobe -i rtsp://admin:admin123456@192.168.0.19:8554/profile0'
+args = args.split(' ')
+p = subprocess.Popen(args, stderr=subprocess.PIPE)  # stdout=subprocess.PIPE
+p.wait()
+if p.stderr is not None:
+    try:
+        data: bytes = p.stderr.read()
+        msg: str = data.decode('utf-8')
+        print(msg)
+    except BaseException as e:
+        logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
+code = p.returncode
+print(code)
+
 # def test():
 #     print('xxx')
 #
@@ -37,9 +55,9 @@ import numpy as np
 # stream_json = json.dumps(stream.__dict__)
 # print(xxx)
 
-A = np.empty(shape=(0, 0))
-s = A.size
-print(s)
+# A = np.empty(shape=(0, 0))
+# s = A.size
+# print(s)
 
 
 def read_test():

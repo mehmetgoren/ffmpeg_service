@@ -22,6 +22,11 @@ class DeviceServices(IntEnum):
     ALL = READ | DETECTION | CLOUD_INTEGRATION | FFMPEG | MNGR
 
 
+class EventListenerHandlerType(IntEnum):
+    THREAD = 0
+    PROCESS = 1
+
+
 # todo: mngr should auto-decide config fields. Implement it later by heartbeat infos.
 class DeviceConfig:
     def __init__(self):
@@ -100,6 +105,7 @@ class FFmpegConfig:
         self.check_ffmpeg_stream_running_process_interval: int = 10
         self.check_ffmpeg_record_running_process_interval: int = 30
         self.start_task_wait_for_interval: float = 3.
+        self.event_listener_handler_type: EventListenerHandlerType = EventListenerHandlerType.THREAD
 
 
 class Config:

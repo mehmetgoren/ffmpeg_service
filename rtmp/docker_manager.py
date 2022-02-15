@@ -34,8 +34,7 @@ class DockerManager:
         container_name = rtmp_model.get_container_name()
         for container in all_containers:
             if container.name == container_name:
-                container.stop()
-                container.remove()
+                self.stop_container(container)
                 break
         container = self.client.containers.run(rtmp_model.get_image_name(), detach=True,
                                                command=rtmp_model.get_commands(),

@@ -18,11 +18,12 @@ class RedisDb(IntEnum):
     EVENTBUS = 15
 
 
-def crate_redis_connection(db: RedisDb) -> Redis:
-    return Redis(host=config.redis.host, port=config.redis.port, charset='utf-8', db=int(db))
+def crate_redis_connection(db: RedisDb, socket_keepalive: bool = False, health_check_interval: int = 0) -> Redis:
+    return Redis(host=config.redis.host, port=config.redis.port, charset='utf-8', db=int(db), socket_keepalive=socket_keepalive,
+                 health_check_interval=health_check_interval)
 
 
-def datetime_now():
+def datetime_now() -> str:
     now = datetime.now()
     sep = '-'
     strings = [''] * 13

@@ -30,28 +30,23 @@ class DiskImageReader:
     def __init__(self, options: DiskImageReaderOptions):
         self.options = options
         self.closed = False
-        self.event_bus = EventBus(options.pubsub_channel)
+        self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
 
     def __send(self, dic: dict):
         # noinspection DuplicatedCode
         if self.options.method == PushMethod.REDIS_PUBSUB:
-            def _pub():
-                self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
-                logger.info(
-                    f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
-
-            fn = _pub
+            self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+            logger.info(
+                f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
         else:
             def _post():
                 data = json.dumps(dic).encode("utf-8")
                 requests.post(self.options.api_address, data=data)
                 logger.info(
                     f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
-
-            fn = _post
-        th = Thread(target=fn)
-        th.daemon = True
-        th.start()
+            th = Thread(target=_post)
+            th.daemon = True
+            th.start()
 
     async def __read(self):
         img_path, frame_rate = self.options.image_path, self.options.frame_rate
