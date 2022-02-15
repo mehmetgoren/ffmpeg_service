@@ -13,29 +13,33 @@
 # from PIL import Image
 #
 # import cv2
-import json
+# import json
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
-from common.data.source_repository import SourceRepository
+# from common.data.source_repository import SourceRepository
 from common.utilities import crate_redis_connection, RedisDb
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
-
+import numpy as np
 # def test():
 #     print('xxx')
 #
 #
 # print(test.__name__)
-from stream.stream_model import StreamModel
-from stream.stream_repository import StreamRepository
+# from stream.stream_model import StreamModel
+# from stream.stream_repository import StreamRepository
+#
+# xxx = json.dumps(StreamModel().__dict__)
+# source = SourceRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
+# stream = StreamRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
+# source_json = json.dumps(source.__dict__)
+# stream_json = json.dumps(stream.__dict__)
+# print(xxx)
 
-xxx = json.dumps(StreamModel().__dict__)
-source = SourceRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
-stream = StreamRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
-source_json = json.dumps(source.__dict__)
-stream_json = json.dumps(stream.__dict__)
-print(xxx)
+A = np.empty(shape=(0, 0))
+s = A.size
+print(s)
 
 
 def read_test():

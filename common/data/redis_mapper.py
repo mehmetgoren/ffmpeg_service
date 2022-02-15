@@ -57,10 +57,10 @@ class RedisMapper:
                 model_dic[key] = value
         return model_dic
 
+    __cache = {}
+
     def __get_field_types(self):
         return RedisMapper.__cache[self.type_name]
-
-    __cache = {}
 
     @staticmethod
     def __init_model_type(model, type_name: str):
@@ -87,14 +87,33 @@ class RedisMapper:
 
     @staticmethod
     def __set_value(field_types: dict, key: str, value: str, dest_dict: dict):
+        fns = RedisMapper.__get_init_cache_fns()
         data_type = field_types[key]
-        if data_type == DataTypes.STR:
-            dest_dict[key] = value
-        elif data_type == DataTypes.BOOL:
-            dest_dict[key] = int(value) == 1
-        elif data_type == DataTypes.INT_ENUM:
-            dest_dict[key] = int(value)
-        elif data_type == DataTypes.INT:
-            dest_dict[key] = int(value)
-        else:
-            raise NotImplementedError(type(data_type))
+        dest_dict[key] = fns[data_type](value)
+
+    __cache_fns = {}
+
+    @staticmethod
+    def __get_init_cache_fns():
+        fns = RedisMapper.__cache_fns
+        if len(fns) > 0:
+            return fns
+
+        def fn_str(value) -> str:
+            return value
+
+        def fn_bool(value) -> bool:
+            return int(value) == 1
+
+        def fn_int_enum(value) -> int:
+            return int(value)
+
+        def fn_int(value) -> int:
+            return int(value)
+
+        fns[DataTypes.STR] = fn_str
+        fns[DataTypes.BOOL] = fn_bool
+        fns[DataTypes.INT_ENUM] = fn_int_enum
+        fns[DataTypes.INT] = fn_int
+        logger.warning(f'new cached functions dictionary has been initialized')
+        return fns
