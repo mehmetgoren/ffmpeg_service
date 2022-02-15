@@ -1,7 +1,5 @@
 from enum import IntEnum
 
-from common.data.base_repository import map_from
-
 
 class TaskOp(IntEnum):
     none = 0
@@ -48,6 +46,3 @@ class Task:
     def set_op(self, op: TaskOp):
         self.op = op
         self.op_name = TaskOp.str(op)
-
-    def map_from(self, fixed_dic: dict):
-        return map_from(fixed_dic, Task(), self)

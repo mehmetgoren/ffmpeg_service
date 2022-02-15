@@ -1,4 +1,3 @@
-from typing import Dict
 from enum import IntEnum
 
 
@@ -15,14 +14,6 @@ class EditorRequestEvent:
         self.name: str = ''
         self.rtsp_address: str = ''
         self.event_type: EditorEventType = EditorEventType.NONE
-
-    def map_from(self, dic: Dict):
-        self.id = dic['id']
-        self.brand = dic['brand']
-        self.name = dic['name']
-        self.rtsp_address = dic['rtsp_address']
-        self.event_type = dic['event_type']
-        return self
 
 
 class EditorResponseEvent(EditorRequestEvent):

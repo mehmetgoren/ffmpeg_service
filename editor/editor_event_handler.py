@@ -1,4 +1,4 @@
-from common.data.base_repository import is_message_invalid, fix_redis_pubsub_dict
+from common.data.redis_mapper import RedisMapper
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
@@ -9,17 +9,16 @@ from utils.json_serializer import serialize_json
 
 class EditorEventHandler(EventHandler):
     def __init__(self):
-        self.encoding = 'utf-8'
         self.event_bus = EventBus('editor_response')
         logger.info('EditorEventHandler: initialized')
 
     def handle(self, dic: dict):
-        if is_message_invalid(dic):
+        if RedisMapper.is_pubsub_message_invalid(dic):
             logger.info('EditorEventHandler: message is invalid')
             return
         logger.info('EditorEventHandler handle called')
-        fixed_dic, _ = fix_redis_pubsub_dict(dic, self.encoding)
-        request: EditorRequestEvent = EditorRequestEvent().map_from(fixed_dic)
+        mapper = RedisMapper(EditorRequestEvent())
+        request: EditorRequestEvent = mapper.from_redis_pubsub(dic)
         if request.event_type == EditorEventType.NONE:
             logger.info('EditorEventHandler: NONE, EditorEventHAndler is not handling this event')
             return

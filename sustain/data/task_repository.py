@@ -1,7 +1,7 @@
 from typing import List
 from redis.client import Redis
 
-from common.data.base_repository import BaseRepository, fix_dic_fields_bool_to_int, fix_dic_field_enum_to_int
+from common.data.base_repository import BaseRepository
 from sustain.data.task import Task, TaskOp
 
 
@@ -14,9 +14,7 @@ class TaskRepository(BaseRepository):
 
     def add(self, model: Task):
         key = self._get_key(model.op)
-        dic = model.__dict__
-        fix_dic_fields_bool_to_int(dic)
-        fix_dic_field_enum_to_int(dic, ['op'])
+        dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
 
     def remove_all(self) -> int:
@@ -31,8 +29,7 @@ class TaskRepository(BaseRepository):
         keys = self.connection.keys(f'{self.namespace}*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            dic = self.fix_bin_redis_dic(dic)
-            model = Task().map_from(dic)
+            model: Task = self.from_redis(Task(), dic)
             models.append(model)
         return models
 
@@ -41,5 +38,4 @@ class TaskRepository(BaseRepository):
         dic = self.connection.hgetall(key)
         if not dic:
             return None
-        dic = self.fix_bin_redis_dic(dic)
-        return Task().map_from(dic)
+        return self.from_redis(Task(), dic)

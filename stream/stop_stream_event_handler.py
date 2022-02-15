@@ -5,6 +5,7 @@ from common.utilities import logger
 from rtmp.docker_manager import DockerManager
 from stream.stream_repository import StreamRepository
 from stream.base_stream_event_handler import BaseStreamEventHandler
+from utils.json_serializer import serialize_json
 
 
 class StopStreamEventHandler(BaseStreamEventHandler):
@@ -15,7 +16,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
     def handle(self, dic: dict):
         logger.info('StopStreamEventHandler handle called')
         # dic is request model with id
-        is_valid_msg, stream_model, request_model, dic_json = self.parse_message(dic)
+        is_valid_msg, stream_model, source_model = self.parse_message(dic)
         if not is_valid_msg:
             return
         if stream_model is not None:
@@ -48,4 +49,5 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                 except BaseException as e:
                     logger.error(f'Error while removing FLV container for {stream_model.id}, err: {e}')
 
-        self.event_bus.publish(dic_json)
+        source_json = serialize_json(source_model)
+        self.event_bus.publish(source_json)

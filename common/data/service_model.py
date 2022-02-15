@@ -11,19 +11,19 @@ from common.utilities import datetime_now
 
 class ServiceModel:
     def __init__(self, name: str):
-        self.name = name
+        self.name: str = name
         self.description: str = ''
-        self.platform = ''
-        self.platform_version = ''
-        self.hostname = ''
-        self.ip_address = ''
-        self.mac_address = ''
-        self.processor = ''
-        self.cpu_count = ''
-        self.ram = ''
-        self.pid = ''
-        self.created_at = ''
-        self.heartbeat = ''
+        self.platform: str = ''
+        self.platform_version: str = ''
+        self.hostname: str = ''
+        self.ip_address: str = ''
+        self.mac_address: str = ''
+        self.processor: str = ''
+        self.cpu_count: str = ''
+        self.ram: str = ''
+        self.pid: str = ''
+        self.created_at: str = ''
+        self.heartbeat: str = ''
 
     def detect_values(self):
         self.platform = platform.system()
@@ -37,7 +37,3 @@ class ServiceModel:
         self.pid = os.getpid()
         self.created_at = datetime_now()
         self.heartbeat = datetime_now()
-
-    def map_from(self, dic: dict):
-        self.__dict__.update(dic)
-        return self

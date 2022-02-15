@@ -14,7 +14,7 @@ class RtspTemplateRepository(BaseRepository):
 
     def add(self, model: RtspTemplateModel):
         key = self._get_key(model.id)
-        dic = model.__dict__
+        dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
 
     def get(self, identifier: str) -> RtspTemplateModel:
@@ -22,15 +22,13 @@ class RtspTemplateRepository(BaseRepository):
         dic = self.connection.hgetall(key)
         if not dic:
             return None
-        dic = self.fix_bin_redis_dic(dic)
-        return RtspTemplateModel().map_from(dic)
+        return self.from_redis(RtspTemplateModel(), dic)
 
     def get_all(self) -> List[RtspTemplateModel]:
         models: List[RtspTemplateModel] = []
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            dic = self.fix_bin_redis_dic(dic)
-            model = RtspTemplateModel().map_from(dic)
+            model: RtspTemplateModel = self.from_redis(RtspTemplateModel(), dic)
             models.append(model)
         return models

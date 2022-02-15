@@ -1,7 +1,7 @@
 from redis import Redis
 from typing import List
 
-from common.data.base_repository import BaseRepository, fix_dic_fields_bool_to_int
+from common.data.base_repository import BaseRepository
 from stream.stream_model import StreamModel
 
 
@@ -17,8 +17,7 @@ class StreamRepository(BaseRepository):
 
     def add(self, model: StreamModel) -> int:
         key = self._get_key(model.id)
-        dic = model.__dict__
-        fix_dic_fields_bool_to_int(dic)
+        dic = self.to_redis(model)
         return self.connection.hset(key, mapping=dic)
 
     def update(self, model: StreamModel, fields: List[str]) -> int:
@@ -37,17 +36,17 @@ class StreamRepository(BaseRepository):
         dic = self.connection.hgetall(key)
         if not dic:
             return None
-        dic = self.fix_bin_redis_dic(dic)
-        return StreamModel().map_from(dic)
+        model: StreamModel = self.from_redis(StreamModel(), dic)
+        model.set_paths()
+        return model
 
     def get_all(self) -> List[StreamModel]:
         models: List[StreamModel] = []
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            dic = self.fix_bin_redis_dic(dic)
-            model = StreamModel().map_from(dic)
-
+            model: StreamModel = self.from_redis(StreamModel(), dic)
+            model.set_paths()
             models.append(model)
         return models
 

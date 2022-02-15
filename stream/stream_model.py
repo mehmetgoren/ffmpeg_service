@@ -1,5 +1,4 @@
 from command_builder import get_hls_output_path, get_read_jpeg_output_path, get_record_output_folder_path
-from common.data.base_repository import map_from
 from common.data.source_model import RmtpServerType, SourceModel, StreamType, FlvPlayerConnectionType
 
 
@@ -50,16 +49,10 @@ class StreamModel:
         self.read_jpeg_output_path: str = ''
         self.record_output_folder_path: str = ''
 
-    @staticmethod
-    def __set_paths(self):
+    def set_paths(self):
         self.hls_output_path = get_hls_output_path(self.id)
         self.read_jpeg_output_path = get_read_jpeg_output_path(self.id)
         self.record_output_folder_path = get_record_output_folder_path(self.id)
-
-    def map_from(self, fixed_dic: dict):
-        typed_dic = map_from(fixed_dic, StreamModel(), self)
-        self.__set_paths(typed_dic)
-        return self
 
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
@@ -86,5 +79,6 @@ class StreamModel:
         self.record = source.record
         self.record_duration = source.record_segment_interval
 
-        self.__set_paths(self)
+        self.set_paths()
+
         return self

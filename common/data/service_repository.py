@@ -17,14 +17,14 @@ class ServiceRepository(BaseRepository):
         model = ServiceModel(service_name)
         model.description = description
         model.detect_values()
-        self.connection.hset(key, mapping=model.__dict__)
+        dic = self.to_redis(model)
+        self.connection.hset(key, mapping=dic)
 
     def get_all(self) -> List[ServiceModel]:
         models: List[ServiceModel] = []
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            fixed_dic = self.fix_bin_redis_dic(dic)
-            model = ServiceModel(str(key).split(':')[1]).map_from(fixed_dic)
+            model: ServiceModel = self.from_redis(ServiceModel(str(key).split(':')[1]), dic)
             models.append(model)
         return models

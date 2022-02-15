@@ -1,4 +1,4 @@
-from common.data.base_repository import is_message_invalid
+from common.data.redis_mapper import RedisMapper
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
@@ -15,7 +15,7 @@ class RestartStreamEventHandler(EventHandler):
 
     # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
-        if is_message_invalid(dic):
+        if RedisMapper.is_pubsub_message_invalid(dic):
             return
         logger.info('RestartStreamEventHandler handle called')
         self.stop_stream_event_handler.handle(dic)

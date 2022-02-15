@@ -33,7 +33,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
 
     # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
-        is_valid_msg, prev_stream_model, source_model, _ = self.parse_message(dic)
+        is_valid_msg, prev_stream_model, source_model = self.parse_message(dic)
         if not is_valid_msg:
             return
         logger.info('StartStreamEventHandler handle called')

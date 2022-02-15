@@ -1,7 +1,5 @@
 from enum import IntEnum
 
-from common.data.base_repository import map_from
-
 
 class RmtpServerType(IntEnum):
     SRS = 0
@@ -491,9 +489,6 @@ class SourceModel(FFmpegModel):
         self.direct_read_frame_rate: int = 1
         self.direct_read_width: int = 640
         self.direct_read_height: int = 360
-
-    def map_from(self, fixed_dic: dict):
-        return map_from(fixed_dic, SourceModel(), self)
 
     def get_id(self):
         return self.id

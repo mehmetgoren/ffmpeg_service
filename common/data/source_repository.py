@@ -14,7 +14,7 @@ class SourceRepository(BaseRepository):
 
     def add(self, model: SourceModel):
         key = self._get_key(model.id)
-        dic = model.__dict__
+        dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
 
     def update(self, model: SourceModel, fields: List[str]) -> int:
@@ -29,15 +29,13 @@ class SourceRepository(BaseRepository):
         dic = self.connection.hgetall(key)
         if not dic:
             return None
-        dic = self.fix_bin_redis_dic(dic)
-        return SourceModel().map_from(dic)
+        return self.from_redis(SourceModel(), dic)
 
     def get_all(self) -> List[SourceModel]:
         models: List[SourceModel] = []
         keys = self.connection.keys(self.namespace + '*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            dic = self.fix_bin_redis_dic(dic)
-            model = SourceModel().map_from(dic)
+            model: SourceModel = self.from_redis(SourceModel(), dic)
             models.append(model)
         return models

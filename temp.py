@@ -13,19 +13,30 @@
 # from PIL import Image
 #
 # import cv2
+import json
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
+from common.data.source_repository import SourceRepository
 from common.utilities import crate_redis_connection, RedisDb
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
-
 
 # def test():
 #     print('xxx')
 #
 #
 # print(test.__name__)
+from stream.stream_model import StreamModel
+from stream.stream_repository import StreamRepository
+
+xxx = json.dumps(StreamModel().__dict__)
+source = SourceRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
+stream = StreamRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
+source_json = json.dumps(source.__dict__)
+stream_json = json.dumps(stream.__dict__)
+print(xxx)
+
 
 def read_test():
     opts = FFmpegReaderOptions()
@@ -191,7 +202,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():
