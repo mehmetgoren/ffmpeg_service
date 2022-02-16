@@ -11,8 +11,6 @@ class StreamModel:
         self.name: str = ''
         self.rtsp_address: str = ''
 
-        self.enabled: bool = False
-
         # stream
         self.pid: int = -1
         self.created_at: str = datetime_now()
@@ -23,7 +21,7 @@ class StreamModel:
         self.rtmp_server_initialized: bool = False
         self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS
         self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP
-        self.need_reload_interval: int = 300
+        self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
         self.rtmp_image_name: str = ''
         self.rtmp_container_name: str = ''
         self.rtmp_address: str = ''
@@ -60,8 +58,6 @@ class StreamModel:
         self.id = source.id
         self.name = source.name
         self.rtsp_address = source.rtsp_address
-
-        self.enabled = source.enabled
 
         self.stream_type = source.stream_type
         self.rtmp_server_type = source.rtmp_server_type
