@@ -15,7 +15,7 @@ class StreamModel:
 
         # stream
         self.pid: int = -1
-        self.created_at: str = ''
+        self.created_at: str = datetime_now()
         self.args: str = ''
 
         # extended
@@ -49,8 +49,6 @@ class StreamModel:
         self.hls_output_path: str = ''
         self.read_jpeg_output_path: str = ''
         self.record_output_folder_path: str = ''
-
-        self.created_at: str = datetime_now()
 
     def set_paths(self):
         self.hls_output_path = get_hls_output_path(self.id)

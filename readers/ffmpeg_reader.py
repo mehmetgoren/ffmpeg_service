@@ -12,6 +12,7 @@ from cv2 import cv2
 
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger
+from utils.json_serializer import serialize_json_dic
 
 
 class PushMethod(IntEnum):
@@ -89,7 +90,7 @@ class FFmpegReader:
             dic = self.__create_model_dic(np_img)
             # noinspection DuplicatedCode
             if self.options.method == PushMethod.REDIS_PUBSUB:
-                self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+                self.event_bus.publish(serialize_json_dic(dic))
                 logger.info(
                     f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
             else:
@@ -98,6 +99,7 @@ class FFmpegReader:
                     requests.post(self.options.api_address, data=data)
                     logger.info(
                         f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
+
                 th = Thread(target=_post)
                 th.daemon = True
                 th.start()

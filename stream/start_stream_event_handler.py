@@ -40,7 +40,9 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                     logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
         source_model.last_exception_msg = msg
         source_model.failed_count += 1
-        self.source_repository.update(source_model, ['last_exception_msg', 'failed_count'])
+        temp = self.source_repository.get(source_model.id)
+        if temp is not None:
+            self.source_repository.update(source_model, ['last_exception_msg', 'failed_count'])
 
     @staticmethod
     def __start_thread(target, args):
@@ -72,6 +74,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 self.__start_thread(self.__start_ffmpeg_process, [source_model, stream_model])
                 concrete.wait_for(stream_model)
                 self.__start_thread(concrete.create_piped_ffmpeg_process, [source_model, stream_model])
+            time.sleep(1)  # give it a time to set new streaming values like rtmp_address, pid etc...
             prev_stream_model = stream_model
 
         stream_model_json = serialize_json(prev_stream_model)
@@ -92,7 +95,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
             p = subprocess.Popen(args, stderr=subprocess.PIPE)
             stream_model.pid = p.pid
             stream_model.args = ' '.join(args)
-            self.stream_repository.update(stream_model, ['pid', 'args'])
+            self.stream_repository.add(stream_model)
             logger.info('the model has been saved by repository')
             if stream_model.jpeg_enabled and stream_model.use_disk_image_reader_service:
                 image_reader = self.__start_disk_image_reader(stream_model)
@@ -167,10 +170,6 @@ class StartFlvStreamHandler:
             local_rtmp_pipe_input_address = stream_model.rtmp_address
         args: List[str] = ['ffmpeg', '-i',
                            local_rtmp_pipe_input_address]  # this one have to be local address (Loopback). Otherwise, it costs double network usage!..
-        # container = self.docker_manager.get_container(stream_model)
-        # while 1:
-        #     if container.status == 'running':
-        #         break
         # todo:move it to config
         time.sleep(3)
         cmd_builder = CommandBuilder(source_model)
@@ -181,7 +180,7 @@ class StartFlvStreamHandler:
             p = subprocess.Popen(args, stderr=subprocess.PIPE)
             stream_model.record_flv_pid = p.pid
             stream_model.record_flv_args = ' '.join(args)
-            self.proxy.stream_repository.update(stream_model, ['record_flv_pid', 'record_flv_args'])
+            self.proxy.stream_repository.add(stream_model)
             logger.info('the model has been saved by repository')
             p.wait()
         except BaseException as e:
@@ -213,7 +212,7 @@ class DirectReadHandler:
         try:
             logger.info('FFmpeg direct read stream subprocess has been opened')
             self.stream_model.pid = self.ffmpeg_reader.get_pid()
-            self.stream_repository.update(self.stream_model, ['pid'])
+            self.stream_repository.add(self.stream_model)
             logger.info('the model has been saved by repository')
             self.ffmpeg_reader.read()
         except BaseException as e:

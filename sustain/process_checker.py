@@ -1,4 +1,3 @@
-import json
 import time
 import psutil
 import schedule
@@ -9,6 +8,7 @@ from common.event_bus.event_bus import EventBus
 from common.utilities import logger, crate_redis_connection, RedisDb, config
 from stream.stream_repository import StreamRepository
 from stream.start_stream_event_handler import StartStreamEventHandler, StartFlvStreamHandler
+from utils.json_serializer import serialize_json_dic
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __source_repository = SourceRepository(__connection_main)
@@ -33,7 +33,7 @@ def __check_ffmpeg_stream_running_process():
                 f'a failed stream FFmpeg process was detected for model {stream_model.name} - {stream_model.pid} and will be recovered in {__interval_stream} seconds')
             source_model = __source_repository.get(stream_model.id)
             dic = source_model.__dict__
-            __event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+            __event_bus.publish(serialize_json_dic(dic))
             time.sleep(1)
         else:
             logger.info(f'FFmpeg stream process {stream_model.name} - {stream_model.pid} is running')

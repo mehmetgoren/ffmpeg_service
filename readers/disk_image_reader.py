@@ -9,6 +9,7 @@ import requests
 
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger
+from utils.json_serializer import serialize_json_dic
 
 
 class PushMethod(IntEnum):
@@ -35,7 +36,7 @@ class DiskImageReader:
     def __send(self, dic: dict):
         # noinspection DuplicatedCode
         if self.options.method == PushMethod.REDIS_PUBSUB:
-            self.event_bus.publish(json.dumps(dic, ensure_ascii=False, indent=4))
+            self.event_bus.publish(serialize_json_dic(dic))
             logger.info(
                 f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
         else:
