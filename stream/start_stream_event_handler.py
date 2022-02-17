@@ -27,7 +27,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         logger.info('StartStreamEventHandler initialized')
 
     def handle_operation_error(self, source_model: SourceModel, err, sub_proc):
-        msg: str = 'unknown'
+        msg: str = 'FFmpeg process has been terminated'
         if err is not None:
             msg = str(err)
         elif sub_proc is not None:
@@ -40,7 +40,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                     logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
         source_model.last_exception_msg = msg
         source_model.failed_count += 1
-        temp = self.source_repository.get(source_model.id)
+        temp = self.source_repository.get(source_model.id)  # if it wasn't deleted before.
         if temp is not None:
             self.source_repository.update(source_model, ['last_exception_msg', 'failed_count'])
 
@@ -168,7 +168,7 @@ class StartFlvStreamHandler:
                                                                               'rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk')
         else:
             local_rtmp_pipe_input_address = stream_model.rtmp_address
-        args: List[str] = ['ffmpeg', '-i',
+        args: List[str] = ['ffmpeg', '-re', '-i',
                            local_rtmp_pipe_input_address]  # this one have to be local address (Loopback). Otherwise, it costs double network usage!..
         # todo:move it to config
         time.sleep(3)
@@ -177,7 +177,7 @@ class StartFlvStreamHandler:
         p = None
         try:
             logger.info('stream FLV Record subprocess has been opened')
-            p = subprocess.Popen(args, stderr=subprocess.PIPE)
+            p = subprocess.Popen(args)  # do not use PIPE, otherwise FFmpeg recording process will be stuck.
             stream_model.record_flv_pid = p.pid
             stream_model.record_flv_args = ' '.join(args)
             self.proxy.stream_repository.add(stream_model)

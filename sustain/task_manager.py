@@ -13,6 +13,7 @@ from common.utilities import crate_redis_connection, RedisDb, logger, config
 from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event
 from sustain.data.task import Task, TaskOp
 from sustain.data.task_repository import TaskRepository
+from sustain.kill_prevs import kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
 from sustain.leaky_checker import check_leaky_ffmpeg_processes, check_unstopped_rtmp_server_containers
 from sustain.process_checker import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process
 
@@ -118,11 +119,16 @@ def __kill_all_previous_jobs():
         __kil_process('worker process', task.worker_pid)
 
 
-def clean_previous():
+def clean_others_previous():
+    kill_all_prev_ffmpeg_procs()
+    reset_rtmp_container_ports(__connection_main)
+    remove_all_prev_rtmp_containers(__connection_main)
+
+
+def clean_my_previous():
     __kill_all_previous_jobs()
     __delete_all_rq()
     __task_repository.remove_all()
-    __connection_main.hset('rtmpports', 'ports_count', 0)
 
 
 def add_tasks():

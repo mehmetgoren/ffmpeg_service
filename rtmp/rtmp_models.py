@@ -1,5 +1,7 @@
 import json
 import time
+from enum import Enum
+
 import requests
 from abc import ABC, abstractmethod
 from redis.client import Redis
@@ -9,12 +11,18 @@ from common.utilities import logger, config
 from stream.stream_model import StreamModel
 
 
+class RtmpServerImages(Enum):
+    OSSRS = 'ossrs/srs:4'
+    LIVEGO = 'gwuhaolin/livego'
+    NMS = 'illuspas/node-media-server'
+
+
 class BaseRtmpModel(ABC):
     def __init__(self, container_name: str, connection: Redis):
         self.container_name = container_name
         self.connection: Redis = connection
         self.inc_namespace = 'rtmpports'
-        self.inc_starting_port = 8999
+        self.inc_starting_port = 1023  # for more info: https://www.thegeekdiary.com/which-network-ports-are-reserved-by-the-linux-operating-system/
         self.increment_by = 1
         self.host = '127.0.0.1'
         self.protocol = 'http'
@@ -72,7 +80,7 @@ class SrsRtmpModel(BaseRtmpModel):
         super().__init__(f'srs_{unique_name}', connection)
 
     def get_image_name(self) -> str:
-        return 'ossrs/srs:4'
+        return RtmpServerImages.OSSRS.value
 
     def get_commands(self) -> list:
         return ['./objs/srs', '-c', 'conf/docker.conf']
@@ -101,7 +109,7 @@ class LiveGoRtmpModel(BaseRtmpModel):
         self.channel_key: str = ''
 
     def get_image_name(self) -> str:
-        return 'gwuhaolin/livego'
+        return RtmpServerImages.LIVEGO.value
 
     def get_commands(self) -> list:
         return []
@@ -146,7 +154,7 @@ class NodeMediaServerRtmpModel(BaseRtmpModel):
         super().__init__(f'nms_{unique_name}', connection)
 
     def get_image_name(self) -> str:
-        return 'illuspas/node-media-server'
+        return RtmpServerImages.NMS.value
 
     def get_commands(self) -> list:
         return []

@@ -14,7 +14,8 @@
 #
 # import cv2
 # import json
-import subprocess
+# import subprocess
+from enum import Enum
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
@@ -22,42 +23,32 @@ from common.data.rtsp_template_repository import RtspTemplateRepository
 # from common.data.source_repository import SourceRepository
 from common.utilities import crate_redis_connection, RedisDb, logger
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod, ImageConverterType
+# from rtmp.rtmp_models import RtmpServerImages
+#
+# print(str(RtmpServerImages.OSSRS.value))
+# print(RtmpServerImages.LIVEGO)
+# print(RtmpServerImages.NMS)
+from sustain.kill_prevs import remove_all_prev_rtmp_containers
+
+remove_all_prev_rtmp_containers(crate_redis_connection(RedisDb.MAIN))
+
 # import numpy as np
 
-args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8 -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/m7kdwupjdvw/%Y-%m-%d-%H-%M-%S.mp4'
-# args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8'
-# args = 'ffprobe -i rtsp://admin:admin123456@192.168.0.19:8554/profile0'
-args = args.split(' ')
-p = subprocess.Popen(args, stderr=subprocess.PIPE)  # stdout=subprocess.PIPE
-p.wait()
-if p.stderr is not None:
-    try:
-        data: bytes = p.stderr.read()
-        msg: str = data.decode('utf-8')
-        print(msg)
-    except BaseException as e:
-        logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
-code = p.returncode
-print(code)
-
-# def test():
-#     print('xxx')
-#
-#
-# print(test.__name__)
-# from stream.stream_model import StreamModel
-# from stream.stream_repository import StreamRepository
-#
-# xxx = json.dumps(StreamModel().__dict__)
-# source = SourceRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
-# stream = StreamRepository(crate_redis_connection(RedisDb.MAIN)).get('axnqq7ppju2')
-# source_json = json.dumps(source.__dict__)
-# stream_json = json.dumps(stream.__dict__)
-# print(xxx)
-
-# A = np.empty(shape=(0, 0))
-# s = A.size
-# print(s)
+# args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8 -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/m7kdwupjdvw/%Y-%m-%d-%H-%M-%S.mp4'
+# # args = 'ffmpeg -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -loglevel warning -i rtsp://admin:admin123456@192.168.0.19:8554/profile0 -strict -2 -c:a copy -c:v copy -tune zerolatency -g 1 -f hls -hls_time 2 -hls_list_size 3 -start_number 0 -hls_allow_cache 0 -hls_flags +delete_segments+omit_endlist /mnt/sde1/live/m7kdwupjdvw/stream.m3u8'
+# # args = 'ffprobe -i rtsp://admin:admin123456@192.168.0.19:8554/profile0'
+# args = args.split(' ')
+# p = subprocess.Popen(args, stderr=subprocess.PIPE)  # stdout=subprocess.PIPE
+# p.wait()
+# if p.stderr is not None:
+#     try:
+#         data: bytes = p.stderr.read()
+#         msg: str = data.decode('utf-8')
+#         print(msg)
+#     except BaseException as e:
+#         logger.error(f'an error occurred during the getting message from STDERR, err: {e}')
+# code = p.returncode
+# print(code)
 
 
 def read_test():
@@ -74,24 +65,6 @@ def read_test():
     reader = FFmpegReader(opts)
     reader.read()
 
-
-# read_test()
-# args = 'ffmpeg -re -progress pipe:5 -analyzeduration 1000000 -probesize 1000000 -fflags +igndts -i rtsp://Admin1:Admin1@192.168.0.15:554/live0 -strict -2 -c:a copy -c:v copy -preset ultrafast -f flv rtmp://127.0.0.1:9000/live/livestream | ffmpeg -i rtmp://127.0.0.1:9000/live/livestream -acodec copy -vcodec copy -strict -2 -movflags +faststart -f segment -segment_atclocktime 1 -reset_timestamps 1 -strftime 1 -segment_list pipe:8 -segment_time 60 /mnt/sde1/playback/xughkkrqhqe/%Y-%m-%d-%H-%M-%S.mp4'
-# args = args.split(' ')
-# p = subprocess.Popen(args)
-# pid = p.pid
-#
-# th = Thread(target=p.wait)
-# # th.daemon = True
-# th.start()
-#
-# print(pid)
-# parent = psutil.Process(pid)
-# children = parent.children(recursive=True)
-# for process in children:
-#     print(process.pid)
-# loop = asyncio.get_event_loop()
-# loop.run_forever()
 
 # class FFmpegRtspSource:
 #     def __init__(self, name: str, rtsp_address: str):
@@ -188,12 +161,6 @@ def read_test():
 
 # _read_ffmpeg()
 
-# x = AudioQuality.Auto
-# b = False
-# print(isinstance(b, bool))
-# print(isinstance(b, int))
-# print(isinstance(x, int))
-
 def config_save():
     config = Config.create()
     # config.handler.read_service_overlay = True
@@ -268,3 +235,5 @@ def add_rtsp_templates():
     template.route = 'stream1'
     template.templates = '{user},{password},{ip}'
     rep.add(template)
+
+# add_rtsp_templates()

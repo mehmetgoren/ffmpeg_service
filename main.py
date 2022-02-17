@@ -3,7 +3,7 @@ import asyncio
 from common.data.heartbeat_repository import HeartbeatRepository
 from common.data.service_repository import ServiceRepository
 from common.utilities import logger, crate_redis_connection, RedisDb
-from sustain.task_manager import add_tasks, start_tasks, clean_previous
+from sustain.task_manager import add_tasks, start_tasks, clean_others_previous, clean_my_previous
 
 
 def register_ffmpeg_service():
@@ -18,7 +18,9 @@ def register_ffmpeg_service():
 def main():
     register_ffmpeg_service()
 
-    clean_previous()
+    clean_my_previous()
+    clean_others_previous()
+
     add_tasks()
     logger.info('The FFmpeg Service® has been started...')
     start_tasks()
@@ -27,7 +29,8 @@ def main():
         loop = asyncio.get_event_loop()
         loop.run_forever()
     finally:
-        clean_previous()
+        clean_my_previous()
+        clean_others_previous()
 
 
 if __name__ == '__main__':

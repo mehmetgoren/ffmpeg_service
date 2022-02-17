@@ -85,3 +85,7 @@ class DockerManager:
     def stop_container(container):
         container.stop()
         container.remove()
+
+    @staticmethod
+    def parse_image_name(container):
+        return container.image.tags[0].replace(':latest', '')
