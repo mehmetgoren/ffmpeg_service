@@ -119,7 +119,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         options.frame_rate = stream_model.jpeg_frame_rate
         options.image_path = stream_model.read_jpeg_output_path
         image_reader = DiskImageReader(options)
-        image_reader.read_async()
+        image_reader.read()
         return image_reader
 
 

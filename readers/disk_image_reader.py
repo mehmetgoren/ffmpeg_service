@@ -1,53 +1,24 @@
 import asyncio
 import base64
-import json
-from datetime import datetime
-from enum import IntEnum
 from io import BytesIO
 from threading import Thread
-import requests
 
-from common.event_bus.event_bus import EventBus
 from common.utilities import logger
-from utils.json_serializer import serialize_json_dic
+from readers.base_reader import BaseReaderOptions, BaseReader
 
 
-class PushMethod(IntEnum):
-    REDIS_PUBSUB = 0
-    REST_API = 1
-
-
-class DiskImageReaderOptions:
-    id: str = ''
-    name: str = ''
-    method: PushMethod = PushMethod.REST_API
-    pubsub_channel: str = 'read_service'
-    api_address: str = 'http://localhost:2072/ffmpegreader'
-    frame_rate: int = 1
+class DiskImageReaderOptions(BaseReaderOptions):
     image_path: str = ''
 
 
-class DiskImageReader:
+class DiskImageReader(BaseReader):
     def __init__(self, options: DiskImageReaderOptions):
+        super().__init__(options)
         self.options = options
         self.closed = False
-        self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
 
-    def __send(self, dic: dict):
-        # noinspection DuplicatedCode
-        if self.options.method == PushMethod.REDIS_PUBSUB:
-            self.event_bus.publish(serialize_json_dic(dic))
-            logger.info(
-                f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
-        else:
-            def _post():
-                data = json.dumps(dic).encode("utf-8")
-                requests.post(self.options.api_address, data=data)
-                logger.info(
-                    f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
-            th = Thread(target=_post)
-            th.daemon = True
-            th.start()
+    def close(self):
+        self.closed = True
 
     async def __read(self):
         img_path, frame_rate = self.options.image_path, self.options.frame_rate
@@ -56,16 +27,14 @@ class DiskImageReader:
             try:
                 with open(img_path, 'rb') as fh:
                     buffered = BytesIO(fh.read())
-                img_str = base64.b64encode(buffered.getvalue()).decode()
-                dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id}
-                self.__send(dic)
+                self._send(buffered)
                 await asyncio.sleep(1. / frame_rate)
             except BaseException as e:
                 logger.error(f'An error occurred during the reading image from disk, err: {e}')
                 await asyncio.sleep(1)
         logger.info('Disk Image Service has been closed')
 
-    def read_async(self):
+    def read(self):
         def fn():
             asyncio.run(self.__read())
 
@@ -73,5 +42,6 @@ class DiskImageReader:
         th.daemon = True
         th.start()
 
-    def close(self):
-        self.closed = True
+    def _create_base64_img(self, buffered):
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return img_str
