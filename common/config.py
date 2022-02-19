@@ -108,6 +108,11 @@ class FFmpegConfig:
         self.event_listener_handler_type: EventListenerHandlerType = EventListenerHandlerType.THREAD
 
 
+class AiConfig:
+    def __init__(self):
+        self.detected_folder: str = '/mnt/sde1/detected/'
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -120,6 +125,7 @@ class Config:
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.path: PathConfig = PathConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
+        self.ai: AiConfig = AiConfig()
         self.__connection: Redis = None
 
     @staticmethod
