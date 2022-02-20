@@ -11,15 +11,17 @@ from rq.job import Job, get_current_job, Retry
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
 from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event
-from sustain.data.task import Task, TaskOp
-from sustain.data.task_repository import TaskRepository
+from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
+from sustain.task.task_model import TaskModel, TaskOp
+from sustain.task.task_repository import TaskRepository
 from sustain.kill_prevs import kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
 from sustain.leaky_checker import check_leaky_ffmpeg_processes, check_unstopped_rtmp_server_containers
-from sustain.process_checker import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process
+from sustain.process_checker import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process, check_ffmpeg_record_stuck_process
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __connection_rq = crate_redis_connection(RedisDb.RQ)
 __task_repository = TaskRepository(__connection_main)
+__rec_stuck_repository = RecStuckRepository(__connection_main)
 __queue = Queue(connection=__connection_rq)
 
 __max_retry = Retry(max=sys.maxsize)
@@ -32,6 +34,7 @@ __func_dic = {
     TaskOp.check_unstopped_rtmp_server_containers: check_unstopped_rtmp_server_containers,
     TaskOp.check_ffmpeg_stream_running_process: check_ffmpeg_stream_running_process,
     TaskOp.check_ffmpeg_record_running_process: check_ffmpeg_record_running_process,
+    TaskOp.check_ffmpeg_record_stuck_process: check_ffmpeg_record_stuck_process
 }
 __wait_for = config.ffmpeg.start_task_wait_for_interval
 
@@ -129,10 +132,11 @@ def clean_my_previous():
     __kill_all_previous_jobs()
     __delete_all_rq()
     __task_repository.remove_all()
+    __rec_stuck_repository.remove_all()
 
 
 def add_tasks():
-    task = Task()
+    task = TaskModel()
     # noinspection DuplicatedCode
     task.set_op(TaskOp.listen_start_stream_event)
     __task_repository.add(task)
@@ -150,6 +154,8 @@ def add_tasks():
     task.set_op(TaskOp.check_ffmpeg_stream_running_process)
     __task_repository.add(task)
     task.set_op(TaskOp.check_ffmpeg_record_running_process)
+    __task_repository.add(task)
+    task.set_op(TaskOp.check_ffmpeg_record_stuck_process)
     __task_repository.add(task)
 
 

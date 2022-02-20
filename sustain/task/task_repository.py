@@ -2,7 +2,7 @@ from typing import List
 from redis.client import Redis
 
 from common.data.base_repository import BaseRepository
-from sustain.data.task import Task, TaskOp
+from sustain.task.task_model import TaskModel, TaskOp
 
 
 class TaskRepository(BaseRepository):
@@ -12,7 +12,7 @@ class TaskRepository(BaseRepository):
     def _get_key(self, identifier: TaskOp) -> str:
         return f'{self.namespace}{identifier}'
 
-    def add(self, model: Task):
+    def add(self, model: TaskModel):
         key = self._get_key(model.op)
         dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
@@ -24,18 +24,18 @@ class TaskRepository(BaseRepository):
             count += r.delete(key)
         return count
 
-    def get_all(self) -> List[Task]:
-        models: List[Task] = []
+    def get_all(self) -> List[TaskModel]:
+        models: List[TaskModel] = []
         keys = self.connection.keys(f'{self.namespace}*')
         for key in keys:
             dic = self.connection.hgetall(key)
-            model: Task = self.from_redis(Task(), dic)
+            model: TaskModel = self.from_redis(TaskModel(), dic)
             models.append(model)
         return models
 
-    def get(self, identifier: TaskOp) -> Task:
+    def get(self, identifier: TaskOp) -> TaskModel:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:
             return None
-        return self.from_redis(Task(), dic)
+        return self.from_redis(TaskModel(), dic)

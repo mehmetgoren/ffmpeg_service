@@ -7,7 +7,7 @@ from stream.stream_model import StreamModel
 
 class StreamRepository(BaseRepository):
     def __init__(self, connection: Redis):
-        super().__init__(connection, 'stream:')
+        super().__init__(connection, 'streams:')
 
     def get_connection(self) -> Redis:
         return self.connection

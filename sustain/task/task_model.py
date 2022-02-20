@@ -11,6 +11,7 @@ class TaskOp(IntEnum):
     check_unstopped_rtmp_server_containers = 6
     check_ffmpeg_stream_running_process = 7
     check_ffmpeg_record_running_process = 8
+    check_ffmpeg_record_stuck_process = 9
 
     @staticmethod
     def create_dict():
@@ -23,6 +24,7 @@ class TaskOp(IntEnum):
             TaskOp.check_unstopped_rtmp_server_containers: 'check_unstopped_rtmp_server_containers',
             TaskOp.check_ffmpeg_stream_running_process: 'check_ffmpeg_stream_running_process',
             TaskOp.check_ffmpeg_record_running_process: 'check_ffmpeg_record_running_process',
+            TaskOp.check_ffmpeg_record_stuck_process: 'check_ffmpeg_record_stuck_process'
         }
 
     @staticmethod
@@ -30,7 +32,7 @@ class TaskOp(IntEnum):
         return TaskOp.create_dict()[value]
 
 
-class Task:
+class TaskModel:
     def __init__(self):
         self.op: TaskOp = TaskOp.none
         self.op_name: str = ''

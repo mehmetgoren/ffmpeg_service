@@ -104,6 +104,7 @@ class FFmpegConfig:
         self.check_unstopped_containers_interval: int = 600
         self.check_ffmpeg_stream_running_process_interval: int = 10
         self.check_ffmpeg_record_running_process_interval: int = 30
+        self.check_ffmpeg_record_stuck_process_interval: int = 600
         self.start_task_wait_for_interval: float = 3.
         self.event_listener_handler_type: EventListenerHandlerType = EventListenerHandlerType.THREAD
 

@@ -56,6 +56,7 @@ class StreamModel:
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
         self.id = source.id
+        self.brand = source.brand
         self.name = source.name
         self.rtsp_address = source.rtsp_address
 

@@ -1,47 +1,29 @@
+import glob
+import os
+
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
 from common.utilities import crate_redis_connection, RedisDb
 from readers.base_reader import PushMethod
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions
+from stream.stream_repository import StreamRepository
 
 
-# def bench_PIL_vs_cv2():
-#     img_path = '/home/gokalp/Downloads/download (43)'
-#     image = Image.open(img_path)
-#     numpy_img = asarray(image)
-#     # To convert RGB to BGR
-#     # numpy_img = numpy_img[:, :, ::-1]
-#
-#     img_str = ''
-#     length = 100
-#     start = datetime.now()
-#     for j in range(length):
-#         buff = cv2.imencode('.jpg', numpy_img)[1]
-#         img_str = base64.b64encode(buff).decode()
-#         # print(len(img_str))
-#     end = datetime.now()
-#     print(f'cv2 length: {len(img_str)}')
-#     print(f'cv2: {(end - start).microseconds}')
-#
-#     start = datetime.now()
-#     for j in range(length):
-#         img = Image.fromarray(numpy_img)
-#         buffered = BytesIO()
-#         img.save(buffered, format="JPEG")
-#         img_str = base64.b64encode(buffered.getvalue()).decode()
-#         # print(len(img_str))
-#     end = datetime.now()
-#     print(f'PIL length: {len(img_str)}')
-#     print(f'PIL: {(end - start).microseconds}')
-#     # result:
-#     # cv2 length: 322456
-#     # cv2: 962414
-#     # PIL length: 187792
-#     # PIL: 637581
-#
-#
-# bench_PIL_vs_cv2()
+def rc_test():
+    conn = crate_redis_connection(RedisDb.MAIN)
+    rep = StreamRepository(conn)
+    streams = rep.get_all()
+    for stream in streams:
+        if stream.record:
+            list_of_files = glob.glob(f'{stream.record_output_folder_path}/*')  # * means all if it needs specific format then *.csv
+            latest_file = max(list_of_files, key=os.path.getctime)
+            size = os.path.getsize(latest_file)
+            print(f'{latest_file} - {size}')
+            # print(os.stat(stream.record_output_folder_path))
+
+
+# rc_test()
 
 
 def read_test():
@@ -66,7 +48,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():
@@ -110,5 +92,6 @@ def add_rtsp_templates():
     template.route = 'stream1'
     template.templates = '{user},{password},{ip}'
     rep.add(template)
+
 
 # add_rtsp_templates()
