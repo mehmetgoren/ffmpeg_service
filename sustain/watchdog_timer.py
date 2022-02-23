@@ -2,7 +2,6 @@ import time
 from datetime import datetime
 
 import psutil
-import schedule
 
 from common.data.source_model import StreamType
 from common.data.source_repository import SourceRepository
@@ -12,6 +11,7 @@ from stream.stream_repository import StreamRepository
 from stream.start_stream_event_handler import StartStreamEventHandler, StartFlvStreamHandler
 from sustain.rec_stuck.rec_stuck_model import RecStuckModel
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
+from sustain.scheduler import setup_scheduler
 from utils.json_serializer import serialize_json_dic
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
@@ -109,24 +109,12 @@ def __check_ffmpeg_record_stuck_process():
 
 
 def check_ffmpeg_stream_running_process():
-    scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(__interval_stream).seconds.do(__check_ffmpeg_stream_running_process)
-    while True:
-        scheduler_instance.run_pending()
-        time.sleep(1)
+    setup_scheduler(__interval_stream, __check_ffmpeg_stream_running_process, True)
 
 
 def check_ffmpeg_record_running_process():
-    scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(__interval_record).seconds.do(__check_ffmpeg_record_running_process)
-    while True:
-        scheduler_instance.run_pending()
-        time.sleep(1)
+    setup_scheduler(__interval_record, __check_ffmpeg_record_running_process, True)
 
 
 def check_ffmpeg_record_stuck_process():
-    scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(__interval_stuck).seconds.do(__check_ffmpeg_record_stuck_process)
-    while True:
-        scheduler_instance.run_pending()
-        time.sleep(1)
+    setup_scheduler(__interval_stuck, __check_ffmpeg_record_stuck_process, True)

@@ -15,8 +15,8 @@ from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.task.task_model import TaskModel, TaskOp
 from sustain.task.task_repository import TaskRepository
 from sustain.kill_prevs import kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
-from sustain.leaky_checker import check_leaky_ffmpeg_processes, check_unstopped_rtmp_server_containers
-from sustain.process_checker import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process, check_ffmpeg_record_stuck_process
+from sustain.zombie_killers import check_zombie_ffmpeg_processes, check_unstopped_rtmp_server_containers
+from sustain.watchdog_timer import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process, check_ffmpeg_record_stuck_process
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __connection_rq = crate_redis_connection(RedisDb.RQ)
@@ -30,7 +30,7 @@ __func_dic = {
     TaskOp.listen_stop_stream_event: listen_stop_stream_event,
     TaskOp.listen_restart_stream_event: listen_restart_stream_event,
     TaskOp.listen_editor_event: listen_editor_event,
-    TaskOp.check_leaky_ffmpeg_processes: check_leaky_ffmpeg_processes,
+    TaskOp.check_zombie_ffmpeg_processes: check_zombie_ffmpeg_processes,
     TaskOp.check_unstopped_rtmp_server_containers: check_unstopped_rtmp_server_containers,
     TaskOp.check_ffmpeg_stream_running_process: check_ffmpeg_stream_running_process,
     TaskOp.check_ffmpeg_record_running_process: check_ffmpeg_record_running_process,
@@ -147,7 +147,7 @@ def add_tasks():
     task.set_op(TaskOp.listen_editor_event)
     __task_repository.add(task)
     # noinspection DuplicatedCode
-    task.set_op(TaskOp.check_leaky_ffmpeg_processes)
+    task.set_op(TaskOp.check_zombie_ffmpeg_processes)
     __task_repository.add(task)
     task.set_op(TaskOp.check_unstopped_rtmp_server_containers)
     __task_repository.add(task)

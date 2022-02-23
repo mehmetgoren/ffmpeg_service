@@ -36,4 +36,4 @@ def remove_all_prev_rtmp_containers(connection_main: Redis):
             docker_manager.stop_container(container)
             logger.warn(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
         except BaseException as e:
-            logger.error(f'an error occurred during stopping a leaked rtmp server container ({container.name}), ex: {e} at {datetime.now()}')
+            logger.error(f'an error occurred during stopping a zombie rtmp server container ({container.name}), ex: {e} at {datetime.now()}')

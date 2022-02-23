@@ -1,23 +1,22 @@
 import os
 import signal
-import time
 from datetime import datetime
 import psutil
-import schedule
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
 from rtmp.docker_manager import DockerManager
 from stream.stream_repository import StreamRepository
+from sustain.scheduler import setup_scheduler
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __stream_repository = StreamRepository(__connection_main)
 
 
-def __check_leaky_ffmpeg_processes():
-    logger.info(f'checking leaking ffmpeg processes at {datetime.now()}')
+def __check_zombie_ffmpeg_processes():
+    logger.info(f'checking zombie ffmpeg processes at {datetime.now()}')
     models = __stream_repository.get_all()
     if len(models) == 0:
-        logger.info(f'no stream operation exists, checking leaky FFmpeg process operation is now exiting at {datetime.now()}')
+        logger.info(f'no stream operation exists, checking zombie FFmpeg process operation is now exiting at {datetime.now()}')
         return
     models_pid_dic = {}
     for model in models:
@@ -32,15 +31,15 @@ def __check_leaky_ffmpeg_processes():
                 if len(args) == 8 and args[4] == 'image2' and args[5] == '-vframes':
                     continue  # which means it is RtspVideoEditor' FFmpeg subprocess
                 os.kill(proc.pid, signal.SIGKILL)
-                logger.warn(f'a leaked FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
+                logger.warn(f'a zombie FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
             except BaseException as e:
-                logger.error(f'an error occurred during killing a leaked FFmpeg process, ex: {e} at {datetime.now()}')
+                logger.error(f'an error occurred during killing a zombie FFmpeg process, ex: {e} at {datetime.now()}')
 
 
 def __check_unstopped_rtmp_server_containers():
     models = __stream_repository.get_all()
     if len(models) == 0:
-        logger.info(f'no stream operation exists, checking leaky RTMP server container operation is now exiting at {datetime.now()}')
+        logger.info(f'no stream operation exists, checking zombie RTMP server container operation is now exiting at {datetime.now()}')
         return
     logger.info(f'checking unstopped rtmp server containers at {datetime.now()}')
     containers_name_dic = {}
@@ -61,20 +60,12 @@ def __check_unstopped_rtmp_server_containers():
                 docker_manager.stop_container(container)
                 logger.warn(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
             except BaseException as e:
-                logger.error(f'an error occurred during stopping a leaked rtmp server container, ex: {e} at {datetime.now()}')
+                logger.error(f'an error occurred during stopping a zombie rtmp server container, ex: {e} at {datetime.now()}')
 
 
-def check_leaky_ffmpeg_processes():
-    scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(config.ffmpeg.check_leaky_ffmpeg_processes_interval).seconds.do(__check_leaky_ffmpeg_processes)
-    while True:
-        scheduler_instance.run_pending()
-        time.sleep(1)
+def check_zombie_ffmpeg_processes():
+    setup_scheduler(config.ffmpeg.check_zombie_ffmpeg_processes_interval, __check_zombie_ffmpeg_processes, True)
 
 
 def check_unstopped_rtmp_server_containers():
-    scheduler_instance = schedule.Scheduler()
-    scheduler_instance.every(config.ffmpeg.check_unstopped_containers_interval).seconds.do(__check_unstopped_rtmp_server_containers)
-    while True:
-        scheduler_instance.run_pending()
-        time.sleep(1)
+    setup_scheduler(config.ffmpeg.check_unstopped_containers_interval, __check_unstopped_rtmp_server_containers, False)

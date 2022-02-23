@@ -48,7 +48,7 @@ def config_save():
     print(config.to_json())
 
 
-# config_save()
+config_save()
 
 
 def add_rtsp_templates():

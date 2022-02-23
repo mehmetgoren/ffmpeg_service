@@ -64,6 +64,14 @@ class TorchConfig:
         self.white_list: List[int] = [j for j in range(80)]
 
 
+class TensorflowConfig:
+    def __init__(self):
+        self.model_name = 'efficientdet/lite4/detection'
+        self.threshold: float = .1
+        self.white_list: List[int] = [j for j in range(80)]
+        self.cache_folder: str = '/mnt/sdc1/test_projects/tf_cache'
+
+
 class OnceDetectorConfig:
     def __init__(self):
         self.imagehash_threshold: int = 3
@@ -100,7 +108,7 @@ class FFmpegConfig:
     def __init__(self):
         self.use_double_quotes_for_path: bool = False
         self.max_operation_retry_count: int = 10000000
-        self.check_leaky_ffmpeg_processes_interval: int = 600
+        self.check_zombie_ffmpeg_processes_interval: int = 600
         self.check_unstopped_containers_interval: int = 600
         self.check_ffmpeg_stream_running_process_interval: int = 10
         self.check_ffmpeg_record_running_process_interval: int = 30
@@ -121,6 +129,7 @@ class Config:
         self.redis: ConfigRedis = ConfigRedis()
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
+        self.tensorflow: TensorflowConfig = TensorflowConfig()
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.handler: HandlerConfig = HandlerConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
