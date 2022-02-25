@@ -122,7 +122,7 @@ class CommandBuilder:
         # JPEG Snapshot starts
         if f.jpeg_enabled:
             jpeg_fps = 1 if f.jpeg_frame_rate < 1 else f.jpeg_frame_rate
-            args.extend(['-vf', f'fps={jpeg_fps}'])
+            args.extend(['-vf', f'fps={jpeg_fps}'])  # setting this value reduces the cpu usage
             if f.jpeg_width > 0 and f.jpeg_height > 0:
                 args.extend(['-s', f'{f.jpeg_width}x{f.jpeg_height}'])
             if 1 < f.jpeg_quality < 32:

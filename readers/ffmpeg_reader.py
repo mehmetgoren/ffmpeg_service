@@ -39,9 +39,6 @@ class FFmpegReader(BaseReader):
         self.process = ffmpeg.run_async(stream, pipe_stdout=True)
 
     def get_img(self) -> np.array:
-        if self.process.poll() is not None:
-            logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')
-            return None
         packet = self.process.stdout.read(self.packet_size)
         numpy_img = np.frombuffer(packet, np.uint8).reshape([self.options.height, self.options.width, self.cl_channels])
         return numpy_img
@@ -64,6 +61,7 @@ class FFmpegReader(BaseReader):
                 # _close_stream(source, name, 1)
                 break
             self._send(np_img)
+        logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')
 
     def _create_base64_img(self, numpy_img: np.array) -> str:
         img = Image.fromarray(numpy_img)

@@ -7,11 +7,7 @@ class TaskOp(IntEnum):
     listen_stop_stream_event = 2
     listen_restart_stream_event = 3
     listen_editor_event = 4
-    check_zombie_ffmpeg_processes = 5
-    check_unstopped_rtmp_server_containers = 6
-    check_ffmpeg_stream_running_process = 7
-    check_ffmpeg_record_running_process = 8
-    check_ffmpeg_record_stuck_process = 9
+    watchdog = 5
 
     @staticmethod
     def create_dict():
@@ -20,11 +16,7 @@ class TaskOp(IntEnum):
             TaskOp.listen_stop_stream_event: 'listen_stop_stream_event',
             TaskOp.listen_restart_stream_event: 'listen_restart_stream_event',
             TaskOp.listen_editor_event: 'listen_editor_event',
-            TaskOp.check_zombie_ffmpeg_processes: 'check_zombie_ffmpeg_processes',
-            TaskOp.check_unstopped_rtmp_server_containers: 'check_unstopped_rtmp_server_containers',
-            TaskOp.check_ffmpeg_stream_running_process: 'check_ffmpeg_stream_running_process',
-            TaskOp.check_ffmpeg_record_running_process: 'check_ffmpeg_record_running_process',
-            TaskOp.check_ffmpeg_record_stuck_process: 'check_ffmpeg_record_stuck_process'
+            TaskOp.watchdog: 'watchdog'
         }
 
     @staticmethod

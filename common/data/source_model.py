@@ -487,14 +487,15 @@ class SourceModel(FFmpegModel):
         self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
 
         self.use_disk_image_reader_service: bool = True
+        self.reader: bool = False
+        self.reader_frame_rate: int = 1
+        self.reader_width: int = 1280
+        self.reader_height: int = 720
 
         self.direct_read_frame_rate: int = 1
         self.direct_read_width: int = 640
         self.direct_read_height: int = 360
 
-        # for error messages
-        self.last_exception_msg: str = ''
-        self.failed_count: int = 0
         self.created_at: str = datetime_now()
 
     def get_id(self):

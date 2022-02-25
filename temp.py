@@ -1,13 +1,56 @@
+import base64
+import datetime
 import glob
 import os
+import subprocess
+from io import BytesIO
+
+import numpy as np
+from PIL import Image
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
+from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb
 from readers.base_reader import PushMethod
 from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions
 from stream.stream_repository import StreamRepository
+from utils.json_serializer import serialize_json_dic
+
+__event_bus = EventBus('read_service')
+
+
+def _create_base64_img(numpy_img: np.array) -> str:
+    img = Image.fromarray(numpy_img)
+    buffered = BytesIO()
+    img.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    return img_str
+
+
+def _send(img_data):
+    img_str = _create_base64_img(img_data)
+    dic = {'name': 'eufy', 'img': img_str, 'source': 'xxx_test'}
+    __event_bus.publish_async(serialize_json_dic(dic))
+
+
+def pipe_test():
+    args = 'ffmpeg -i rtmp://127.0.0.1:9010/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk -filter_complex [0]fps=fps=1:round=up[s0];[s0]scale=1280:720[s1] -map [s1] -f rawvideo -pix_fmt rgb24 pipe:'
+    args = args.split(' ')
+    proc = subprocess.Popen(args, stdout=subprocess.PIPE)
+    width, height, cl_channels = 1280, 720, 3
+    packet_size = width * height * cl_channels
+    while True:
+        # line = proc.stdout.readline()
+        packet = proc.stdout.read(packet_size)
+        numpy_img = np.frombuffer(packet, np.uint8).reshape([height, width, cl_channels])
+        _send(numpy_img)
+        print(numpy_img.shape, ' at ', str(datetime.datetime.now()))
+    # p.wait()
+
+
+# pipe_test()
 
 
 def rc_test():
@@ -92,6 +135,5 @@ def add_rtsp_templates():
     template.route = 'stream1'
     template.templates = '{user},{password},{ip}'
     rep.add(template)
-
 
 # add_rtsp_templates()

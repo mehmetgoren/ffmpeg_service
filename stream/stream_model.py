@@ -35,13 +35,22 @@ class StreamModel:
 
         self.jpeg_enabled: bool = False
         self.jpeg_frame_rate: int = 0
-        self.use_disk_image_reader_service: bool = False
 
         self.record: bool = False
         self.record_duration: int = 15
         self.record_flv_pid: int = 0
         self.record_flv_args: str = ''
         self.record_flv_failed_count: int = 0
+
+        # FFmpeg snapshot for AI. It is available only for HLS & RTMP/FLV
+        self.use_disk_image_reader_service: bool = False
+        # FFmpeg snapshot for AI. It is available only for RTMP/FLV
+        self.reader: bool = False
+        self.reader_frame_rate: int = 1
+        self.reader_width: int = 1280
+        self.reader_height: int = 720
+        self.reader_pid: int = 0
+        self.reader_failed_count: int = 0
 
         # paths
         self.hls_output_path: str = ''
@@ -72,7 +81,12 @@ class StreamModel:
 
         self.jpeg_enabled = source.jpeg_enabled
         self.jpeg_frame_rate = source.jpeg_frame_rate
+
         self.use_disk_image_reader_service = source.use_disk_image_reader_service
+        self.reader = source.reader
+        self.reader_frame_rate: source.reader_frame_rate
+        self.reader_width: int = source.reader_width
+        self.reader_height: int = source.reader_height
 
         self.record = source.record
         self.record_duration = source.record_segment_interval
@@ -80,3 +94,12 @@ class StreamModel:
         self.set_paths()
 
         return self
+
+    def is_flv_record_enabled(self) -> bool:
+        return self.stream_type == StreamType.FLV and self.record
+
+    def is_reader_enabled(self) -> bool:
+        return self.stream_type == StreamType.FLV and self.reader
+
+    def is_disk_image_reader_service_enabled(self) -> bool:
+        return self.jpeg_enabled and self.use_disk_image_reader_service

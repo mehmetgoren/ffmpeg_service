@@ -1,5 +1,4 @@
 import threading
-from datetime import datetime
 from redis import Redis
 
 from common.data.base_repository import BaseRepository
@@ -26,7 +25,5 @@ class HeartbeatRepository(BaseRepository):
     def _tick(self):
         try:
             self.connection.hset(self.namespace + self.service_name, 'heartbeat', datetime_now())
-            logger.info(
-                f'Heartbeat({self.service_name}) was beaten at ' + datetime.now().strftime("%Y-%m-%d %H:%M:%MS"))
         except Exception as e:
             logger.error('Heartbeat failed: ' + str(e))

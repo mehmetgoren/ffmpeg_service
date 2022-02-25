@@ -29,6 +29,7 @@ class BaseRtmpModel(ABC):
         self.port_dic = {}
         self.rtmp_port: int = 0
         self.flv_port: int = 0
+        self.rtmp_server_wait: float = config.ffmpeg.rtmp_server_init_interval  # otherwise, RTMP read will not work
 
     def map_to(self, stream_model: StreamModel):
         stream_model.rtmp_container_ports = json.dumps(self.get_ports())
@@ -93,6 +94,7 @@ class SrsRtmpModel(BaseRtmpModel):
             self.port_dic = {'1935': str(self.rtmp_port), '1985': str(other_port), '8080': str(self.flv_port)}
 
     def init_channel_key(self) -> str:
+        time.sleep(self.rtmp_server_wait)
         return ''
 
     def get_rtmp_address(self) -> str:
@@ -139,7 +141,8 @@ class LiveGoRtmpModel(BaseRtmpModel):
                 retry_count += 1
             if retry_count == max_retry:
                 logger.error('init_channel_key max retry count has been exceeded.')
-            return self.channel_key
+        time.sleep(self.rtmp_server_wait)
+        return self.channel_key
 
     def get_rtmp_address(self) -> str:
         return f'rtmp://{self.host}:{self.rtmp_port}/live/livestream'
@@ -167,6 +170,7 @@ class NodeMediaServerRtmpModel(BaseRtmpModel):
             self.port_dic = {'1935': str(self.rtmp_port), '8000': str(self.flv_port), '8443': str(other_port)}
 
     def init_channel_key(self) -> str:
+        time.sleep(self.rtmp_server_wait)
         return ''
 
     def get_rtmp_address(self) -> str:

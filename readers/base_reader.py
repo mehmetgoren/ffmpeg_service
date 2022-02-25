@@ -33,7 +33,7 @@ class BaseReader(ABC):
         img_str = self._create_base64_img(img_data)
         dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id}
         if self.options.method == PushMethod.REDIS_PUBSUB:
-            self.event_bus.publish(serialize_json_dic(dic))
+            self.event_bus.publish_async(serialize_json_dic(dic))
             logger.info(
                 f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
         else:

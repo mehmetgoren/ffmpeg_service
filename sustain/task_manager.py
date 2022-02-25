@@ -11,18 +11,22 @@ from rq.job import Job, get_current_job, Retry
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
 from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event
+from sustain.failed_stream.failed_stream_repository import FailedStreamRepository
+from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.task.task_model import TaskModel, TaskOp
 from sustain.task.task_repository import TaskRepository
 from sustain.kill_prevs import kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
-from sustain.zombie_killers import check_zombie_ffmpeg_processes, check_unstopped_rtmp_server_containers
-from sustain.watchdog_timer import check_ffmpeg_stream_running_process, check_ffmpeg_record_running_process, check_ffmpeg_record_stuck_process
+from sustain.watchdog_timer import WatchDogTimer
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
 __connection_rq = crate_redis_connection(RedisDb.RQ)
 __task_repository = TaskRepository(__connection_main)
 __rec_stuck_repository = RecStuckRepository(__connection_main)
+__failed_stream_repository = FailedStreamRepository(__connection_main)
+__zombie_repository = ZombieRepository(__connection_main)
 __queue = Queue(connection=__connection_rq)
+__watchdog = WatchDogTimer(__connection_main)
 
 __max_retry = Retry(max=sys.maxsize)
 __func_dic = {
@@ -30,11 +34,7 @@ __func_dic = {
     TaskOp.listen_stop_stream_event: listen_stop_stream_event,
     TaskOp.listen_restart_stream_event: listen_restart_stream_event,
     TaskOp.listen_editor_event: listen_editor_event,
-    TaskOp.check_zombie_ffmpeg_processes: check_zombie_ffmpeg_processes,
-    TaskOp.check_unstopped_rtmp_server_containers: check_unstopped_rtmp_server_containers,
-    TaskOp.check_ffmpeg_stream_running_process: check_ffmpeg_stream_running_process,
-    TaskOp.check_ffmpeg_record_running_process: check_ffmpeg_record_running_process,
-    TaskOp.check_ffmpeg_record_stuck_process: check_ffmpeg_record_stuck_process
+    TaskOp.watchdog: __watchdog.start
 }
 __wait_for = config.ffmpeg.start_task_wait_for_interval
 
@@ -55,6 +55,7 @@ def __proxy_func(op: TaskOp):  # added only for getting job_id, worker_name, pid
         task.exception_msg = f'{exception_name} - {exception_value}'
         task.failed_count += 1
         __task_repository.add(task)
+        time.sleep(1.)
 
 
 def __init_tasks() -> (List[Job], BaseException):
@@ -133,11 +134,12 @@ def clean_my_previous():
     __delete_all_rq()
     __task_repository.remove_all()
     __rec_stuck_repository.remove_all()
+    __failed_stream_repository.remove_all()
+    __zombie_repository.remove_all()
 
 
 def add_tasks():
     task = TaskModel()
-    # noinspection DuplicatedCode
     task.set_op(TaskOp.listen_start_stream_event)
     __task_repository.add(task)
     task.set_op(TaskOp.listen_stop_stream_event)
@@ -146,16 +148,7 @@ def add_tasks():
     __task_repository.add(task)
     task.set_op(TaskOp.listen_editor_event)
     __task_repository.add(task)
-    # noinspection DuplicatedCode
-    task.set_op(TaskOp.check_zombie_ffmpeg_processes)
-    __task_repository.add(task)
-    task.set_op(TaskOp.check_unstopped_rtmp_server_containers)
-    __task_repository.add(task)
-    task.set_op(TaskOp.check_ffmpeg_stream_running_process)
-    __task_repository.add(task)
-    task.set_op(TaskOp.check_ffmpeg_record_running_process)
-    __task_repository.add(task)
-    task.set_op(TaskOp.check_ffmpeg_record_stuck_process)
+    task.set_op(TaskOp.watchdog)
     __task_repository.add(task)
 
 

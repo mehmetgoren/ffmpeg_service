@@ -26,7 +26,8 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                 logger.error(f'Error while removing stream {stream_model.id} from repository: {e}')
 
             try:
-                os.kill(stream_model.pid, 9)  # pid kill also stop FFmpeg direct read process too.
+                if stream_model.pid > 0:
+                    os.kill(stream_model.pid, 9)  # pid kill also stop FFmpeg direct read process too.
             except BaseException as e:
                 logger.error(f'Error while killing process {stream_model.pid}, err: {e}')
 
@@ -39,9 +40,17 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             if stream_model.stream_type == StreamType.FLV:
                 if stream_model.record:
                     try:
-                        os.kill(stream_model.record_flv_pid, 9)
+                        if stream_model.record_flv_pid > 0:
+                            os.kill(stream_model.record_flv_pid, 9)
                     except BaseException as e:
-                        logger.error(f'Error while killing record FFmpeg process for {stream_model.id}, err: {e}')
+                        logger.error(f'Error while killing FFmpeg record process for {stream_model.id}, err: {e}')
+
+                if stream_model.reader:
+                    try:
+                        if stream_model.reader_pid > 0:
+                            os.kill(stream_model.reader_pid, 9)
+                    except BaseException as e:
+                        logger.error(f'Error while killing FFmpeg reader process for {stream_model.id}, err: {e}')
 
                 try:
                     docker_manager = DockerManager(self.stream_repository.connection)
@@ -50,4 +59,4 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                     logger.error(f'Error while removing FLV container for {stream_model.id}, err: {e}')
 
         source_json = serialize_json(source_model)
-        self.event_bus.publish(source_json)
+        self.event_bus.publish_async(source_json)

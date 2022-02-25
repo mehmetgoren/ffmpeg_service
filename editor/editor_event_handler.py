@@ -29,6 +29,6 @@ class EditorEventHandler(EventHandler):
             elif request.event_type == EditorEventType.GENERATE_THUMBNAIL:
                 response.image_base64 = RtspVideoEditor(request.rtsp_address).generate_thumbnail()
 
-            self.event_bus.publish(serialize_json(response))
+            self.event_bus.publish_async(serialize_json(response))
         else:
             raise NotImplementedError('EditorEventHandler: event_type is not implemented')
