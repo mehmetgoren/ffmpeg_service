@@ -484,7 +484,6 @@ class SourceModel(FFmpegModel):
         self.enabled: bool = True
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
         self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
-        self.need_reload_interval: int = 300  # this one is hls/flv player reload value. Not used in the command builder
 
         self.use_disk_image_reader_service: bool = True
         self.reader: bool = False
