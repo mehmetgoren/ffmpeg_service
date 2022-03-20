@@ -11,6 +11,7 @@ from PIL import Image
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
+from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb
 from readers.base_reader import PushMethod
@@ -52,6 +53,51 @@ def pipe_test():
 
 # pipe_test()
 
+def redis_bench():
+    conn = crate_redis_connection(RedisDb.MAIN)
+    rep = SourceRepository(conn)
+    start = datetime.datetime.now()
+    length = 10000
+    for j in range(length):
+        source = rep.get('3xzdeqtd3p6')
+        # print(source.name)
+    end = datetime.datetime.now()
+    print(f'result: {(end - start).microseconds}')
+
+
+# redis_bench()
+
+
+def set_test():
+    arr = [j for j in range(1000)]
+
+    start = datetime.datetime.now()
+    length = 1000000
+    for j in range(length):
+        result = j in arr
+        # print(source.name)
+    end = datetime.datetime.now()
+    print(f'arr result: {(end - start).microseconds}')
+
+    sett = {j for j in range(1000)}
+    start = datetime.datetime.now()
+    for j in range(length):
+        result = j in sett
+        # print(source.name)
+    end = datetime.datetime.now()
+    print(f'set result: {(end - start).microseconds}')
+
+    dic = {j: True for j in range(1000)}
+    start = datetime.datetime.now()
+    for j in range(length):
+        result = j in dic
+        # print(source.name)
+    end = datetime.datetime.now()
+    print(f'dict result: {(end - start).microseconds}')
+
+
+# set_test()
+
 
 def rc_test():
     conn = crate_redis_connection(RedisDb.MAIN)
@@ -91,7 +137,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():

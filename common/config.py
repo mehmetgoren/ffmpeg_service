@@ -1,7 +1,6 @@
 import json
 import os
 from types import SimpleNamespace
-from typing import List
 from redis import Redis
 from enum import IntEnum
 import platform
@@ -47,23 +46,17 @@ class ConfigRedis:
 class JetsonConfig:
     def __init__(self):
         self.model_name: str = 'ssd-mobilenet-v2'
-        self.threshold: float = .1
-        self.white_list: List[int] = [j for j in range(91)]
 
 
 class TorchConfig:
     def __init__(self):
         self.model_name = 'ultralytics/yolov5'
         self.model_name_specific = 'yolov5x6'
-        self.threshold: float = .1
-        self.white_list: List[int] = [j for j in range(80)]
 
 
 class TensorflowConfig:
     def __init__(self):
         self.model_name = 'efficientdet/lite4/detection'
-        self.threshold: float = .1
-        self.white_list: List[int] = [j for j in range(80)]
         self.cache_folder: str = '/mnt/sdc1/test_projects/tf_cache'
 
 
@@ -72,16 +65,6 @@ class OnceDetectorConfig:
         self.imagehash_threshold: int = 3
         self.psnr_threshold: float = .2
         self.ssim_threshold: float = .2
-
-
-class HandlerConfig:
-    def __init__(self):
-        self.save_image_folder_path: str = '/mnt/sde1'
-        self.save_image_extension: str = 'jpg'
-        self.show_image_wait_key: int = 1
-        self.show_image_caption: bool = False
-        self.show_image_fullscreen: bool = False
-        self.read_service_overlay: bool = True
 
 
 class SourceReaderConfig:
@@ -111,6 +94,7 @@ class FFmpegConfig:
 
 class AiConfig:
     def __init__(self):
+        self.read_service_overlay: bool = True
         self.detected_folder: str = '/mnt/sde1/detected/'
 
 
@@ -123,7 +107,6 @@ class Config:
         self.torch: TorchConfig = TorchConfig()
         self.tensorflow: TensorflowConfig = TensorflowConfig()
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
-        self.handler: HandlerConfig = HandlerConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.path: PathConfig = PathConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
