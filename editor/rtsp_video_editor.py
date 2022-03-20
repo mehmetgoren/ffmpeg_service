@@ -8,11 +8,11 @@ import PIL.Image as Image
 
 # for more information: https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md
 class RtspVideoEditor:
-    def __init__(self, rtsp_address: str):
-        self.rtsp_address = rtsp_address
+    def __init__(self, address: str):
+        self.address = address
 
     def __take_screenshot(self) -> Image:
-        x = ffmpeg.input(self.rtsp_address)
+        x = ffmpeg.input(self.address)
         x = ffmpeg.output(x, 'pipe:', vframes=1, format='image2')
         # args = x.get_args()
         out, _ = x.run(capture_stdout=True)

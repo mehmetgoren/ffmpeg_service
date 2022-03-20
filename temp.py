@@ -119,7 +119,7 @@ def read_test():
     opts = FFmpegReaderOptions()
     opts.id = 'ayufisdvbuw'
     opts.name = 'eufy'
-    opts.rtsp_address = 'rtsp://Admin1:Admin1@192.168.1.183/live0'
+    opts.address = 'rtsp://Admin1:Admin1@192.168.1.183/live0'
     opts.method = PushMethod.REDIS_PUBSUB
     opts.frame_rate = 1
     opts.width = 640
@@ -137,7 +137,7 @@ def config_save():
     print(config.to_json())
 
 
-# config_save()
+config_save()
 
 
 def add_rtsp_templates():

@@ -12,7 +12,7 @@ class EditorRequestEvent:
         self.id: str = ''
         self.brand: str = ''
         self.name: str = ''
-        self.rtsp_address: str = ''
+        self.address: str = ''
         self.event_type: EditorEventType = EditorEventType.NONE
 
 

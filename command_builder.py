@@ -57,7 +57,7 @@ class CommandBuilder:
         if f.input_type == InputType.MPEG4:
             args.append('-re')
 
-        args.extend(['-i', self.__add_double_quotes(f.rtsp_address)])
+        args.extend(['-i', self.__add_double_quotes(f.address)])
 
         args.extend(['-strict', '-2'])
         # input ends

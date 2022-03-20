@@ -416,9 +416,9 @@ class LogLevel(IntEnum):
 
 
 class FFmpegModel:
-    def __init__(self, identifier: str = '', rtsp_address: str = ''):
+    def __init__(self, identifier: str = '', address: str = ''):
         self.id: str = identifier
-        self.rtsp_address: str = rtsp_address
+        self.address: str = address
         self.record: bool = False
         self.input_type: InputType = InputType.H264_H265
         self.rtsp_transport: RtspTransport = RtspTransport.Auto
@@ -475,8 +475,8 @@ class FFmpegModel:
 
 
 class SourceModel(FFmpegModel):
-    def __init__(self, identifier: str = '', brand: str = '', name: str = '', rtsp_address: str = ''):
-        super().__init__(identifier, rtsp_address)
+    def __init__(self, identifier: str = '', brand: str = '', name: str = '', address: str = ''):
+        super().__init__(identifier, address)
         self.brand: str = brand
         self.name: str = name
         self.description: str = ''
@@ -506,5 +506,5 @@ class SourceModel(FFmpegModel):
     def get_name(self):
         return self.name
 
-    def get_rtsp_address(self):
-        return self.rtsp_address
+    def get_address(self):
+        return self.address

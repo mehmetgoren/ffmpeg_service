@@ -9,7 +9,7 @@ from readers.base_reader import BaseReaderOptions, BaseReader
 
 
 class FFmpegReaderOptions(BaseReaderOptions):
-    rtsp_address: str = ''
+    address: str = ''
     width: int = 0
     height: int = 0
 
@@ -20,7 +20,7 @@ class FFmpegReader(BaseReader):
         self.options: FFmpegReaderOptions = options
         has_external_scale = options.width > 0 and options.height > 0
         if not has_external_scale:
-            probe = ffmpeg.probe(options.rtsp_address)
+            probe = ffmpeg.probe(options.address)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
             options.width = int(video_stream['width'])
             options.height = int(video_stream['height'])
@@ -31,7 +31,7 @@ class FFmpegReader(BaseReader):
         logger.info(f'camera ({options.id}) stream fps: {self.stream_fps}')
 
         self.packet_size = options.width * options.height * self.cl_channels
-        stream = ffmpeg.input(options.rtsp_address)
+        stream = ffmpeg.input(options.address)
         stream = ffmpeg.filter(stream, 'fps', fps=options.frame_rate, round='up')
         if has_external_scale:
             stream = ffmpeg.filter(stream, 'scale', options.width, options.height)

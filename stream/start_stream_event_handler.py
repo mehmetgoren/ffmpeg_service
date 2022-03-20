@@ -194,7 +194,7 @@ class StartFlvStreamHandler:
             options = FFmpegReaderOptions()
             options.id = stream_model.id
             options.name = stream_model.name
-            options.rtsp_address = local_rtmp_pipe_input_address
+            options.address = local_rtmp_pipe_input_address
             options.frame_rate = stream_model.reader_frame_rate
             options.width = stream_model.reader_width
             options.height = stream_model.reader_height
@@ -218,7 +218,7 @@ class DirectReadHandler:
         self.options = FFmpegReaderOptions()
         self.options.id = stream_model.id
         self.options.name = stream_model.name
-        self.options.rtsp_address = stream_model.rtsp_address
+        self.options.address = stream_model.address
         self.options.frame_rate = stream_model.direct_read_frame_rate
         self.options.width = stream_model.direct_read_width
         self.options.height = stream_model.direct_read_height

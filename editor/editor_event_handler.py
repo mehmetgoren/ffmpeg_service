@@ -25,9 +25,9 @@ class EditorEventHandler(EventHandler):
         if request.event_type < 3:
             response = EditorResponseEvent().map_from_super(request)
             if request.event_type == EditorEventType.TAKE_SCREENSHOT:
-                response.image_base64 = RtspVideoEditor(request.rtsp_address).take_screenshot()
+                response.image_base64 = RtspVideoEditor(request.address).take_screenshot()
             elif request.event_type == EditorEventType.GENERATE_THUMBNAIL:
-                response.image_base64 = RtspVideoEditor(request.rtsp_address).generate_thumbnail()
+                response.image_base64 = RtspVideoEditor(request.address).generate_thumbnail()
 
             self.event_bus.publish_async(serialize_json(response))
         else:

@@ -6,7 +6,7 @@ class FailedStreamModel:
         self.id: str = ''
         self.brand: str = ''
         self.name: str = ''
-        self.rtsp_address: str = ''
+        self.address: str = ''
 
         self.watch_dog_interval: float = .0
 
@@ -19,5 +19,5 @@ class FailedStreamModel:
         self.id = source.id
         self.brand = source.brand
         self.name = source.name
-        self.rtsp_address = source.rtsp_address
+        self.address = source.address
         return self

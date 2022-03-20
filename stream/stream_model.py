@@ -9,7 +9,7 @@ class StreamModel:
         self.id: str = ''
         self.brand: str = ''
         self.name: str = ''
-        self.rtsp_address: str = ''
+        self.address: str = ''
 
         # stream
         self.pid: int = -1
@@ -66,7 +66,7 @@ class StreamModel:
         self.id = source.id
         self.brand = source.brand
         self.name = source.name
-        self.rtsp_address = source.rtsp_address
+        self.address = source.address
 
         self.stream_type = source.stream_type
         self.rtmp_server_type = source.rtmp_server_type
