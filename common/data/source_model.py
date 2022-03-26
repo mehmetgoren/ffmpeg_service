@@ -9,17 +9,6 @@ class RmtpServerType(IntEnum):
     NODE_MEDIA_SERVER = 2
 
 
-class InputType(IntEnum):
-    H264_H265 = 0
-    MPEG4 = 1
-    HLS = 2
-
-
-class FlvPlayerConnectionType(IntEnum):
-    HTTP = 0
-    WEBSOCKET = 1
-
-
 class RtspTransport(IntEnum):
     Auto = 0
     TCP = 1
@@ -195,22 +184,21 @@ class Rotate(IntEnum):
 
 
 class StreamType(IntEnum):
-    HLS = 0
-    FLV = 1,
-    DirectRead = 2
+    FLV = 0
+    FFMPEG_READER = 1
+    HLS = 2
 
 
 class AudioCodec(IntEnum):
-    Auto = 0
-    NoAudio = 1
-    VORBIS = 2
-    OPUS = 3
-    MP3LAME = 4
-    AAC = 5
-    AC3 = 6
-    DTS = 7
-    ALAC = 8
-    copy = 9
+    NoAudio = 0
+    VORBIS = 1
+    OPUS = 2
+    MP3LAME = 3
+    AAC = 4
+    AC3 = 5
+    DTS = 6
+    ALAC = 7
+    copy = 8
 
     @staticmethod
     def create_dict():
@@ -419,8 +407,7 @@ class FFmpegModel:
     def __init__(self, identifier: str = '', address: str = ''):
         self.id: str = identifier
         self.address: str = address
-        self.record: bool = False
-        self.input_type: InputType = InputType.H264_H265
+        self.record_enabled: bool = False
         self.rtsp_transport: RtspTransport = RtspTransport.Auto
 
         self.analyzation_duration: int = 1000000
@@ -432,32 +419,25 @@ class FFmpegModel:
         self.video_decoder: VideoDecoder = VideoDecoder.Auto
         self.hwaccel_device = ''
 
-        self.stream_type: StreamType = StreamType.HLS
-        self.rtmp_server_address: str = ''  # this one is meant to be set from stream model.
+        self.stream_type: StreamType = StreamType.FLV
+        self.rtmp_address: str = ''  # this one is meant to be set from stream model.
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
-        self.hls_preset: Preset = Preset.Superfast
+        self.preset: Preset = Preset.Auto
         self.stream_quality: int = 0
         self.stream_frame_rate: int = 0
         self.stream_width: int = 0
         self.stream_height: int = 0
         self.stream_rotate: Rotate = Rotate.No
-        self.stream_audio_codec: AudioCodec = AudioCodec.NoAudio
+        self.stream_audio_codec: AudioCodec = AudioCodec.copy
         self.stream_audio_channel: AudioChannel = AudioChannel.SOURCE
         self.stream_audio_quality: AudioQuality = AudioQuality.Auto
         self.stream_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.stream_audio_volume: int = 100
 
-        self.jpeg_enabled: bool = False
-        self.jpeg_frame_rate: int = 0
-        self.jpeg_use_vsync: bool = False
-        self.jpeg_quality: int = 2
-        self.jpeg_width: int = 0
-        self.jpeg_height: int = 0
-
         self.record_file_type: RecordFileTypes = RecordFileTypes.MP4
-        self.record_video_codec: RecordVideoCodec = RecordVideoCodec.Auto
+        self.record_video_codec: RecordVideoCodec = RecordVideoCodec.copy
         self.record_quality: int = 0
         self.record_preset: Preset = Preset.Auto
         self.record_frame_rate: int = 0
@@ -465,13 +445,13 @@ class FFmpegModel:
         self.record_height: int = 0
         self.record_segment_interval: int = 15
         self.record_rotate: Rotate = Rotate.No
-        self.record_audio_codec: AudioCodec = AudioCodec.NoAudio
+        self.record_audio_codec: AudioCodec = AudioCodec.copy
         self.record_audio_channel: AudioChannel = AudioChannel.SOURCE
         self.record_audio_quality: AudioQuality = AudioQuality.Auto
         self.record_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.record_audio_volume: int = 100
 
-        self.log_level: LogLevel = LogLevel.none
+        self.log_level: LogLevel = LogLevel.Warning
 
 
 class SourceModel(FFmpegModel):
@@ -481,19 +461,17 @@ class SourceModel(FFmpegModel):
         self.name: str = name
         self.description: str = ''
 
-        self.enabled: bool = True
+        self.enabled: bool = True  # reserved for future using
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
-        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP  # this one is stored for UI
 
-        self.use_disk_image_reader_service: bool = True
-        self.reader: bool = False
-        self.reader_frame_rate: int = 1
-        self.reader_width: int = 1280
-        self.reader_height: int = 720
+        self.snapshot_enabled: bool = False
+        self.snapshot_frame_rate: int = 1
+        self.snapshot_width: int = 640
+        self.snapshot_height: int = 360
 
-        self.direct_read_frame_rate: int = 1
-        self.direct_read_width: int = 640
-        self.direct_read_height: int = 360
+        self.ffmpeg_reader_frame_rate: int = 1
+        self.ffmpeg_reader_width: int = 640
+        self.ffmpeg_reader_height: int = 360
 
         self.created_at: str = datetime_now()
 

@@ -2,9 +2,7 @@ from typing import List, Any
 import docker
 from redis.client import Redis
 
-from common.data.source_model import StreamType
 from stream.stream_model import StreamModel, RmtpServerType
-from stream.stream_repository import StreamRepository
 from rtmp.rtmp_models import BaseRtmpModel, SrsRtmpModel, LiveGoRtmpModel, NodeMediaServerRtmpModel
 
 
@@ -50,25 +48,15 @@ class DockerManager:
         container = self.__init_container(rtmp_model, all_containers)
         return rtmp_model, container
 
-    # Use it if you decide to use auto_remove on containers. Otherwise, 'unless stopped' can restore de container and don't use it on the process checker.
-    def run_all(self, stream_repository: StreamRepository):
-        all_containers = self.client.containers.list(all=True)
-        models = stream_repository.get_all()
-        filtered_models: List[StreamModel] = []
-        for model in models:
-            if model.rtmp_server_type == StreamType.FLV:
-                filtered_models.append(model)
-        for stream_model in filtered_models:
-            if not stream_model.rtmp_server_initialized:
-                rtmp_model = self.__create_rtmp_model(stream_model.rtmp_server_type, stream_model.id)
-                self.__init_container(rtmp_model, all_containers)
-                rtmp_model.map_to(stream_model)
-                stream_repository.add(stream_model)
-
     def remove(self, model: StreamModel):
         container = self.get_container(model)
         if container is not None:
             self.stop_container(container)
+
+    def get_container_by(self, container_name):
+        filters: dict = {'name': container_name}
+        containers = self.client.containers.list(filters=filters)
+        return containers[0] if len(containers) > 0 else None
 
     def get_container(self, model: StreamModel):
         container_name = model.rtmp_container_name

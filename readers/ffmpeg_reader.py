@@ -1,23 +1,41 @@
 import base64
+import json
+from datetime import datetime
+from enum import IntEnum
 from io import BytesIO
+from threading import Thread
 import ffmpeg
 import numpy as np
+import requests
 from PIL import Image
 
+from common.event_bus.event_bus import EventBus
 from common.utilities import logger
-from readers.base_reader import BaseReaderOptions, BaseReader
+from utils.json_serializer import serialize_json_dic
 
 
-class FFmpegReaderOptions(BaseReaderOptions):
+class PushMethod(IntEnum):
+    REDIS_PUBSUB = 0
+    REST_API = 1
+
+
+class FFmpegReaderOptions:
+    id: str = ''
+    name: str = ''
+    method: PushMethod = PushMethod.REDIS_PUBSUB
+    pubsub_channel: str = 'read_service'
+    api_address: str = 'http://localhost:2072/ffmpegreader'
+    frame_rate: int = 1
     address: str = ''
     width: int = 0
     height: int = 0
 
 
-class FFmpegReader(BaseReader):
+class FFmpegReader:
     def __init__(self, options: FFmpegReaderOptions):
-        super().__init__(options)
         self.options: FFmpegReaderOptions = options
+        self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
+
         has_external_scale = options.width > 0 and options.height > 0
         if not has_external_scale:
             probe = ffmpeg.probe(options.address)
@@ -38,7 +56,33 @@ class FFmpegReader(BaseReader):
         stream = ffmpeg.output(stream, 'pipe:', format='rawvideo', pix_fmt='rgb24')
         self.process = ffmpeg.run_async(stream, pipe_stdout=True)
 
-    def get_img(self) -> np.array:
+    @staticmethod
+    def __create_base64_img(numpy_img: np.array) -> str:
+        img = Image.fromarray(numpy_img)
+        buffered = BytesIO()
+        img.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+        return img_str
+
+    def __send(self, img_data):
+        img_str = self.__create_base64_img(img_data)
+        dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id}
+        if self.options.method == PushMethod.REDIS_PUBSUB:
+            self.event_bus.publish_async(serialize_json_dic(dic))
+            logger.info(
+                f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
+        else:
+            def _post():
+                data = json.dumps(dic).encode("utf-8")
+                requests.post(self.options.api_address, data=data)
+                logger.info(
+                    f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
+
+            th = Thread(target=_post)
+            th.daemon = True
+            th.start()
+
+    def __get_img(self) -> np.array:
         packet = self.process.stdout.read(self.packet_size)
         numpy_img = np.frombuffer(packet, np.uint8).reshape([self.options.height, self.options.width, self.cl_channels])
         return numpy_img
@@ -56,16 +100,10 @@ class FFmpegReader(BaseReader):
     # todo: move to stable version powered by Redis-RQ
     def read(self):
         while not self.is_closed():
-            np_img = self.get_img()
+            np_img = self.__get_img()
             if np_img is None:
                 # _close_stream(source, name, 1)
                 break
-            self._send(np_img)
+            self.__send(np_img)
         logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')
 
-    def _create_base64_img(self, numpy_img: np.array) -> str:
-        img = Image.fromarray(numpy_img)
-        buffered = BytesIO()
-        img.save(buffered, format="JPEG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        return img_str

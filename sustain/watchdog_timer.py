@@ -2,31 +2,24 @@ import os
 import signal
 import time
 from datetime import datetime
-from enum import Enum
 from typing import List
 import psutil
 from redis.client import Redis
 
+from common.data.source_model import SourceModel
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, config
 from rtmp.docker_manager import DockerManager
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
-from sustain.failed_stream.failed_stream_model import FailedStreamModel
+from sustain.failed_stream.failed_stream_model import FailedStreamModel, WatchDogOperations
 from sustain.failed_stream.failed_stream_repository import FailedStreamRepository
 from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_model import RecStuckModel
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.scheduler import setup_scheduler
 from utils.json_serializer import serialize_json_dic
-
-
-class WatchDogOperations(str, Enum):
-    check_stream_process = 'check_stream_process'
-    check_record_process = 'check_record_process'
-    check_reader_process = 'check_reader_process'
-    check_record_stuck_process = 'check_record_stuck_process'
 
 
 class WatchDogTimer:
@@ -48,7 +41,7 @@ class WatchDogTimer:
     def __start_prev_streams(self):
         stream_models = self.stream_repository.get_all()
         for stream_model in stream_models:
-            self.__publish_restart(stream_model.id)
+            self.__publish_restart(self.source_repository.get(stream_model.id))
 
     def start(self):
         self.__start_prev_streams()
@@ -66,46 +59,27 @@ class WatchDogTimer:
 
         logger.info(f'watchdog timer has been finished at {datetime.now()}')
 
-    def _check_running_processes(self) -> List[StreamModel]:
-        stream_models = self.stream_repository.get_all()
-        rec_stuck_repository = RecStuckRepository(self.conn)
-        self.__remove_zombie_rec_stuck_models(stream_models, rec_stuck_repository)
-        broken_streams: List[StreamModel] = []
-        for stream_model in stream_models:
-            if self.__check_stream_process(stream_model):
-                broken_streams.append(stream_model)
-                continue
-            if self.__check_record_process(stream_model):
-                broken_streams.append(stream_model)
-                continue
-            if self.__check_reader_process(stream_model):
-                broken_streams.append(stream_model)
-                continue
-            if (datetime.now() - self.last_check_record_stuck_process_datetime).seconds > 180:
-                if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
-                    broken_streams.append(stream_model)
-                self.last_check_record_stuck_process_datetime = datetime.now()
-        return broken_streams
+    def __publish_restart(self, source_model: SourceModel):
+        dic = source_model.__dict__
+        self.restart_stream_event_bus.publish_async(serialize_json_dic(dic))
 
-    def __log_failed_process(self, source_id: str, op: WatchDogOperations):
+    def __recover(self, op: WatchDogOperations, stream_model: StreamModel):
+        source_id = stream_model.id
         source_model = self.source_repository.get(source_id)  # if it wasn't deleted before.
-        if source_model is None:
-            return
-        failed_stream_model: FailedStreamModel = self.failed_stream_repository.get(source_id)
-        if failed_stream_model is None:
-            failed_stream_model = FailedStreamModel().map_from_source(source_model)
-        failed_stream_model.watch_dog_interval = self.interval
-        if op == WatchDogOperations.check_stream_process:
-            failed_stream_model.stream_failed_count += 1
-        elif op == WatchDogOperations.check_record_process:
-            failed_stream_model.record_failed_count += 1
-        elif op == WatchDogOperations.check_reader_process:
-            failed_stream_model.reader_failed_count += 1
-        elif op == WatchDogOperations.check_record_stuck_process:
-            failed_stream_model.record_stuck_failed_count += 1
-        else:
-            raise NotImplementedError(op.value)
-        self.failed_stream_repository.add(failed_stream_model)
+
+        def log_failed():
+            if source_model is None:
+                return
+            failed_stream_model: FailedStreamModel = self.failed_stream_repository.get(source_id)
+            if failed_stream_model is None:
+                failed_stream_model = FailedStreamModel().map_from_source(source_model)
+            failed_stream_model.watch_dog_interval = self.interval
+            failed_stream_model.set_failed_count(op)
+            self.failed_stream_repository.add(failed_stream_model)
+
+        log_failed()
+        self.__publish_restart(source_model)
+        time.sleep(self.failed_process_interval)
 
     @staticmethod
     def __remove_zombie_rec_stuck_models(stream_models: List[StreamModel], rec_stuck_repository: RecStuckRepository):
@@ -118,50 +92,84 @@ class WatchDogTimer:
                 rec_stuck_repository.remove(rec_stuck_model)
                 logger.warn('a zombie recording stuck model found on recstucks and removed')
 
-    def __publish_restart(self, source_id: str):
-        source_model = self.source_repository.get(source_id)
-        dic = source_model.__dict__
-        self.restart_stream_event_bus.publish_async(serialize_json_dic(dic))
+    def _check_running_processes(self) -> List[StreamModel]:
+        stream_models = self.stream_repository.get_all()
+        rec_stuck_repository = RecStuckRepository(self.conn)
+        self.__remove_zombie_rec_stuck_models(stream_models, rec_stuck_repository)
+        broken_streams: List[StreamModel] = []
+        for stream_model in stream_models:
+            if self.__check_rtmp_container(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if self.__check_rtmp_feeder_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if self.__check_hls_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if self.__check_ffmpeg_reader_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if self.__check_record_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if self.__check_snapshot_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
+            if (datetime.now() - self.last_check_record_stuck_process_datetime).seconds > 180:
+                if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
+                    broken_streams.append(stream_model)
+                self.last_check_record_stuck_process_datetime = datetime.now()
+        return broken_streams
 
-    def __check_stream_process(self, stream_model: StreamModel):
-        op = WatchDogOperations.check_stream_process
+    def __check_rtmp_container(self, stream_model: StreamModel) -> bool:
+        op = WatchDogOperations.check_rtmp_container
         logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
-        if not psutil.pid_exists(stream_model.pid):
+        docker_manager = DockerManager(self.conn)
+        container = docker_manager.get_container(stream_model)
+        if container is None or container.status != 'running':
             logger.warning(
-                f'a failed FFmpeg stream process was detected for model {stream_model.name} (pid:{stream_model.pid}) and will be recovered')
-            self.__log_failed_process(stream_model.id, op)
-            self.__publish_restart(stream_model.id)
-            time.sleep(self.failed_process_interval)
+                f'a failed RTMP container was detected for model {stream_model.name} (container name:{stream_model.rtmp_container_name}) and will be recovered')
+            self.__recover(op, stream_model)
             return True
         return False
+
+    def __check_process(self, op: WatchDogOperations, stream_model: StreamModel, pid: int) -> bool:
+        logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
+        if not psutil.pid_exists(pid):
+            logger.warning(
+                f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
+            self.__recover(op, stream_model)
+            return True
+        return False
+
+    def __check_rtmp_feeder_process(self, stream_model: StreamModel):
+        op = WatchDogOperations.check_rtmp_feeder_process
+        return self.__check_process(op, stream_model, stream_model.rtmp_feeder_pid)
+
+    def __check_hls_process(self, stream_model: StreamModel):
+        if not stream_model.is_hls_enabled():
+            return False
+        op = WatchDogOperations.check_hls_process
+        return self.__check_process(op, stream_model, stream_model.hls_pid)
+
+    def __check_ffmpeg_reader_process(self, stream_model: StreamModel):
+        if not stream_model.is_ffmpeg_reader_enabled():
+            return False
+        op = WatchDogOperations.check_ffmpeg_reader_process
+        return self.__check_process(op, stream_model, stream_model.ffmpeg_reader_pid)
 
     def __check_record_process(self, stream_model: StreamModel):
+        if not stream_model.is_record_enabled():
+            return False
         op = WatchDogOperations.check_record_process
-        logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
-        if stream_model.is_flv_record_enabled() and not psutil.pid_exists(stream_model.record_flv_pid):
-            stream_model.record_flv_failed_count += 1
-            self.stream_repository.update(stream_model, ['record_flv_failed_count'])
-            logger.warn(
-                f'a failed FFmpeg record process was detected for model {stream_model.name} (pid:{stream_model.pid}) and will be recovered')
-            self.__log_failed_process(stream_model.id, op)
-            self.__publish_restart(stream_model.id)
-            time.sleep(self.failed_process_interval)
-            return True
-        return False
+        return self.__check_process(op, stream_model, stream_model.record_pid)
 
-    def __check_reader_process(self, stream_model: StreamModel):
-        op = WatchDogOperations.check_reader_process
-        logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
-        if stream_model.is_reader_enabled() and not psutil.pid_exists(stream_model.reader_pid):
-            stream_model.reader_failed_count += 1
-            self.stream_repository.update(stream_model, ['reader_failed_count'])
-            logger.warn(
-                f'a failed FFmpeg reader process was detected for model {stream_model.name} (pid:{stream_model.pid}) and will be recovered')
-            self.__log_failed_process(stream_model.id, op)
-            self.__publish_restart(stream_model.id)
-            time.sleep(self.failed_process_interval)
-            return True
-        return False
+    def __check_snapshot_process(self, stream_model: StreamModel):
+        if not stream_model.is_snapshot_enabled():
+            return False
+        op = WatchDogOperations.check_snapshot_process
+        return self.__check_process(op, stream_model, stream_model.snapshot_pid)
 
     def __check_record_stuck_process(self, stream_model: StreamModel, rec_stuck_repository: RecStuckRepository):
         op = WatchDogOperations.check_record_stuck_process
@@ -172,7 +180,7 @@ class WatchDogTimer:
             old.last_modified_size = curr.last_modified_size
             rec_stuck_repository.add(old)
 
-        if stream_model.record:
+        if stream_model.record_enabled:
             db_model = rec_stuck_repository.get(stream_model.id)
             if db_model is None:
                 db_model = RecStuckModel().from_stream(stream_model)
@@ -186,15 +194,11 @@ class WatchDogTimer:
                     refresh(db_model, current)
                     return False
 
-                logger.warn(
-                    f'a failed FFmpeg stuck record process was detected for model {stream_model.name} (pid:{stream_model.pid}) and will be recovered')
-                self.__log_failed_process(stream_model.id, op)
-                # let' s relive the zombie
                 db_model.failed_count += 1
                 db_model.failed_modified_file = db_model.last_modified_file
                 rec_stuck_repository.add(db_model)
-                self.__publish_restart(stream_model.id)
-                time.sleep(self.failed_process_interval)
+
+                self.__recover(op, stream_model)
                 return True
         return False
 
@@ -207,13 +211,17 @@ class WatchDogTimer:
     def __check_zombie_ffmpeg_processes(self, stream_models: List[StreamModel]):
         logger.info(f'check_zombie_ffmpeg_processes is being executed at {datetime.now()}')
         models_pid_dic = {}
+
+        def add_pid(pid: int):
+            if pid > 0:
+                models_pid_dic[pid] = pid
+
         for stream_model in stream_models:
-            if stream_model.pid > 0:
-                models_pid_dic[stream_model.pid] = stream_model.pid
-            if stream_model.record_flv_pid > 0:
-                models_pid_dic[stream_model.record_flv_pid] = stream_model.record_flv_pid
-            if stream_model.reader_pid > 0:
-                models_pid_dic[stream_model.reader_pid] = stream_model.reader_pid
+            add_pid(stream_model.rtmp_feeder_pid)
+            add_pid(stream_model.hls_pid)
+            add_pid(stream_model.ffmpeg_reader_pid)
+            add_pid(stream_model.record_pid)
+            add_pid(stream_model.snapshot_pid)
         all_process_list = psutil.process_iter()
         for proc in all_process_list:
             if proc.name() == "ffmpeg" and proc.pid not in models_pid_dic:

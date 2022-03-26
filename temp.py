@@ -5,6 +5,7 @@ import os
 import subprocess
 from io import BytesIO
 
+import docker
 import numpy as np
 from PIL import Image
 
@@ -14,8 +15,7 @@ from common.data.rtsp_template_repository import RtspTemplateRepository
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb
-from readers.base_reader import PushMethod
-from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions
+from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
 from stream.stream_repository import StreamRepository
 from utils.json_serializer import serialize_json_dic
 
@@ -59,7 +59,7 @@ def redis_bench():
     start = datetime.datetime.now()
     length = 10000
     for j in range(length):
-        source = rep.get('3xzdeqtd3p6')
+        _ = rep.get('3xzdeqtd3p6')
         # print(source.name)
     end = datetime.datetime.now()
     print(f'result: {(end - start).microseconds}')
@@ -74,7 +74,7 @@ def set_test():
     start = datetime.datetime.now()
     length = 1000000
     for j in range(length):
-        result = j in arr
+        _ = j in arr
         # print(source.name)
     end = datetime.datetime.now()
     print(f'arr result: {(end - start).microseconds}')
@@ -82,7 +82,7 @@ def set_test():
     sett = {j for j in range(1000)}
     start = datetime.datetime.now()
     for j in range(length):
-        result = j in sett
+        _ = j in sett
         # print(source.name)
     end = datetime.datetime.now()
     print(f'set result: {(end - start).microseconds}')
@@ -90,7 +90,7 @@ def set_test():
     dic = {j: True for j in range(1000)}
     start = datetime.datetime.now()
     for j in range(length):
-        result = j in dic
+        _ = j in dic
         # print(source.name)
     end = datetime.datetime.now()
     print(f'dict result: {(end - start).microseconds}')
@@ -104,7 +104,7 @@ def rc_test():
     rep = StreamRepository(conn)
     streams = rep.get_all()
     for stream in streams:
-        if stream.record:
+        if stream.record_enabled:
             list_of_files = glob.glob(f'{stream.record_output_folder_path}/*')  # * means all if it needs specific format then *.csv
             latest_file = max(list_of_files, key=os.path.getctime)
             size = os.path.getsize(latest_file)
@@ -129,6 +129,16 @@ def read_test():
     reader.read()
 
 
+def docker_tests():
+    client = docker.from_env()
+    filters: dict = {'name': 'livego_gokalp222'}
+    container = client.containers.list(filters=filters)
+    print(container[0].name)
+
+
+docker_tests()
+
+
 def config_save():
     config = Config.create()
 
@@ -137,7 +147,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():

@@ -1,23 +1,21 @@
 import os
-import os.path
-import time
 import subprocess
+import time
+from abc import abstractmethod, ABC
 from datetime import datetime
-from typing import List
 from threading import Thread
+from typing import List
 import psutil
 
-from command_builder import CommandBuilder, get_hls_output_path
+from command_builder import CommandBuilder
 from common.data.source_model import SourceModel, RmtpServerType
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
-from readers.disk_image_reader import DiskImageReader, DiskImageReaderOptions
-from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions
+from readers.ffmpeg_reader import FFmpegReaderOptions, FFmpegReader
 from rtmp.docker_manager import DockerManager
-from stream.req_resp import StartStreamRequestEvent
-from stream.stream_model import StreamModel, StreamType
-from stream.stream_repository import StreamRepository
 from stream.base_stream_event_handler import BaseStreamEventHandler
+from stream.stream_model import StreamModel
+from stream.stream_repository import StreamRepository
 from utils.json_serializer import serialize_json
 
 
@@ -27,99 +25,128 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         self.source_repository = source_repository
         logger.info(f'StartStreamEventHandler initialized at {datetime.now()}')
 
-    @staticmethod
-    def __start_thread(target, args):
-        th = Thread(target=target, args=args)
-        th.daemon = True
-        th.start()
-
     def publish_async(self, stream_model: StreamModel):
         stream_model_json = serialize_json(stream_model)
         self.event_bus.publish_async(stream_model_json)
 
     # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
-        is_valid_msg, prev_stream_model, source_model = self.parse_message(dic)
+        is_valid_msg, stream_model, source_model = self.parse_message(dic)
         if not is_valid_msg:
             return
         logger.info(f'StartStreamEventHandler handle called {datetime.now()}')
-        need_reload = prev_stream_model is None or not psutil.pid_exists(prev_stream_model.pid)
+        need_reload = stream_model is None or not psutil.pid_exists(stream_model.rtmp_feeder_pid)
         if need_reload:
             stream_model = StreamModel().map_from_source(source_model)
             self.stream_repository.add(stream_model)  # to prevent missing fields because of the update operation.
-            if source_model.stream_type == StreamType.DirectRead:
-                direct = DirectReadHandler(stream_model, self)
-                self.__start_thread(direct.start_ffmpeg_process, [])
-            else:
-                if source_model.stream_type == StreamType.HLS:
-                    concrete = StartHlsStreamEventHandler(self)
-                elif source_model.stream_type == StreamType.FLV:
-                    concrete = StartFlvStreamHandler(self)
-                else:
-                    raise NotImplementedError(f'StreamType of {source_model.stream_type} is not supported')
-                concrete.set_values(stream_model)
-                self.__start_thread(self.__start_ffmpeg_process, [source_model, stream_model])
-                concrete.wait_for(stream_model)
-                self.__start_thread(concrete.create_ffmpeg_record_process, [source_model, stream_model])
-                self.__start_thread(concrete.create_ffmpeg_reader_process, [stream_model])
-        else:
-            self.publish_async(prev_stream_model)
+            starters: List[ProcessStarter] = [RtmpProcessStarter(self.source_repository, self.stream_repository)]
+            if stream_model.is_hls_enabled():
+                starters.append(HlsProcessStarter(self.stream_repository))
+            elif stream_model.is_ffmpeg_reader_enabled():
+                starters.append(FFmpegReaderProcessesStarter(self.stream_repository))
+            if stream_model.is_record_enabled():
+                starters.append(RecordProcessStarter(self.stream_repository))
+            if stream_model.is_snapshot_enabled():
+                starters.append(SnapshotProcessStarter(self.stream_repository))
+            for starter in starters:
+                starter.start_process(source_model, stream_model)
+        self.publish_async(stream_model)
 
-    def __start_ffmpeg_process(self, request: StartStreamRequestEvent, stream_model: StreamModel):
-        logger.info(f'starting stream at {datetime.now()}')
-        if request.stream_type == StreamType.FLV:
-            request.rtmp_server_address = stream_model.rtmp_address
-            if request.jpeg_enabled and request.reader:  # both of them cannot be enabled since they use same 'read_service' pub_sub channel
-                request.jpeg_enabled = False
-                request.use_disk_image_reader_service = False
-            self.source_repository.add(request)
-        cmd_builder = CommandBuilder(request)
-        args: List[str] = cmd_builder.build()
 
-        p = None
-        image_reader = None
+class ProcessStarter(ABC):
+    def __init__(self, stream_repository: StreamRepository):
+        self.stream_repository = stream_repository
+
+    @abstractmethod
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        raise NotImplementedError('StartStreamEventHandler._create_process')
+
+    @abstractmethod
+    def _execute_process(self, proc: any):
+        raise NotImplementedError('StartStreamEventHandler._execute_process')
+
+    @abstractmethod
+    def _dispose_process(self, proc: any):
+        raise NotImplementedError('StartStreamEventHandler._dispose_process')
+
+    @staticmethod
+    def _wait_extra(stream_model: StreamModel):
+        if stream_model.rtmp_server_type == RmtpServerType.LIVEGO:
+            time.sleep(config.ffmpeg.rtmp_server_init_interval)  # otherwise rtmp won't work for LIVEGO
+
+    @staticmethod
+    def __start_thread(target, args):
+        th = Thread(target=target, args=args)
+        th.daemon = True
+        th.start()
+
+    def start_process(self, source_model: SourceModel, stream_model: StreamModel):
         try:
-            logger.info(f'stream subprocess has been opened at {datetime.now()}')
-            p = subprocess.Popen(args)
-            stream_model.pid = p.pid
-            stream_model.args = ' '.join(args)
+            proc = self._create_process(source_model, stream_model)
             self.stream_repository.add(stream_model)
-            logger.info(f'the model has been saved by repository at {datetime.now()}')
-            if stream_model.is_disk_image_reader_service_enabled():
-                image_reader = self.__start_disk_image_reader(stream_model)
-            self.publish_async(stream_model)
-            p.wait()
-        except BaseException as e:
-            logger.error(f'an error occurred during FFmpeg sub-process, err: {e} at {datetime.now()}')
-        finally:
-            if p is not None:
-                p.terminate()
-            if image_reader is not None:
-                image_reader.close()
-            logger.info(f'stream subprocess has been terminated at {datetime.now()}')
+        except BaseException as e1:
+            logger.error(f'an error occurred during the creation of a subprocess operation, err: {e1} at {datetime.now()}')
+            return
+
+        def fn(ps: ProcessStarter, p):
+            try:
+                ps._execute_process(p)
+            except BaseException as e2:
+                logger.error(f'an error occurred during the executing of a subprocess operation, err: {e2} at {datetime.now()}')
+                return
+            finally:
+                try:
+                    ps._dispose_process(p)
+                except BaseException as e3:
+                    logger.error(f'an error occurred during the disposing subprocess operation, err: {e3} at {datetime.now()}')
+
+        self.__start_thread(fn, [self, proc])
+
+
+class SubProcessTemplate(ProcessStarter, ABC):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+
+    def _execute_process(self, proc: any):
+        proc.wait()
+
+    def _dispose_process(self, proc: any):
+        proc.terminate()
+
+
+class RtmpProcessStarter(SubProcessTemplate):
+    def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+        self.source_repository = source_repository
+        self.docker_manager = DockerManager(stream_repository.connection)
 
     @staticmethod
-    def __start_disk_image_reader(stream_model: StreamModel) -> DiskImageReader:
-        options = DiskImageReaderOptions()
-        options.id = stream_model.id
-        options.name = stream_model.name
-        options.frame_rate = stream_model.jpeg_frame_rate
-        options.image_path = stream_model.read_jpeg_output_path
-        image_reader = DiskImageReader(options)
-        image_reader.read()
-        return image_reader
+    def __wait_for(rtmp_model):
+        rtmp_model.init_channel_key()
+
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        rtmp_model, _ = self.docker_manager.run(stream_model.rtmp_server_type, stream_model.id)
+        self.__wait_for(rtmp_model)
+        rtmp_model.map_to(stream_model)
+        source_model.rtmp_address = stream_model.rtmp_address
+        self.source_repository.add(source_model)
+
+        cmd_builder = CommandBuilder(source_model)
+        args = cmd_builder.build_input()
+        args.extend(cmd_builder.build_output())
+        proc = subprocess.Popen(args)  # do not use PIPE, otherwise FFmpeg recording process will be stuck.
+        logger.info(f'stream RTMP feeder subprocess has been opened at {datetime.now()}')
+        stream_model.rtmp_feeder_pid = proc.pid
+        stream_model.rtmp_feeder_args = ' '.join(args)
+        return proc
 
 
-class StartHlsStreamEventHandler:
-    def __init__(self, proxy: StartStreamEventHandler):
-        self.proxy = proxy
-
-    def set_values(self, stream_model: StreamModel):
-        self.proxy.delete_prev_stream_files(stream_model.id)
-        stream_model.hls_output_path = get_hls_output_path(stream_model.id)
+class HlsProcessStarter(SubProcessTemplate):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
 
     @staticmethod
-    def wait_for(stream_model: StreamModel):
+    def __wait_for(stream_model: StreamModel):
         max_retry = config.ffmpeg.max_operation_retry_count
         retry_count = 0
         while retry_count < max_retry:
@@ -129,112 +156,78 @@ class StartHlsStreamEventHandler:
             time.sleep(1.)
             retry_count += 1
 
-    def create_ffmpeg_record_process(self, source_model: SourceModel, stream_model: StreamModel):
-        pass  # HLS record handled without any problem.
-
-    def create_ffmpeg_reader_process(self, stream_model: StreamModel):
-        pass  # HLS does not have RTMP server
-
-
-class StartFlvStreamHandler:
-    def __init__(self, proxy: StartStreamEventHandler):
-        self.proxy = proxy
-        self.docker_manager = DockerManager(proxy.stream_repository.connection)
-        self.rtmp_model = None
-
-    def set_values(self, stream_model: StreamModel):
-        self.rtmp_model, _ = self.docker_manager.run(stream_model.rtmp_server_type, stream_model.id)
-        self.rtmp_model.map_to(stream_model)
-
-    def wait_for(self, stream_model: StreamModel):
-        self.rtmp_model.init_channel_key()
-
-    @staticmethod
-    def __get_rtmp_address(stream_model: StreamModel):
-        if stream_model.rtmp_server_type == RmtpServerType.LIVEGO:
-            local_rtmp_pipe_input_address = stream_model.rtmp_address.replace('livestream',
-                                                                              'rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk')
-        else:
-            local_rtmp_pipe_input_address = stream_model.rtmp_address
-        return local_rtmp_pipe_input_address
-
-    def create_ffmpeg_record_process(self, source_model: SourceModel, stream_model: StreamModel):
-        if not stream_model.is_flv_record_enabled():
-            return
-
-        local_rtmp_pipe_input_address = self.__get_rtmp_address(stream_model)
-        args: List[str] = ['ffmpeg', '-re', '-i',
-                           local_rtmp_pipe_input_address]  # this one have to be local address (Loopback). Otherwise, it costs double network usage!..
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        self._wait_extra(stream_model)
         cmd_builder = CommandBuilder(source_model)
-        cmd_builder.extend_record(args)
-        p = None
-        try:
-            logger.info(f'stream FLV Record subprocess has been opened at {datetime.now()}')
-            p = subprocess.Popen(args)  # do not use PIPE, otherwise FFmpeg recording process will be stuck.
-            stream_model.record_flv_pid = p.pid
-            stream_model.record_flv_args = ' '.join(args)
-            self.proxy.stream_repository.add(stream_model)
-            logger.info(f'the model has been saved by repository at {datetime.now()}')
-            p.wait()
-        except BaseException as e:
-            logger.error(f'an error occurred during FFmpeg FLV record subprocess, err: {e} at {datetime.now()}')
-        finally:
-            if p is not None:
-                p.terminate()
-            logger.info(f'stream FLV record subprocess has been terminated at {datetime.now()}')
-
-    # always execute this by a different thread. Otherwise, it blocks the whole execution
-    def create_ffmpeg_reader_process(self, stream_model: StreamModel):
-        if not stream_model.is_reader_enabled():
-            return
-        local_rtmp_pipe_input_address = self.__get_rtmp_address(stream_model)
-        ffmpeg_reader = None
-        try:
-            logger.info(f'starting FFmpeg read process at {datetime.now()}')
-            options = FFmpegReaderOptions()
-            options.id = stream_model.id
-            options.name = stream_model.name
-            options.address = local_rtmp_pipe_input_address
-            options.frame_rate = stream_model.reader_frame_rate
-            options.width = stream_model.reader_width
-            options.height = stream_model.reader_height
-            ffmpeg_reader = FFmpegReader(options)
-            stream_model.reader_pid = ffmpeg_reader.get_pid()
-            self.proxy.stream_repository.add(stream_model)
-            ffmpeg_reader.read()
-        except BaseException as e:
-            logger.error(f'an error occurred while starting FFmpeg direct read sub-process, err: {e} at {datetime.now()}')
-        finally:
-            if ffmpeg_reader is not None:
-                ffmpeg_reader.close()
-                logger.info(f'FFmpeg reader process has been terminated at {datetime.now()}')
+        args = cmd_builder.build_stream()
+        proc = subprocess.Popen(args)
+        logger.info(f'stream HLS subprocess has been opened at {datetime.now()}')
+        stream_model.hls_pid = proc.pid
+        stream_model.hls_args = ' '.join(args)
+        self.__wait_for(stream_model)
+        return proc
 
 
-class DirectReadHandler:
-    def __init__(self, stream_model: StreamModel, proxy: StartStreamEventHandler):
-        self.stream_model = stream_model
-        self.proxy = proxy
-        self.stream_repository = proxy.stream_repository
-        self.options = FFmpegReaderOptions()
-        self.options.id = stream_model.id
-        self.options.name = stream_model.name
-        self.options.address = stream_model.address
-        self.options.frame_rate = stream_model.direct_read_frame_rate
-        self.options.width = stream_model.direct_read_width
-        self.options.height = stream_model.direct_read_height
-        self.ffmpeg_reader = FFmpegReader(self.options)
+class RecordProcessStarter(SubProcessTemplate):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
 
-    def start_ffmpeg_process(self):
-        logger.info('starting FFmpeg direct read stream')
-        try:
-            logger.info(f'FFmpeg direct read stream subprocess has been opened at {datetime.now()}')
-            self.stream_model.pid = self.ffmpeg_reader.get_pid()
-            self.stream_repository.add(self.stream_model)
-            logger.info(f'the model has been saved by repository at {datetime.now()}')
-            self.proxy.publish_async(self.stream_model)
-            self.ffmpeg_reader.read()
-        except BaseException as e:
-            logger.error(f'an error occurred while starting FFmpeg direct read sub-process, err: {e} at {datetime.now()}')
-        finally:
-            self.ffmpeg_reader.close()
-            logger.info(f'FFmpeg direct read stream subprocess has been terminated at {datetime.now()}')
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        self._wait_extra(stream_model)
+        cmd_builder = CommandBuilder(source_model)
+        args = cmd_builder.build_record()
+        proc = subprocess.Popen(args)
+        logger.info(f'stream Video Recording subprocess has been opened at {datetime.now()}')
+        stream_model.record_pid = proc.pid
+        stream_model.record_args = ' '.join(args)
+        return proc
+
+
+class FFmpegReaderTemplate(ProcessStarter, ABC):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+
+    def _execute_process(self, ffmpeg_reader: any):
+        ffmpeg_reader.read()
+
+    def _dispose_process(self, ffmpeg_reader: any):
+        ffmpeg_reader.close()
+
+
+# noinspection DuplicatedCode
+class SnapshotProcessStarter(FFmpegReaderTemplate):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        options = FFmpegReaderOptions()
+        options.id = stream_model.id
+        options.name = stream_model.name
+        options.address = stream_model.rtmp_address
+        options.frame_rate = stream_model.snapshot_frame_rate
+        options.width = stream_model.snapshot_width
+        options.height = stream_model.snapshot_height
+        ffmpeg_reader = FFmpegReader(options)
+        stream_model.snapshot_pid = ffmpeg_reader.get_pid()
+        logger.info(f'starting Snapshot process at {datetime.now()}')
+        return ffmpeg_reader
+
+
+# noinspection DuplicatedCode
+class FFmpegReaderProcessesStarter(FFmpegReaderTemplate):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        self._wait_extra(stream_model)
+        options = FFmpegReaderOptions()
+        options.id = stream_model.id
+        options.name = stream_model.name
+        options.address = stream_model.rtmp_address
+        options.frame_rate = stream_model.ffmpeg_reader_frame_rate
+        options.width = stream_model.ffmpeg_reader_width
+        options.height = stream_model.ffmpeg_reader_height
+        ffmpeg_reader = FFmpegReader(options)
+        stream_model.ffmpeg_reader_pid = ffmpeg_reader.get_pid()
+        logger.info(f'starting FFmpegReader process at {datetime.now()}')
+        return ffmpeg_reader

@@ -1,19 +1,17 @@
 import json
 import time
 from enum import Enum
-
 import requests
 from abc import ABC, abstractmethod
 from redis.client import Redis
 
-from common.data.source_model import FlvPlayerConnectionType
 from common.utilities import logger, config
 from stream.stream_model import StreamModel
 
 
 class RtmpServerImages(Enum):
     OSSRS = 'ossrs/srs:4'
-    LIVEGO = 'gwuhaolin/livego'
+    LIVEGO = 'livego_local'  # original one is 'gwuhaolin/livego'
     NMS = 'illuspas/node-media-server'
 
 
@@ -84,7 +82,7 @@ class SrsRtmpModel(BaseRtmpModel):
         return RtmpServerImages.OSSRS.value
 
     def get_commands(self) -> list:
-        return ['./objs/srs', '-c', 'conf/docker.conf']
+        return ['./objs/srs', '-c', 'conf/http.flv.live.conf']
 
     def int_ports(self):
         if not self.port_dic:
@@ -108,6 +106,7 @@ class LiveGoRtmpModel(BaseRtmpModel):
     def __init__(self, unique_name: str, connection: Redis):
         super().__init__(f'livego_{unique_name}', connection)
         self.web_api_port: int = 0
+        self.predefined_channel_key = 'rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk'
         self.channel_key: str = ''
 
     def get_image_name(self) -> str:
@@ -126,30 +125,30 @@ class LiveGoRtmpModel(BaseRtmpModel):
                              '8090': str(self.web_api_port)}
 
     def init_channel_key(self) -> str:
-        if not self.channel_key:
+        if len(self.channel_key) == 0:
             max_retry = config.ffmpeg.max_operation_retry_count
             retry_count = 0
             while not self.channel_key and retry_count < max_retry:
                 try:
                     resp = requests.get(
-                        f'{self.protocol}://{self.host}:{self.web_api_port}/control/get?room=livestream')
+                        f'{self.protocol}://{self.host}:{self.web_api_port}/control/get?room={self.predefined_channel_key}')
                     resp.raise_for_status()
-                    self.channel_key = resp.json()['data']
+                    self.channel_key = self.predefined_channel_key
                 except BaseException as e:
                     logger.error(e)
                     time.sleep(1)
                 retry_count += 1
             if retry_count == max_retry:
                 logger.error('init_channel_key max retry count has been exceeded.')
+                self.channel_key = self.predefined_channel_key
         time.sleep(self.rtmp_server_wait)
         return self.channel_key
 
     def get_rtmp_address(self) -> str:
-        return f'rtmp://{self.host}:{self.rtmp_port}/live/livestream'
+        return f'rtmp://{self.host}:{self.rtmp_port}/live/{self.channel_key}'
 
     def get_flv_address(self, stream_model: StreamModel) -> str:
-        # livestream default channel key is rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk
-        return f'{self.protocol}://{self.host}:{self.flv_port}/live/{("rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk" if not self.channel_key else self.channel_key)}.flv'
+        return f'{self.protocol}://{self.host}:{self.flv_port}/live/{self.channel_key}.flv'
 
 
 class NodeMediaServerRtmpModel(BaseRtmpModel):
@@ -177,5 +176,5 @@ class NodeMediaServerRtmpModel(BaseRtmpModel):
         return f'rtmp://{self.host}:{self.rtmp_port}/live/STREAM_NAME'
 
     def get_flv_address(self, stream_model: StreamModel) -> str:
-        protocol = 'http' if stream_model.flv_player_connection_type == FlvPlayerConnectionType.HTTP else 'ws'
+        protocol = 'http'  # or https?
         return f'{protocol}://{self.host}:{self.flv_port}/live/STREAM_NAME.flv'

@@ -17,13 +17,6 @@ class SourceRepository(BaseRepository):
         dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
 
-    def update(self, model: SourceModel, fields: List[str]) -> int:
-        key = self._get_key(model.id)
-        dic = {}
-        for field in fields:
-            dic[field] = model.__dict__[field]
-        return self.connection.hset(key, mapping=dic)
-
     def get(self, identifier: str) -> SourceModel:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)

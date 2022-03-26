@@ -20,13 +20,6 @@ class StreamRepository(BaseRepository):
         dic = self.to_redis(model)
         return self.connection.hset(key, mapping=dic)
 
-    def update(self, model: StreamModel, fields: List[str]) -> int:
-        key = self._get_key(model.id)
-        dic = {}
-        for field in fields:
-            dic[field] = model.__dict__[field]
-        return self.connection.hset(key, mapping=dic)
-
     def remove(self, identifier: str) -> int:
         key = self._get_key(identifier)
         return self.connection.delete(key)

@@ -1,5 +1,5 @@
-from command_builder import get_hls_output_path, get_read_jpeg_output_path, get_record_output_folder_path
-from common.data.source_model import RmtpServerType, SourceModel, StreamType, FlvPlayerConnectionType
+from command_builder import get_hls_output_path, get_record_output_folder_path
+from common.data.source_model import RmtpServerType, SourceModel, StreamType
 from common.utilities import datetime_now
 
 
@@ -11,16 +11,16 @@ class StreamModel:
         self.name: str = ''
         self.address: str = ''
 
-        # stream
-        self.pid: int = -1
+        self.rtmp_feeder_pid: int = 0
+        self.rtmp_feeder_args: str = ''
+        self.hls_pid: int = 0
+        self.hls_args: str = ''
         self.created_at: str = datetime_now()
-        self.args: str = ''
 
         # extended
-        self.stream_type: StreamType = StreamType.HLS
+        self.stream_type: StreamType = StreamType.FLV
         self.rtmp_server_initialized: bool = False
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS
-        self.flv_player_connection_type: FlvPlayerConnectionType = FlvPlayerConnectionType.HTTP
+        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO
         self.rtmp_image_name: str = ''
         self.rtmp_container_name: str = ''
         self.rtmp_address: str = ''
@@ -28,37 +28,29 @@ class StreamModel:
         self.rtmp_container_ports: str = ''
         self.rtmp_container_commands: str = ''
 
-        self.direct_read_frame_rate: int = 1
-        self.direct_read_width: int = 640
-        self.direct_read_height: int = 360
+        self.ffmpeg_reader_pid: int = 0
+        self.ffmpeg_reader_frame_rate: int = 1
+        self.ffmpeg_reader_width: int = 640
+        self.ffmpeg_reader_height: int = 360
 
-        self.jpeg_enabled: bool = False
-        self.jpeg_frame_rate: int = 0
-
-        self.record: bool = False
+        self.record_enabled: bool = False
+        self.record_pid: int = 0
+        self.record_args: str = ''
         self.record_duration: int = 15
-        self.record_flv_pid: int = 0
-        self.record_flv_args: str = ''
-        self.record_flv_failed_count: int = 0
 
-        # FFmpeg snapshot for AI. It is available only for HLS & RTMP/FLV
-        self.use_disk_image_reader_service: bool = False
-        # FFmpeg snapshot for AI. It is available only for RTMP/FLV
-        self.reader: bool = False
-        self.reader_frame_rate: int = 1
-        self.reader_width: int = 1280
-        self.reader_height: int = 720
-        self.reader_pid: int = 0
-        self.reader_failed_count: int = 0
+        # FFmpeg snapshot for AI.
+        self.snapshot_enabled: bool = False
+        self.snapshot_pid: int = 0
+        self.snapshot_frame_rate: int = 1
+        self.snapshot_width: int = 640
+        self.snapshot_height: int = 360
 
         # paths
         self.hls_output_path: str = ''
-        self.read_jpeg_output_path: str = ''
         self.record_output_folder_path: str = ''
 
     def set_paths(self):
         self.hls_output_path = get_hls_output_path(self.id)
-        self.read_jpeg_output_path = get_read_jpeg_output_path(self.id)
         self.record_output_folder_path = get_record_output_folder_path(self.id)
 
     def map_from_source(self, source: SourceModel):
@@ -70,34 +62,32 @@ class StreamModel:
 
         self.stream_type = source.stream_type
         self.rtmp_server_type = source.rtmp_server_type
-        self.flv_player_connection_type = source.flv_player_connection_type
 
         # noinspection DuplicatedCode
-        self.direct_read_frame_rate = source.direct_read_frame_rate
-        self.direct_read_width = source.direct_read_width
-        self.direct_read_height = source.direct_read_height
+        self.ffmpeg_reader_frame_rate = source.ffmpeg_reader_frame_rate
+        self.ffmpeg_reader_width = source.ffmpeg_reader_width
+        self.ffmpeg_reader_height = source.ffmpeg_reader_height
 
-        self.jpeg_enabled = source.jpeg_enabled
-        self.jpeg_frame_rate = source.jpeg_frame_rate
+        self.snapshot_enabled = source.snapshot_enabled
+        self.snapshot_frame_rate: source.snapshot_frame_rate
+        self.snapshot_width: int = source.snapshot_width
+        self.snapshot_height: int = source.snapshot_height
 
-        self.use_disk_image_reader_service = source.use_disk_image_reader_service
-        self.reader = source.reader
-        self.reader_frame_rate: source.reader_frame_rate
-        self.reader_width: int = source.reader_width
-        self.reader_height: int = source.reader_height
-
-        self.record = source.record
+        self.record_enabled = source.record_enabled
         self.record_duration = source.record_segment_interval
 
         self.set_paths()
 
         return self
 
-    def is_flv_record_enabled(self) -> bool:
-        return self.stream_type == StreamType.FLV and self.record
+    def is_hls_enabled(self) -> bool:
+        return self.stream_type == StreamType.HLS
 
-    def is_reader_enabled(self) -> bool:
-        return self.stream_type == StreamType.FLV and self.reader
+    def is_record_enabled(self) -> bool:
+        return self.record_enabled
 
-    def is_disk_image_reader_service_enabled(self) -> bool:
-        return self.jpeg_enabled and self.use_disk_image_reader_service
+    def is_snapshot_enabled(self) -> bool:
+        return self.snapshot_enabled
+
+    def is_ffmpeg_reader_enabled(self) -> bool:
+        return self.stream_type == StreamType.FFMPEG_READER
