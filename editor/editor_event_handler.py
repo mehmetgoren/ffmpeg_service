@@ -22,13 +22,13 @@ class EditorEventHandler(EventHandler):
         if request.event_type == EditorEventType.NONE:
             logger.info('EditorEventHandler: NONE, EditorEventHAndler is not handling this event')
             return
-        if request.event_type < 3:
+        if request.event_type < 4:
             response = EditorResponseEvent().map_from_super(request)
-            if request.event_type == EditorEventType.TAKE_SCREENSHOT:
+            if request.event_type == EditorEventType.TAKE_SCREENSHOT or request.event_type == EditorEventType.MASK_SCREENSHOT:
                 response.image_base64 = RtspVideoEditor(request.address).take_screenshot()
             elif request.event_type == EditorEventType.GENERATE_THUMBNAIL:
                 response.image_base64 = RtspVideoEditor(request.address).generate_thumbnail()
 
             self.event_bus.publish_async(serialize_json(response))
         else:
-            raise NotImplementedError('EditorEventHandler: event_type is not implemented')
+            raise NotImplementedError(f'EditorEventHandler: event_type({request.event_type}) is not implemented')

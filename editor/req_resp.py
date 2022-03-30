@@ -5,6 +5,7 @@ class EditorEventType(IntEnum):
     NONE = 0
     TAKE_SCREENSHOT = 1
     GENERATE_THUMBNAIL = 2
+    MASK_SCREENSHOT = 3
 
 
 class EditorRequestEvent:
