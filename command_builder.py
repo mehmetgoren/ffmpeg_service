@@ -172,5 +172,5 @@ class CommandBuilder:
             f.record_segment_interval = 15
         args.extend(['-segment_time', str(f.record_segment_interval * 60)])
         args.append(self.__add_double_quotes(os.path.join(get_record_output_folder_path(f.id),
-                                                          f'%Y-%m-%d-%H-%M-%S.{RecordFileTypes.str(f.record_file_type)}')))
+                                                          f'%Y_%m_%d_%H_%M_%S.{RecordFileTypes.str(f.record_file_type)}')))
         return args

@@ -25,7 +25,7 @@ def crate_redis_connection(db: RedisDb, socket_keepalive: bool = False, health_c
 
 def datetime_now() -> str:
     now = datetime.now()
-    sep = '-'
+    sep = '_'
     strings = [''] * 13
     for j in [1, 3, 5, 7, 9, 11]:
         strings[j] = sep
