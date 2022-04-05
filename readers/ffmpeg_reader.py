@@ -29,6 +29,7 @@ class FFmpegReaderOptions:
     address: str = ''
     width: int = 0
     height: int = 0
+    video_clip_enabled: bool = False
 
 
 class FFmpegReader:
@@ -66,7 +67,7 @@ class FFmpegReader:
 
     def __send(self, img_data):
         img_str = self.__create_base64_img(img_data)
-        dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id}
+        dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id, 'video_clip_enabled': self.options.video_clip_enabled}
         if self.options.method == PushMethod.REDIS_PUBSUB:
             self.event_bus.publish_async(serialize_json_dic(dic))
             logger.info(
@@ -106,4 +107,3 @@ class FFmpegReader:
                 break
             self.__send(np_img)
         logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')
-

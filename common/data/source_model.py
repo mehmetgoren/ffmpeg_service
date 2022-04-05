@@ -451,6 +451,8 @@ class FFmpegModel:
         self.record_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.record_audio_volume: int = 100
 
+        self.video_clip_enabled: bool = False
+
         self.log_level: LogLevel = LogLevel.Warning
 
 

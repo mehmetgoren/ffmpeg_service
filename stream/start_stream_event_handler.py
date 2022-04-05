@@ -207,6 +207,7 @@ class SnapshotProcessStarter(FFmpegReaderTemplate):
         options.frame_rate = stream_model.snapshot_frame_rate
         options.width = stream_model.snapshot_width
         options.height = stream_model.snapshot_height
+        options.video_clip_enabled = stream_model.video_clip_enabled
         ffmpeg_reader = FFmpegReader(options)
         stream_model.snapshot_pid = ffmpeg_reader.get_pid()
         logger.info(f'starting Snapshot process at {datetime.now()}')

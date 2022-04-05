@@ -96,6 +96,7 @@ class AiConfig:
     def __init__(self):
         self.read_service_overlay: bool = True
         self.detected_folder: str = '/mnt/sde1/detected/'
+        self.video_clip_duration: int = 10
 
 
 class Config:

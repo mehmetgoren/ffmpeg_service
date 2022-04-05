@@ -6,12 +6,16 @@ from common.data.source_model import FFmpegModel, RtspTransport, VideoDecoder, S
 from common.utilities import config
 
 
-def get_hls_output_path(source_id: str):
+def get_hls_output_path(source_id: str) -> str:
     return os.path.join(config.path.stream, source_id, 'stream.m3u8')
 
 
-def get_record_output_folder_path(source_id: str):
+def get_record_output_folder_path(source_id: str) -> str:
     return os.path.join(config.path.record, source_id)
+
+
+def get_temp_video_clip_output_folder_path(source_id: str) -> str:
+    return os.path.join(config.path.record, source_id, 'vcs', 'temp')
 
 
 class CommandBuilder:
@@ -118,10 +122,8 @@ class CommandBuilder:
         args.append(self.__add_double_quotes(get_hls_output_path(f.id)))
         return args
 
-    def build_record(self) -> List[str]:
+    def __build_record(self, duration: int, output_path: str) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        if not f.record_enabled:
-            return []
         args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.rtmp_address)]
 
         if f.record_width != 0 and f.record_height != 0:
@@ -168,9 +170,20 @@ class CommandBuilder:
             args.extend(['-movflags', '+faststart'])
         args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1',
                      '-segment_list', 'pipe:8'])
-        if f.record_segment_interval < 1:
-            f.record_segment_interval = 15
-        args.extend(['-segment_time', str(f.record_segment_interval * 60)])
-        args.append(self.__add_double_quotes(os.path.join(get_record_output_folder_path(f.id),
-                                                          f'%Y_%m_%d_%H_%M_%S.{RecordFileTypes.str(f.record_file_type)}')))
+        if duration < 1:
+            duration = 15
+        args.extend(['-segment_time', str(duration)])
+        args.append(self.__add_double_quotes(os.path.join(output_path, f'%Y_%m_%d_%H_%M_%S.{RecordFileTypes.str(f.record_file_type)}')))
+        return args
+
+    def build_record(self) -> List[str]:
+        f: FFmpegModel = self.ffmpeg_model
+        if not f.record_enabled:
+            return []
+        args = self.__build_record(f.record_segment_interval * 60, get_record_output_folder_path(f.id))  # in minutes
+        if f.video_clip_enabled:
+            svc_args = self.__build_record(config.ai.video_clip_duration, get_temp_video_clip_output_folder_path(f.id))  # in seconds
+            length = len(svc_args)
+            svc_args = svc_args[3:length]
+            args.extend(svc_args)
         return args

@@ -45,6 +45,8 @@ class StreamModel:
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
 
+        self.video_clip_enabled: bool = False
+
         # paths
         self.hls_output_path: str = ''
         self.record_output_folder_path: str = ''
@@ -75,6 +77,8 @@ class StreamModel:
 
         self.record_enabled = source.record_enabled
         self.record_duration = source.record_segment_interval
+
+        self.video_clip_enabled = source.video_clip_enabled
 
         self.set_paths()
 
