@@ -31,11 +31,6 @@ class DeviceConfig:
                                 DeviceServices.FFMPEG, DeviceServices.MNGR]
 
 
-class HeartbeatConfig:
-    def __init__(self):
-        self.interval: int = 5
-
-
 class ConfigRedis:
     def __init__(self):
         self.host: str = os.getenv('REDIS_HOST', '127.0.0.1')
@@ -75,11 +70,10 @@ class SourceReaderConfig:
         self.max_retry_in: int = 6  # hours
 
 
-class PathConfig:
+class GeneralConfig:
     def __init__(self):
-        self.stream: str = '/mnt/sde1/live'
-        self.record: str = '/mnt/sde1/playback'
-        self.read: str = '/mnt/sde1/read'
+        self.root_folder_path: str = '/mnt/sde1'
+        self.heartbeat_interval: int = 30
 
 
 class FFmpegConfig:
@@ -95,21 +89,21 @@ class FFmpegConfig:
 class AiConfig:
     def __init__(self):
         self.read_service_overlay: bool = True
-        self.detected_folder: str = '/mnt/sde1/detected/'
         self.video_clip_duration: int = 10
+        self.face_recog_mtcnn_threshold: float = .86
+        self.face_recog_prob_threshold: float = .95
 
 
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
-        self.heartbeat: HeartbeatConfig = HeartbeatConfig()
         self.redis: ConfigRedis = ConfigRedis()
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
         self.tensorflow: TensorflowConfig = TensorflowConfig()
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
-        self.path: PathConfig = PathConfig()
+        self.general: GeneralConfig = GeneralConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.ai: AiConfig = AiConfig()
         self.__connection: Redis = None

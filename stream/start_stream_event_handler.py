@@ -72,7 +72,7 @@ class ProcessStarter(ABC):
     @staticmethod
     def _wait_extra(stream_model: StreamModel):
         if stream_model.rtmp_server_type == RmtpServerType.LIVEGO:
-            time.sleep(config.ffmpeg.rtmp_server_init_interval)  # otherwise rtmp won't work for LIVEGO
+            time.sleep(config.ffmpeg.rtmp_server_init_interval)  # otherwise, rtmp won't work for LIVEGO
 
     @staticmethod
     def __start_thread(target, args):

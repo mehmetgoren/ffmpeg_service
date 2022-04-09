@@ -9,7 +9,7 @@ class HeartbeatRepository(BaseRepository):
     def __init__(self, connection: Redis, service_name: str):
         super().__init__(connection, 'services:')
         self.service_name = service_name
-        self.interval = config.heartbeat.interval
+        self.interval = config.general.heartbeat_interval
 
     def start(self):
         stopped = threading.Event()

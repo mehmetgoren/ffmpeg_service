@@ -7,21 +7,21 @@ from common.utilities import config
 
 
 def get_hls_output_path(source_id: str) -> str:
-    return os.path.join(config.path.stream, source_id, 'stream.m3u8')
+    return os.path.join(config.general.root_folder_path, 'stream', source_id, 'stream.m3u8')
 
 
 def get_record_output_folder_path(source_id: str) -> str:
-    return os.path.join(config.path.record, source_id)
+    return os.path.join(config.general.root_folder_path, 'record', source_id)
 
 
 def get_temp_video_clip_output_folder_path(source_id: str) -> str:
-    return os.path.join(config.path.record, source_id, 'vcs', 'temp')
+    return os.path.join(config.general.root_folder_path, 'record', source_id, 'vcs', 'temp')
 
 
 class CommandBuilder:
     def __init__(self, source_model: FFmpegModel):
         self.ffmpeg_model: FFmpegModel = source_model
-        self.use_double_quotes_for_path: bool = False
+        self.use_double_quotes_for_path: bool = config.ffmpeg.use_double_quotes_for_path
 
     def __add_double_quotes(self, path: str):
         if self.use_double_quotes_for_path:

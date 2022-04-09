@@ -136,7 +136,7 @@ def docker_tests():
     print(container[0].name)
 
 
-docker_tests()
+# docker_tests()
 
 
 def config_save():
@@ -147,7 +147,7 @@ def config_save():
     print(config.to_json())
 
 
-# config_save()
+config_save()
 
 
 def add_rtsp_templates():
