@@ -15,7 +15,7 @@ def get_record_output_folder_path(source_id: str) -> str:
 
 
 def get_temp_video_clip_output_folder_path(source_id: str) -> str:
-    return os.path.join(config.general.root_folder_path, 'record', source_id, 'vcs', 'temp')
+    return os.path.join(config.general.root_folder_path, 'record', source_id, 'temp')
 
 
 class CommandBuilder:
