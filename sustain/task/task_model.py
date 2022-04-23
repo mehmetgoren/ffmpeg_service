@@ -7,7 +7,9 @@ class TaskOp(IntEnum):
     listen_stop_stream_event = 2
     listen_restart_stream_event = 3
     listen_editor_event = 4
-    watchdog = 5
+    listen_various_events = 5
+    watchdog = 6
+    schedule_video_file_indexer = 7
 
     @staticmethod
     def create_dict():
@@ -16,7 +18,9 @@ class TaskOp(IntEnum):
             TaskOp.listen_stop_stream_event: 'listen_stop_stream_event',
             TaskOp.listen_restart_stream_event: 'listen_restart_stream_event',
             TaskOp.listen_editor_event: 'listen_editor_event',
-            TaskOp.watchdog: 'watchdog'
+            TaskOp.listen_various_events: 'listen_various_events',
+            TaskOp.watchdog: 'watchdog',
+            TaskOp.schedule_video_file_indexer: 'schedule_video_file_indexer'
         }
 
     @staticmethod

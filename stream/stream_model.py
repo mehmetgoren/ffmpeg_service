@@ -1,4 +1,3 @@
-from command_builder import get_hls_output_path, get_record_output_folder_path
 from common.data.source_model import RmtpServerType, SourceModel, StreamType
 from common.utilities import datetime_now
 
@@ -45,15 +44,12 @@ class StreamModel:
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
 
-        self.video_clip_enabled: bool = False
+        self.ai_clip_enabled: bool = False
+        self.ai_clip_pid: int = 0
+        self.ai_clip_args: str = ''
 
-        # paths
-        self.hls_output_path: str = ''
-        self.record_output_folder_path: str = ''
-
-    def set_paths(self):
-        self.hls_output_path = get_hls_output_path(self.id)
-        self.record_output_folder_path = get_record_output_folder_path(self.id)
+        self.concat_demuxer_pid: int = 0
+        self.concat_demuxer_args: str = ''
 
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
@@ -78,9 +74,7 @@ class StreamModel:
         self.record_enabled = source.record_enabled
         self.record_duration = source.record_segment_interval
 
-        self.video_clip_enabled = source.video_clip_enabled
-
-        self.set_paths()
+        self.ai_clip_enabled = source.ai_clip_enabled
 
         return self
 
@@ -89,6 +83,9 @@ class StreamModel:
 
     def is_record_enabled(self) -> bool:
         return self.record_enabled
+
+    def is_ai_clip_enabled(self) -> bool:
+        return self.ai_clip_enabled
 
     def is_snapshot_enabled(self) -> bool:
         return self.snapshot_enabled

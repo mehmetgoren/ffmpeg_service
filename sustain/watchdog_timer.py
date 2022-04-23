@@ -113,6 +113,9 @@ class WatchDogTimer:
             if self.__check_record_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
+            if self.__check_ai_clip_process(stream_model):
+                broken_streams.append(stream_model)
+                continue
             if self.__check_snapshot_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
@@ -164,6 +167,12 @@ class WatchDogTimer:
             return False
         op = WatchDogOperations.check_record_process
         return self.__check_process(op, stream_model, stream_model.record_pid)
+
+    def __check_ai_clip_process(self, stream_model: StreamModel):
+        if not stream_model.is_ai_clip_enabled():
+            return False
+        op = WatchDogOperations.check_ai_clip_process
+        return self.__check_process(op, stream_model, stream_model.ai_clip_pid)
 
     def __check_snapshot_process(self, stream_model: StreamModel):
         if not stream_model.is_snapshot_enabled():
@@ -221,7 +230,9 @@ class WatchDogTimer:
             add_pid(stream_model.hls_pid)
             add_pid(stream_model.ffmpeg_reader_pid)
             add_pid(stream_model.record_pid)
+            add_pid(stream_model.ai_clip_pid)
             add_pid(stream_model.snapshot_pid)
+            add_pid(stream_model.concat_demuxer_pid)
         all_process_list = psutil.process_iter()
         for proc in all_process_list:
             if proc.name() == "ffmpeg" and proc.pid not in models_pid_dic:
@@ -247,7 +258,7 @@ class WatchDogTimer:
             return
         docker_manager = DockerManager(self.conn)
         containers = docker_manager.get_all_containers()
-        prefixes = tuple(['srs_', 'livego_', 'nms_'])
+        prefixes = tuple(['srs_', 'srsrt_', 'livego_', 'nms_'])
         for container in containers:
             if container.name.startswith(prefixes) and container.name not in valid_containers_name_dic:
                 try:

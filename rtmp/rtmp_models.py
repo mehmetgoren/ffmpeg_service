@@ -76,7 +76,11 @@ class BaseRtmpModel(ABC):
 
 class SrsRtmpModel(BaseRtmpModel):
     def __init__(self, unique_name: str, connection: Redis):
-        super().__init__(f'srs_{unique_name}', connection)
+        super().__init__(f'{self._get_prefix()}_{unique_name}', connection)
+
+    @staticmethod
+    def _get_prefix():
+        return 'srs'
 
     def get_image_name(self) -> str:
         return RtmpServerImages.OSSRS.value
@@ -100,6 +104,18 @@ class SrsRtmpModel(BaseRtmpModel):
 
     def get_flv_address(self, stream_model: StreamModel) -> str:
         return f'{self.protocol}://{self.host}:{self.flv_port}/live/livestream.flv'
+
+
+class SrsRealtimeRtmpServer(SrsRtmpModel):
+    def __init__(self, unique_name: str, connection: Redis):
+        super().__init__(unique_name, connection)
+
+    @staticmethod
+    def _get_prefix():
+        return 'srsrt'
+
+    def get_commands(self) -> list:
+        return ['./objs/srs', '-c', 'conf/realtime.flv.conf']
 
 
 class LiveGoRtmpModel(BaseRtmpModel):

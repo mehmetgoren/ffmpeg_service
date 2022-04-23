@@ -84,6 +84,8 @@ class FFmpegConfig:
         self.watch_dog_interval: int = 21
         self.watch_dog_failed_wait_interval: float = 3.
         self.start_task_wait_for_interval: float = 1.
+        self.record_concat_limit: int = 1
+        self.record_video_file_indexer_interval: int = 60
 
 
 class AiConfig:

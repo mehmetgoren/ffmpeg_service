@@ -10,13 +10,15 @@ from rq.command import send_stop_job_command, send_kill_horse_command, send_shut
 from rq.job import Job, get_current_job, Retry
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
-from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event
+from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event, \
+    listen_various_events
 from sustain.failed_stream.failed_stream_repository import FailedStreamRepository
 from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.task.task_model import TaskModel, TaskOp
 from sustain.task.task_repository import TaskRepository
 from sustain.kill_prevs import kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
+from sustain.video_file_indexer_timer import schedule_video_file_indexer
 from sustain.watchdog_timer import WatchDogTimer
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
@@ -34,7 +36,9 @@ __func_dic = {
     TaskOp.listen_stop_stream_event: listen_stop_stream_event,
     TaskOp.listen_restart_stream_event: listen_restart_stream_event,
     TaskOp.listen_editor_event: listen_editor_event,
-    TaskOp.watchdog: __watchdog.start
+    TaskOp.listen_various_events: listen_various_events,
+    TaskOp.watchdog: __watchdog.start,
+    TaskOp.schedule_video_file_indexer: schedule_video_file_indexer
 }
 __wait_for = config.ffmpeg.start_task_wait_for_interval
 
@@ -148,7 +152,11 @@ def add_tasks():
     __task_repository.add(task)
     task.set_op(TaskOp.listen_editor_event)
     __task_repository.add(task)
+    task.set_op(TaskOp.listen_various_events)
+    __task_repository.add(task)
     task.set_op(TaskOp.watchdog)
+    __task_repository.add(task)
+    task.set_op(TaskOp.schedule_video_file_indexer)
     __task_repository.add(task)
 
 

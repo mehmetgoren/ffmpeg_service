@@ -30,7 +30,6 @@ class StreamRepository(BaseRepository):
         if not dic:
             return None
         model: StreamModel = self.from_redis(StreamModel(), dic)
-        model.set_paths()
         return model
 
     def get_all(self) -> List[StreamModel]:
@@ -39,7 +38,6 @@ class StreamRepository(BaseRepository):
         for key in keys:
             dic = self.connection.hgetall(key)
             model: StreamModel = self.from_redis(StreamModel(), dic)
-            model.set_paths()
             models.append(model)
         return models
 

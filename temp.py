@@ -4,19 +4,26 @@ import glob
 import os
 import subprocess
 from io import BytesIO
-
+import os.path as path
 import docker
+import ffmpeg
 import numpy as np
 from PIL import Image
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
+from common.data.source_model import SourceModel, RecordFileTypes
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
-from common.utilities import crate_redis_connection, RedisDb
-from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
+from common.utilities import crate_redis_connection, RedisDb, logger
+from ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
+from record.concat_demuxer import ConcatDemuxer
+from record.video_file_indexer import VideoFileIndexer
+from record.video_file_merger import VideoFileMerger
+from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
+from utils.dir import get_record_dir_by
 from utils.json_serializer import serialize_json_dic
 
 __event_bus = EventBus('read_service')
@@ -105,11 +112,12 @@ def rc_test():
     streams = rep.get_all()
     for stream in streams:
         if stream.record_enabled:
-            list_of_files = glob.glob(f'{stream.record_output_folder_path}/*')  # * means all if it needs specific format then *.csv
+            dir_path = get_record_dir_by(stream.id)
+            list_of_files = glob.glob(f'{dir_path}/*')  # * means all if it needs specific format then *.csv
             latest_file = max(list_of_files, key=os.path.getctime)
             size = os.path.getsize(latest_file)
             print(f'{latest_file} - {size}')
-            # print(os.stat(stream.record_output_folder_path))
+            # print(os.stat(dir_path))
 
 
 # rc_test()
@@ -192,4 +200,88 @@ def add_rtsp_templates():
     template.templates = '{user},{password},{ip}'
     rep.add(template)
 
+
 # add_rtsp_templates()
+
+
+def probe_bench():
+    filename = '/home/gokalp/Documents/sill/temp/2022_04_14_18_55_30.mp4'
+    # filename = '/home/gokalp/Documents/sill/temp/corrupted/2022_04_14_00_10_10.mp4'
+    start = datetime.datetime.now()
+    length = 100
+    for j in range(length):
+        try:
+            _ = ffmpeg.probe(filename)
+        except BaseException as ex:
+            logger.error(f'{ex}')
+    end = datetime.datetime.now()
+    print(f'probe_bench result s: {(end - start).seconds}')
+    print(f'probe_bench result ms: {(end - start).microseconds}')
+
+
+# probe_bench()
+
+def test_video_file_indexer():
+    conn_main = crate_redis_connection(RedisDb.MAIN)
+    source_repository = SourceRepository(conn_main)
+    source_id = 'e5dbkevdg6l'
+    source_model = SourceModel()
+    source_model.id = source_id
+    source_model.record_file_type = RecordFileTypes.MP4
+    source_repository.add(source_model)
+    vfi = VideoFileIndexer(source_repository)
+    vfi.move(source_id)
+
+
+# test_video_file_indexer()
+
+
+def test_concat_demuxer():
+    conn_main = crate_redis_connection(RedisDb.MAIN)
+    stream_repository = StreamRepository(conn_main)
+    source_id = 'e5dbkevdg6l'
+    stream_model = StreamModel()
+    stream_model.id = source_id
+    stream_repository.add(stream_model)
+    cd = ConcatDemuxer(stream_repository)
+    root_path = path.join(get_record_dir_by(source_id), '2022', '4', '18', '19')
+    lds = os.listdir(root_path)
+    filenames = []
+    for ld in lds:
+        filenames.append(path.join(root_path, ld))
+    output = path.join(root_path, 'output.mp4')
+    proc = cd.concatenate(source_id, filenames, output)
+    proc.terminate()
+
+
+# test_concat_demuxer()
+
+
+def test_video_file_merger():
+    conn_main = crate_redis_connection(RedisDb.MAIN)
+    source_repository = SourceRepository(conn_main)
+    stream_repository = StreamRepository(conn_main)
+    source_id = 'e5dbkevdg6l'
+    vfm = VideoFileMerger(source_repository, stream_repository)
+    vfm.merge(source_id, '2022_4_18_19')
+
+
+# test_video_file_merger()
+
+# def concat_demuxer_test():
+#     conn_main = crate_redis_connection(RedisDb.MAIN)
+#     source_repository = SourceRepository(conn_main)
+#     stream_repository = StreamRepository(conn_main)
+#     cd = ConcatDemuxer(source_repository, stream_repository)
+#     source_id = 'e5dbkevdg6l'
+#     for j in range(1):
+#         cd.concatenate(source_id)
+#     # start = datetime.datetime.now()
+#     # cd.concatenate()
+#     # end = datetime.datetime.now()
+#     # print(f'concat_demuxer_test result in sec      : {(end - start).seconds}')
+#     # print(f'concat_demuxer_test result in micro-sec: {(end - start).microseconds}')
+
+
+# #
+# concat_demuxer_test()

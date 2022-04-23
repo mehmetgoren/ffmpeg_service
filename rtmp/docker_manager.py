@@ -3,7 +3,7 @@ import docker
 from redis.client import Redis
 
 from stream.stream_model import StreamModel, RmtpServerType
-from rtmp.rtmp_models import BaseRtmpModel, SrsRtmpModel, LiveGoRtmpModel, NodeMediaServerRtmpModel
+from rtmp.rtmp_models import BaseRtmpModel, SrsRtmpModel, SrsRealtimeRtmpServer, LiveGoRtmpModel, NodeMediaServerRtmpModel
 
 
 # for more info: https://docker-py.readthedocs.io/en/stable/containers.html
@@ -12,17 +12,17 @@ class DockerManager:
         self.connection: Redis = connection
         self.client = docker.from_env()
 
-    def create_rtmp_model(self, server_type: RmtpServerType, unique_name: str) -> BaseRtmpModel:
-        if server_type == RmtpServerType.SRS:
-            return SrsRtmpModel(unique_name, self.connection)
-        elif server_type == RmtpServerType.LIVEGO:
-            return LiveGoRtmpModel(unique_name, self.connection)
-        elif server_type == RmtpServerType.NODE_MEDIA_SERVER:
-            return NodeMediaServerRtmpModel(unique_name, self.connection)
-        raise NotImplementedError('RmtpServerType was not match')
-
     def __create_rtmp_model(self, rtmp_server_type: RmtpServerType, stream_id: str) -> BaseRtmpModel:
-        rtmp_model = self.create_rtmp_model(rtmp_server_type, stream_id)
+        if rtmp_server_type == RmtpServerType.SRS:
+            rtmp_model = SrsRtmpModel(stream_id, self.connection)
+        elif rtmp_server_type == RmtpServerType.SRS_REALTIME:
+            rtmp_model = SrsRealtimeRtmpServer(stream_id, self.connection)
+        elif rtmp_server_type == RmtpServerType.LIVEGO:
+            rtmp_model = LiveGoRtmpModel(stream_id, self.connection)
+        elif rtmp_server_type == RmtpServerType.NODE_MEDIA_SERVER:
+            rtmp_model = NodeMediaServerRtmpModel(stream_id, self.connection)
+        else:
+            raise NotImplementedError('RmtpServerType was not match')
 
         rtmp_model.int_ports()
 

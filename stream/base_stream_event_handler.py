@@ -2,7 +2,6 @@ import os
 import shutil
 from abc import ABC
 
-from command_builder import get_hls_output_path
 from common.data.redis_mapper import RedisMapper
 from common.data.source_model import SourceModel
 from common.event_bus.event_bus import EventBus
@@ -10,6 +9,7 @@ from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
+from utils.dir import get_hls_path
 
 
 class BaseStreamEventHandler(EventHandler, ABC):
@@ -32,10 +32,10 @@ class BaseStreamEventHandler(EventHandler, ABC):
 
     @staticmethod
     def delete_prev_stream_files(source_id: str):
-        hls_output_file_path = get_hls_output_path(source_id)
-        folder: str = os.path.dirname(hls_output_file_path)
-        for filename in os.listdir(folder):
-            file_path = os.path.join(folder, filename)
+        hls_output_dir = get_hls_path(source_id)
+        directory: str = os.path.dirname(hls_output_dir)
+        for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
             try:
                 if os.path.isfile(file_path) or os.path.islink(file_path):
                     os.unlink(file_path)

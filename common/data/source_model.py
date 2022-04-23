@@ -5,8 +5,9 @@ from common.utilities import datetime_now
 
 class RmtpServerType(IntEnum):
     SRS = 0
-    LIVEGO = 1
-    NODE_MEDIA_SERVER = 2
+    SRS_REALTIME = 1
+    LIVEGO = 2
+    NODE_MEDIA_SERVER = 3
 
 
 class RtspTransport(IntEnum):
@@ -407,7 +408,6 @@ class FFmpegModel:
     def __init__(self, identifier: str = '', address: str = ''):
         self.id: str = identifier
         self.address: str = address
-        self.record_enabled: bool = False
         self.rtsp_transport: RtspTransport = RtspTransport.Auto
 
         self.analyzation_duration: int = 1000000
@@ -451,8 +451,6 @@ class FFmpegModel:
         self.record_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.record_audio_volume: int = 100
 
-        self.video_clip_enabled: bool = False
-
         self.log_level: LogLevel = LogLevel.Warning
 
 
@@ -474,6 +472,9 @@ class SourceModel(FFmpegModel):
         self.ffmpeg_reader_frame_rate: int = 1
         self.ffmpeg_reader_width: int = 640
         self.ffmpeg_reader_height: int = 360
+
+        self.record_enabled: bool = False
+        self.ai_clip_enabled: bool = False
 
         self.created_at: str = datetime_now()
 

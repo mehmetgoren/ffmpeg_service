@@ -4,18 +4,7 @@ from typing import List
 from common.data.source_model import FFmpegModel, RtspTransport, VideoDecoder, StreamType, StreamVideoCodec, Preset, Rotate, AudioCodec, \
     LogLevel, AudioChannel, AudioQuality, AudioSampleRate, RecordFileTypes, RecordVideoCodec, AccelerationEngine
 from common.utilities import config
-
-
-def get_hls_output_path(source_id: str) -> str:
-    return os.path.join(config.general.root_folder_path, 'stream', source_id, 'stream.m3u8')
-
-
-def get_record_output_folder_path(source_id: str) -> str:
-    return os.path.join(config.general.root_folder_path, 'record', source_id)
-
-
-def get_temp_video_clip_output_folder_path(source_id: str) -> str:
-    return os.path.join(config.general.root_folder_path, 'record', source_id, 'temp')
+from utils.dir import get_record_dir_by, get_ai_clip_dir, get_hls_path
 
 
 class CommandBuilder:
@@ -119,7 +108,7 @@ class CommandBuilder:
         args.extend(['-start_number', '0'])
         args.extend(['-hls_allow_cache', '0'])
         args.extend(['-hls_flags', '+delete_segments+omit_endlist'])
-        args.append(self.__add_double_quotes(get_hls_output_path(f.id)))
+        args.append(self.__add_double_quotes(get_hls_path(f.id)))
         return args
 
     def __build_record(self, duration: int, output_path: str) -> List[str]:
@@ -171,19 +160,15 @@ class CommandBuilder:
         args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1',
                      '-segment_list', 'pipe:8'])
         if duration < 1:
-            duration = 15
+            duration = 10
         args.extend(['-segment_time', str(duration)])
         args.append(self.__add_double_quotes(os.path.join(output_path, f'%Y_%m_%d_%H_%M_%S.{RecordFileTypes.str(f.record_file_type)}')))
         return args
 
     def build_record(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        if not f.record_enabled:
-            return []
-        args = self.__build_record(f.record_segment_interval * 60, get_record_output_folder_path(f.id))  # in minutes
-        if f.video_clip_enabled:
-            svc_args = self.__build_record(config.ai.video_clip_duration, get_temp_video_clip_output_folder_path(f.id))  # in seconds
-            length = len(svc_args)
-            svc_args = svc_args[3:length]
-            args.extend(svc_args)
-        return args
+        return self.__build_record(f.record_segment_interval * 60, get_record_dir_by(f.id))  # in minutes
+
+    def build_ai_clip(self) -> List[str]:
+        f: FFmpegModel = self.ffmpeg_model
+        return self.__build_record(config.ai.video_clip_duration, get_ai_clip_dir(f.id))  # in seconds

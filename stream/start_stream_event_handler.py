@@ -11,11 +11,12 @@ from command_builder import CommandBuilder
 from common.data.source_model import SourceModel, RmtpServerType
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
-from readers.ffmpeg_reader import FFmpegReaderOptions, FFmpegReader
+from ffmpeg_reader import FFmpegReaderOptions, FFmpegReader
 from rtmp.docker_manager import DockerManager
 from stream.base_stream_event_handler import BaseStreamEventHandler
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
+from utils.dir import get_hls_path
 from utils.json_serializer import serialize_json
 
 
@@ -46,6 +47,8 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 starters.append(FFmpegReaderProcessesStarter(self.stream_repository))
             if stream_model.is_record_enabled():
                 starters.append(RecordProcessStarter(self.stream_repository))
+            if stream_model.is_ai_clip_enabled():
+                starters.append(AiClipProcessStarter(self.stream_repository))
             if stream_model.is_snapshot_enabled():
                 starters.append(SnapshotProcessStarter(self.stream_repository))
             for starter in starters:
@@ -149,8 +152,9 @@ class HlsProcessStarter(SubProcessTemplate):
     def __wait_for(stream_model: StreamModel):
         max_retry = config.ffmpeg.max_operation_retry_count
         retry_count = 0
+        hls_output_path = get_hls_path(stream_model.id)
         while retry_count < max_retry:
-            if os.path.exists(stream_model.hls_output_path):
+            if os.path.exists(hls_output_path):
                 logger.info(f'HLS stream file created at {datetime.now()}')
                 break
             time.sleep(1.)
@@ -177,9 +181,24 @@ class RecordProcessStarter(SubProcessTemplate):
         cmd_builder = CommandBuilder(source_model)
         args = cmd_builder.build_record()
         proc = subprocess.Popen(args)
-        logger.info(f'stream Video Recording subprocess has been opened at {datetime.now()}')
+        logger.info(f'recording subprocess has been opened at {datetime.now()}')
         stream_model.record_pid = proc.pid
         stream_model.record_args = ' '.join(args)
+        return proc
+
+
+class AiClipProcessStarter(SubProcessTemplate):
+    def __init__(self, stream_repository: StreamRepository):
+        super().__init__(stream_repository)
+
+    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        self._wait_extra(stream_model)
+        cmd_builder = CommandBuilder(source_model)
+        args = cmd_builder.build_ai_clip()
+        proc = subprocess.Popen(args)
+        logger.info(f'ai clip subprocess has been opened at {datetime.now()}')
+        stream_model.ai_clip_pid = proc.pid
+        stream_model.ai_clip_args = ' '.join(args)
         return proc
 
 
@@ -194,7 +213,6 @@ class FFmpegReaderTemplate(ProcessStarter, ABC):
         ffmpeg_reader.close()
 
 
-# noinspection DuplicatedCode
 class SnapshotProcessStarter(FFmpegReaderTemplate):
     def __init__(self, stream_repository: StreamRepository):
         super().__init__(stream_repository)
@@ -207,14 +225,13 @@ class SnapshotProcessStarter(FFmpegReaderTemplate):
         options.frame_rate = stream_model.snapshot_frame_rate
         options.width = stream_model.snapshot_width
         options.height = stream_model.snapshot_height
-        options.video_clip_enabled = stream_model.video_clip_enabled
+        options.ai_clip_enabled = stream_model.ai_clip_enabled
         ffmpeg_reader = FFmpegReader(options)
         stream_model.snapshot_pid = ffmpeg_reader.get_pid()
         logger.info(f'starting Snapshot process at {datetime.now()}')
         return ffmpeg_reader
 
 
-# noinspection DuplicatedCode
 class FFmpegReaderProcessesStarter(FFmpegReaderTemplate):
     def __init__(self, stream_repository: StreamRepository):
         super().__init__(stream_repository)
