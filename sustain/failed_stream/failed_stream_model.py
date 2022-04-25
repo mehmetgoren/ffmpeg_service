@@ -9,7 +9,6 @@ class WatchDogOperations(str, Enum):
     check_hls_process = 'check_hls_process'
     check_ffmpeg_reader_process = 'check_ffmpeg_reader_process'
     check_record_process = 'check_record_process'
-    check_ai_clip_process = 'check_ai_clip_process'
     check_snapshot_process = 'check_snapshot_process'
     check_record_stuck_process = 'check_record_stuck_process'
 
@@ -28,7 +27,6 @@ class FailedStreamModel:
         self.hls_failed_count: int = 0
         self.ffmpeg_reader_failed_count: int = 0
         self.record_failed_count: int = 0
-        self.ai_clip_failed_count: int = 0
         self.snapshot_failed_count: int = 0
         self.record_stuck_process_count: int = 0
 
@@ -52,8 +50,6 @@ class FailedStreamModel:
             self.ffmpeg_reader_failed_count += 1
         elif op == WatchDogOperations.check_record_process:
             self.record_failed_count += 1
-        elif op == WatchDogOperations.check_ai_clip_process:
-            self.ai_clip_failed_count += 1
         elif op == WatchDogOperations.check_snapshot_process:
             self.snapshot_failed_count += 1
         elif op == WatchDogOperations.check_record_stuck_process:

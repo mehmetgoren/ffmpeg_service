@@ -42,14 +42,6 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                 except BaseException as e:
                     logger.error(f'Error while killing a FFmpeg Recording process, pid: {stream_model.record_pid}, err: {e}')
 
-            if stream_model.is_ai_clip_enabled():
-                try:
-                    if stream_model.ai_clip_pid > 0:
-                        os.kill(stream_model.ai_clip_pid, 9)
-                        logger.info(f'a FFMpeg Ai Clip process has been killed, pid: {stream_model.record_pid}')
-                except BaseException as e:
-                    logger.error(f'Error while killing a FFmpeg Ai Clip process, pid: {stream_model.record_pid}, err: {e}')
-
             if stream_model.is_hls_enabled():
                 try:
                     self.delete_prev_stream_files(stream_model.id)

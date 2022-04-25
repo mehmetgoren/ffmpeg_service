@@ -45,8 +45,6 @@ class StreamModel:
         self.snapshot_height: int = 360
 
         self.ai_clip_enabled: bool = False
-        self.ai_clip_pid: int = 0
-        self.ai_clip_args: str = ''
 
         self.concat_demuxer_pid: int = 0
         self.concat_demuxer_args: str = ''

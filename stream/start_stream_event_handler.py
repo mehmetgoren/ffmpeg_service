@@ -47,8 +47,6 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 starters.append(FFmpegReaderProcessesStarter(self.stream_repository))
             if stream_model.is_record_enabled():
                 starters.append(RecordProcessStarter(self.stream_repository))
-            if stream_model.is_ai_clip_enabled():
-                starters.append(AiClipProcessStarter(self.stream_repository))
             if stream_model.is_snapshot_enabled():
                 starters.append(SnapshotProcessStarter(self.stream_repository))
             for starter in starters:
@@ -180,25 +178,15 @@ class RecordProcessStarter(SubProcessTemplate):
         self._wait_extra(stream_model)
         cmd_builder = CommandBuilder(source_model)
         args = cmd_builder.build_record()
+        if stream_model.is_ai_clip_enabled():
+            svc_args = cmd_builder.build_ai_clip()
+            length = len(svc_args)
+            svc_args = svc_args[3:length]
+            args.extend(svc_args)
         proc = subprocess.Popen(args)
         logger.info(f'recording subprocess has been opened at {datetime.now()}')
         stream_model.record_pid = proc.pid
         stream_model.record_args = ' '.join(args)
-        return proc
-
-
-class AiClipProcessStarter(SubProcessTemplate):
-    def __init__(self, stream_repository: StreamRepository):
-        super().__init__(stream_repository)
-
-    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
-        self._wait_extra(stream_model)
-        cmd_builder = CommandBuilder(source_model)
-        args = cmd_builder.build_ai_clip()
-        proc = subprocess.Popen(args)
-        logger.info(f'ai clip subprocess has been opened at {datetime.now()}')
-        stream_model.ai_clip_pid = proc.pid
-        stream_model.ai_clip_args = ' '.join(args)
         return proc
 
 
