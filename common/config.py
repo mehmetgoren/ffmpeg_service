@@ -90,10 +90,11 @@ class FFmpegConfig:
 
 class AiConfig:
     def __init__(self):
-        self.read_service_overlay: bool = True
+        self.overlay: bool = True
         self.video_clip_duration: int = 10
         self.face_recog_mtcnn_threshold: float = .86
         self.face_recog_prob_threshold: float = .95
+        self.plate_recog_instance_count: int = 2
 
 
 class Config:

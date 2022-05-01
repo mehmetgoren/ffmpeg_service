@@ -1,5 +1,5 @@
 import base64
-import datetime
+from datetime import datetime
 import glob
 import os
 import subprocess
@@ -54,7 +54,7 @@ def pipe_test():
         packet = proc.stdout.read(packet_size)
         numpy_img = np.frombuffer(packet, np.uint8).reshape([height, width, cl_channels])
         _send(numpy_img)
-        print(numpy_img.shape, ' at ', str(datetime.datetime.now()))
+        print(numpy_img.shape, ' at ', str(datetime.now()))
     # p.wait()
 
 
@@ -63,12 +63,12 @@ def pipe_test():
 def redis_bench():
     conn = crate_redis_connection(RedisDb.MAIN)
     rep = SourceRepository(conn)
-    start = datetime.datetime.now()
+    start = datetime.now()
     length = 10000
     for j in range(length):
         _ = rep.get('3xzdeqtd3p6')
         # print(source.name)
-    end = datetime.datetime.now()
+    end = datetime.now()
     print(f'result: {(end - start).microseconds}')
 
 
@@ -78,28 +78,28 @@ def redis_bench():
 def set_test():
     arr = [j for j in range(1000)]
 
-    start = datetime.datetime.now()
+    start = datetime.now()
     length = 1000000
     for j in range(length):
         _ = j in arr
         # print(source.name)
-    end = datetime.datetime.now()
+    end = datetime.now()
     print(f'arr result: {(end - start).microseconds}')
 
     sett = {j for j in range(1000)}
-    start = datetime.datetime.now()
+    start = datetime.now()
     for j in range(length):
         _ = j in sett
         # print(source.name)
-    end = datetime.datetime.now()
+    end = datetime.now()
     print(f'set result: {(end - start).microseconds}')
 
     dic = {j: True for j in range(1000)}
-    start = datetime.datetime.now()
+    start = datetime.now()
     for j in range(length):
         _ = j in dic
         # print(source.name)
-    end = datetime.datetime.now()
+    end = datetime.now()
     print(f'dict result: {(end - start).microseconds}')
 
 
@@ -155,7 +155,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():
@@ -207,14 +207,14 @@ def add_rtsp_templates():
 def probe_bench():
     filename = '/home/gokalp/Documents/sill/temp/2022_04_14_18_55_30.mp4'
     # filename = '/home/gokalp/Documents/sill/temp/corrupted/2022_04_14_00_10_10.mp4'
-    start = datetime.datetime.now()
+    start = datetime.now()
     length = 100
     for j in range(length):
         try:
             _ = ffmpeg.probe(filename)
         except BaseException as ex:
             logger.error(f'{ex}')
-    end = datetime.datetime.now()
+    end = datetime.now()
     print(f'probe_bench result s: {(end - start).seconds}')
     print(f'probe_bench result ms: {(end - start).microseconds}')
 
@@ -276,12 +276,28 @@ def test_video_file_merger():
 #     source_id = 'e5dbkevdg6l'
 #     for j in range(1):
 #         cd.concatenate(source_id)
-#     # start = datetime.datetime.now()
+#     # start = datetime.now()
 #     # cd.concatenate()
-#     # end = datetime.datetime.now()
+#     # end = datetime.now()
 #     # print(f'concat_demuxer_test result in sec      : {(end - start).seconds}')
 #     # print(f'concat_demuxer_test result in micro-sec: {(end - start).microseconds}')
 
 
 # #
 # concat_demuxer_test()
+
+def test_openalpr_local():
+    client = docker.from_env()
+    filters: dict = {'name': 'openalpr_local'}
+    container = client.containers.list(filters)[0]
+    res = None
+    start = datetime.now()
+    for j in range(25):
+        res = container.exec_run('alpr -c eu tr4.jpg -j')
+    end = datetime.now()
+    diff = end - start
+    print(f'{diff.seconds}:{diff.microseconds}')
+    # print(res.output.decode('utf-8'))
+
+
+test_openalpr_local()
