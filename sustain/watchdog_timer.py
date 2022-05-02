@@ -9,7 +9,7 @@ from redis.client import Redis
 from common.data.source_model import SourceModel
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
-from common.utilities import logger, config
+from common.utilities import logger, config, datetime_now
 from rtmp.docker_manager import DockerManager
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
@@ -116,7 +116,7 @@ class WatchDogTimer:
             if self.__check_snapshot_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
-            if (datetime.now() - self.last_check_record_stuck_process_datetime).seconds > 180:
+            if (datetime.now() - self.last_check_record_stuck_process_datetime).seconds > (stream_model.record_segment_interval * 60 * 2):
                 if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
                     broken_streams.append(stream_model)
                 self.last_check_record_stuck_process_datetime = datetime.now()
@@ -184,6 +184,7 @@ class WatchDogTimer:
             db_model = rec_stuck_repository.get(stream_model.id)
             if db_model is None:
                 db_model = RecStuckModel().from_stream(stream_model)
+                db_model.last_operation_at = datetime_now()
                 rec_stuck_repository.add(db_model)
             else:
                 current = RecStuckModel().from_stream(stream_model)
@@ -196,6 +197,7 @@ class WatchDogTimer:
 
                 db_model.failed_count += 1
                 db_model.failed_modified_file = db_model.last_modified_file
+                db_model.last_operation_at = datetime_now()
                 rec_stuck_repository.add(db_model)
 
                 self.__recover(op, stream_model)

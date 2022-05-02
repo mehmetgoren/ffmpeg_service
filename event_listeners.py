@@ -44,7 +44,7 @@ def listen_various_events():
     def fn_listen_vfm():
         while 1:
             try:
-                vfm_handler = VideoFileMergerEventHandler(__source_repository, __stream_repository)
+                vfm_handler = VideoFileMergerEventHandler(__stream_repository)
                 event_bus = EventBus('vfm_request')
                 event_bus.subscribe_async(vfm_handler)
             except BaseException as ex:

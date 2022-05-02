@@ -1,13 +1,11 @@
-from common.data.source_repository import SourceRepository
 from common.utilities import crate_redis_connection, RedisDb, config
 from record.video_file_indexer import VideoFileIndexer
 from stream.stream_repository import StreamRepository
 from sustain.scheduler import setup_scheduler
 
 __connection_main = crate_redis_connection(RedisDb.MAIN)
-__source_repository = SourceRepository(crate_redis_connection(RedisDb.MAIN))
 __stream_repository = StreamRepository(__connection_main)
-__vfi = VideoFileIndexer(__source_repository)
+__vfi = VideoFileIndexer(__stream_repository)
 __interval = config.ffmpeg.record_video_file_indexer_interval
 
 

@@ -1,4 +1,5 @@
 import os
+import pathlib
 from os import path
 from pathlib import Path
 from datetime import datetime
@@ -73,6 +74,17 @@ def sort_video_files(filenames: List[str]) -> List[str]:
             items.append(fi)
     items.sort()
     return [item.filename for item in items]
+
+
+def get_sorted_valid_files(dir_path: str, ext: str) -> List[str]:
+    all_files = os.listdir(dir_path)
+    ret: List[str] = []
+    for f in all_files:
+        full_path = path.join(dir_path, f)
+        if path.isdir(full_path) or pathlib.Path(f).suffix != ext:
+            continue
+        ret.append(full_path)
+    return sort_video_files(ret)
 
 
 def filename_to_datetime(filename: str) -> datetime:

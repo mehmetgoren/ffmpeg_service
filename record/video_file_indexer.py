@@ -1,32 +1,20 @@
 import os
 from os import path
-import pathlib
 from typing import List
 import ffmpeg
 
 from common.data.source_model import RecordFileTypes
-from common.data.source_repository import SourceRepository
 from common.utilities import config, logger
-from utils.dir import get_record_dir_by, get_filename_date_record_dir, create_dir_if_not_exists, sort_video_files
+from stream.stream_repository import StreamRepository
+from utils.dir import get_record_dir_by, get_filename_date_record_dir, create_dir_if_not_exists, get_sorted_valid_files
 
 
 class VideoFileIndexer:
-    def __init__(self, source_repository: SourceRepository):
-        self.source_repository = source_repository
+    def __init__(self, stream_repository: StreamRepository):
+        self.stream_repository = stream_repository
         self.last_file_count = config.ffmpeg.record_concat_limit
         if self.last_file_count < 1:
             self.last_file_count = 1
-
-    @staticmethod
-    def __get_valid_files(source_record_dir: str, ext: str) -> List[str]:
-        all_files = os.listdir(source_record_dir)
-        ret: List[str] = []
-        for f in all_files:
-            full_path = path.join(source_record_dir, f)
-            if path.isdir(full_path) or pathlib.Path(f).suffix != ext:
-                continue
-            ret.append(full_path)
-        return sort_video_files(ret)
 
     @staticmethod
     def __remove_invalid_midget_files(filenames: List[str]) -> List[str]:
@@ -58,9 +46,12 @@ class VideoFileIndexer:
 
     def move(self, source_id: str):
         source_record_dir = get_record_dir_by(source_id)
-        source_model = self.source_repository.get(source_id)
-        ext = '.' + RecordFileTypes.str(source_model.record_file_type)
-        filenames = self.__get_valid_files(source_record_dir, ext)
+        stream_model = self.stream_repository.get(source_id)
+        if stream_model is None:
+            logger.info(f'no stream({source_id}) was found for move operation')
+            return
+        ext = '.' + RecordFileTypes.str(stream_model.record_file_type)
+        filenames = get_sorted_valid_files(source_record_dir, ext)
         valid_file_length = len(filenames) - self.last_file_count
         if valid_file_length < 1:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')

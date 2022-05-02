@@ -3,7 +3,6 @@ import os.path as path
 from typing import List
 
 from common.data.source_model import RecordFileTypes
-from common.data.source_repository import SourceRepository
 from common.utilities import logger
 from record.concat_demuxer import ConcatDemuxer
 from stream.stream_repository import StreamRepository
@@ -11,8 +10,7 @@ from utils.dir import get_given_date_record_dir, sort_video_files
 
 
 class VideoFileMerger:
-    def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
-        self.source_repository = source_repository
+    def __init__(self, stream_repository: StreamRepository):
         self.stream_repository = stream_repository
         self.cd = ConcatDemuxer(stream_repository)
 
@@ -42,8 +40,8 @@ class VideoFileMerger:
         for ld in lds:
             filenames.append(path.join(source_record_dir, ld))
         filenames = sort_video_files(filenames)
-        source_model = self.source_repository.get(source_id)
-        ext = '.' + RecordFileTypes.str(source_model.record_file_type)
+        stream_model = self.stream_repository.get(source_id)
+        ext = '.' + RecordFileTypes.str(stream_model.record_file_type)
         output_file = path.join(source_record_dir, f'output{ext}')
         prev_output_file_exists = path.exists(output_file)
         prev_output_file = ''

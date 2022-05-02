@@ -1,4 +1,4 @@
-from common.data.source_model import RmtpServerType, SourceModel, StreamType
+from common.data.source_model import RmtpServerType, SourceModel, StreamType, RecordFileTypes
 from common.utilities import datetime_now
 
 
@@ -33,9 +33,10 @@ class StreamModel:
         self.ffmpeg_reader_height: int = 360
 
         self.record_enabled: bool = False
+        self.record_file_type: RecordFileTypes = RecordFileTypes.MP4
         self.record_pid: int = 0
         self.record_args: str = ''
-        self.record_duration: int = 15
+        self.record_segment_interval: int = 15
 
         # FFmpeg snapshot for AI.
         self.snapshot_enabled: bool = False
@@ -70,7 +71,8 @@ class StreamModel:
         self.snapshot_height: int = source.snapshot_height
 
         self.record_enabled = source.record_enabled
-        self.record_duration = source.record_segment_interval
+        self.record_file_type = source.record_file_type
+        self.record_segment_interval = source.record_segment_interval
 
         self.ai_clip_enabled = source.ai_clip_enabled
 

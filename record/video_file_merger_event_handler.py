@@ -1,7 +1,6 @@
 from datetime import datetime
 
 from common.data.redis_mapper import RedisMapper
-from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
@@ -12,8 +11,7 @@ from utils.json_serializer import serialize_json
 
 
 class VideoFileMergerEventHandler(EventHandler):
-    def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
-        self.source_repository = source_repository
+    def __init__(self, stream_repository: StreamRepository):
         self.stream_repository = stream_repository
         self.event_bus = EventBus('vfm_response')
         logger.info(f'VideoFileMergerEventHandler: initialized at {datetime.now()}')
@@ -25,7 +23,7 @@ class VideoFileMergerEventHandler(EventHandler):
 
         mapper = RedisMapper(VideoFileMergerRequestEvent)
         request: VideoFileMergerRequestEvent = mapper.from_redis_pubsub(dic)
-        vfm = VideoFileMerger(self.source_repository, self.stream_repository)
+        vfm = VideoFileMerger(self.stream_repository)
         response = VideoFileMergerResponseEvent()
         response.result = vfm.merge(request.id, request.date_str)
 

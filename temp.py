@@ -13,7 +13,7 @@ from PIL import Image
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
 from common.data.rtsp_template_repository import RtspTemplateRepository
-from common.data.source_model import SourceModel, RecordFileTypes
+from common.data.source_model import RecordFileTypes
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb, logger
@@ -23,7 +23,7 @@ from record.video_file_indexer import VideoFileIndexer
 from record.video_file_merger import VideoFileMerger
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
-from utils.dir import get_record_dir_by
+from utils.dir import get_record_dir_by, get_sorted_valid_files
 from utils.json_serializer import serialize_json_dic
 
 __event_bus = EventBus('read_service')
@@ -223,13 +223,13 @@ def probe_bench():
 
 def test_video_file_indexer():
     conn_main = crate_redis_connection(RedisDb.MAIN)
-    source_repository = SourceRepository(conn_main)
+    stream_repository = StreamRepository(conn_main)
     source_id = 'e5dbkevdg6l'
-    source_model = SourceModel()
-    source_model.id = source_id
-    source_model.record_file_type = RecordFileTypes.MP4
-    source_repository.add(source_model)
-    vfi = VideoFileIndexer(source_repository)
+    stream_model = StreamModel()
+    stream_model.id = source_id
+    stream_model.record_file_type = RecordFileTypes.MP4
+    stream_repository.add(stream_model)
+    vfi = VideoFileIndexer(stream_repository)
     vfi.move(source_id)
 
 
@@ -259,10 +259,9 @@ def test_concat_demuxer():
 
 def test_video_file_merger():
     conn_main = crate_redis_connection(RedisDb.MAIN)
-    source_repository = SourceRepository(conn_main)
     stream_repository = StreamRepository(conn_main)
     source_id = 'e5dbkevdg6l'
-    vfm = VideoFileMerger(source_repository, stream_repository)
+    vfm = VideoFileMerger(stream_repository)
     vfm.merge(source_id, '2022_4_18_19')
 
 
@@ -297,7 +296,19 @@ def test_openalpr_local():
     end = datetime.now()
     diff = end - start
     print(f'{diff.seconds}:{diff.microseconds}')
-    # print(res.output.decode('utf-8'))
+    print(res.output.decode('utf-8'))
 
 
-test_openalpr_local()
+# test_openalpr_local()
+
+def restuck_test():
+    first = ''
+    record_output_dir = '/mnt/sde1/record/qhfv46ocpha/2022/4/22/21'
+    ext = '.' + RecordFileTypes.str(RecordFileTypes.MP4)
+    files = get_sorted_valid_files(record_output_dir, ext)
+    if len(files) > 0:
+        first = files[0]
+    print(first)
+
+
+restuck_test()
