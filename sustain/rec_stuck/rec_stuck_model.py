@@ -19,7 +19,7 @@ class RecStuckModel:
         self.failed_count: int = 0
         self.failed_modified_file: str = ''
 
-        self.last_operation_at: str = ''
+        self.last_check_at: str = ''
 
     def from_stream(self, stream_model: StreamModel):
         self.id = stream_model.id

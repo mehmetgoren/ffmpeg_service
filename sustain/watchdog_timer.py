@@ -19,6 +19,7 @@ from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_model import RecStuckModel
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.scheduler import setup_scheduler
+from utils.dir import str_to_datetime
 from utils.json_serializer import serialize_json_dic
 
 
@@ -36,7 +37,6 @@ class WatchDogTimer:
         logger.info(f'watch_dog failed_process_interval is : {self.failed_process_interval}')
         self.zombie_counter = 1
         self.zombie_multiplier: int = 6
-        self.last_check_record_stuck_process_datetime = datetime.now()
 
     def __start_prev_streams(self):
         stream_models = self.stream_repository.get_all()
@@ -116,10 +116,8 @@ class WatchDogTimer:
             if self.__check_snapshot_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
-            if (datetime.now() - self.last_check_record_stuck_process_datetime).seconds > (stream_model.record_segment_interval * 60 * 2):
-                if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
-                    broken_streams.append(stream_model)
-                self.last_check_record_stuck_process_datetime = datetime.now()
+            if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
+                broken_streams.append(stream_model)
         return broken_streams
 
     def __check_rtmp_container(self, stream_model: StreamModel) -> bool:
@@ -178,15 +176,26 @@ class WatchDogTimer:
         def refresh(old: RecStuckModel, curr: RecStuckModel):
             old.last_modified_file = curr.last_modified_file
             old.last_modified_size = curr.last_modified_size
+            old.last_check_at = datetime_now()
             rec_stuck_repository.add(old)
+
+        def check_time(rsm: RecStuckModel, sm: StreamModel) -> bool:
+            last_check_at_time = str_to_datetime(rsm.last_check_at)
+            diff_sec = (datetime.now() - last_check_at_time).seconds
+            min_sec = (sm.record_segment_interval * 60 * 2)
+            return diff_sec > min_sec
 
         if stream_model.record_enabled:
             db_model = rec_stuck_repository.get(stream_model.id)
             if db_model is None:
                 db_model = RecStuckModel().from_stream(stream_model)
-                db_model.last_operation_at = datetime_now()
+                db_model.last_check_at = datetime_now()
                 rec_stuck_repository.add(db_model)
             else:
+                if not check_time(db_model, stream_model):
+                    logger.info(f'source({stream_model.id}) min interval does not meet for record restuck')
+                    return False
+
                 current = RecStuckModel().from_stream(stream_model)
                 if db_model.last_modified_file != current.last_modified_file:  # means file has been already changed
                     refresh(db_model, current)
@@ -197,7 +206,7 @@ class WatchDogTimer:
 
                 db_model.failed_count += 1
                 db_model.failed_modified_file = db_model.last_modified_file
-                db_model.last_operation_at = datetime_now()
+                db_model.last_check_at = datetime_now()
                 rec_stuck_repository.add(db_model)
 
                 self.__recover(op, stream_model)

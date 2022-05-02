@@ -90,8 +90,16 @@ def get_sorted_valid_files(dir_path: str, ext: str) -> List[str]:
 def filename_to_datetime(filename: str) -> datetime:
     try:
         filename = Path(filename).stem
+        return str_to_datetime(filename)
+    except BaseException as ex:
+        logger.error(f'an error occurred on filename_to_datetime, err: {ex}')
+        return None
+
+
+def str_to_datetime(value: str) -> datetime:
+    try:
         sep = '_'
-        splits = filename.split(sep)
+        splits = value.split(sep)
 
         year = int(splits[0])
         length = len(splits)
@@ -104,7 +112,7 @@ def filename_to_datetime(filename: str) -> datetime:
 
         return datetime(year, month, day, hour, minute, second, microsecond)
     except BaseException as ex:
-        logger.error(f'an error occurred on filename_to_datetime, err: {ex}')
+        logger.error(f'an error occurred on str_to_datetime, err: {ex}')
         return None
 
 
