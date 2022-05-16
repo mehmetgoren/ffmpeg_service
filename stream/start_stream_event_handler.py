@@ -161,7 +161,7 @@ class HlsProcessStarter(SubProcessTemplate):
     def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
         self._wait_extra(stream_model)
         cmd_builder = CommandBuilder(source_model)
-        args = cmd_builder.build_stream()
+        args = cmd_builder.build_hls_stream()
         proc = subprocess.Popen(args)
         logger.info(f'stream HLS subprocess has been opened at {datetime.now()}')
         stream_model.hls_pid = proc.pid
@@ -233,6 +233,7 @@ class FFmpegReaderProcessesStarter(FFmpegReaderTemplate):
         options.frame_rate = stream_model.ffmpeg_reader_frame_rate
         options.width = stream_model.ffmpeg_reader_width
         options.height = stream_model.ffmpeg_reader_height
+        options.pubsub_channel = f'ffrs{stream_model.id}'
         ffmpeg_reader = FFmpegReader(options)
         stream_model.ffmpeg_reader_pid = ffmpeg_reader.get_pid()
         logger.info(f'starting FFmpegReader process at {datetime.now()}')

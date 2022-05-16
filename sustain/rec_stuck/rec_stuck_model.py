@@ -10,6 +10,7 @@ class RecStuckModel:
         self.brand: str = ''
         self.name: str = ''
         self.address: str = ''
+        self.record_segment_interval: int = 0
         self.record_output_dir: str = ''
         self.file_ext: str = ''
 
@@ -26,6 +27,7 @@ class RecStuckModel:
         self.brand = stream_model.brand
         self.name = stream_model.name
         self.address = stream_model.address
+        self.record_segment_interval = stream_model.record_segment_interval
         self.record_output_dir = get_record_dir_by(stream_model.id)
         self.file_ext = '.' + RecordFileTypes.str(stream_model.record_file_type)
 

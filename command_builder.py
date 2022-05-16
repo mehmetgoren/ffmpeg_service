@@ -94,12 +94,13 @@ class CommandBuilder:
         args.append(self.__add_double_quotes(f.rtmp_address))
         return args
 
-    def build_stream(self) -> List[str]:
+    def build_hls_stream(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
         if f.stream_type != StreamType.HLS:
             return []
         args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.rtmp_address)]
 
+        args.extend(['-c:a', 'copy', '-c:v', 'copy'])
         # stream starts
         args.extend(['-tune', 'zerolatency', '-g', '1'])  # acceptable only for HLS
         args.extend(['-f', 'hls'])
