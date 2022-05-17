@@ -33,20 +33,39 @@ class VideoFileMerger:
             return True
         return False
 
+    @staticmethod
+    def __fix_zeroless_file_name(date_str: str) -> str:
+        splits = date_str.split('_')
+        values: List[str] = []
+        for split in splits:
+            value = split
+            if int(split) < 10:
+                value = '0' + value
+            values.append(value)
+        return '_'.join(values)
+
     def merge(self, source_id: str, date_str: str) -> bool:
         source_record_dir = get_given_date_record_dir(source_id, date_str)
+        if len(source_record_dir) == 0:
+            logger.warning(f'video file merge operation is now exiting since the source_id({source_id}) and/or date_str({date_str}) is invalid')
+            return False
         lds = os.listdir(source_record_dir)
+        if len(lds) < 2:
+            logger.warning(
+                f'video file merge operation is now exiting since there is not enough video file for source_id({source_id}) and/or date_str({date_str})')
+            return False
         filenames: List[str] = []
         for ld in lds:
             filenames.append(path.join(source_record_dir, ld))
         filenames = sort_video_files(filenames)
         stream_model = self.stream_repository.get(source_id)
         ext = '.' + RecordFileTypes.str(stream_model.record_file_type)
-        output_file = path.join(source_record_dir, f'output{ext}')
+        output_file_name = f'{self.__fix_zeroless_file_name(date_str)}{ext}'
+        output_file = path.join(source_record_dir, output_file_name)
         prev_output_file_exists = path.exists(output_file)
         prev_output_file = ''
         if prev_output_file_exists:
-            prev_output_file = path.join(source_record_dir, f'output_prev{ext}')
+            prev_output_file = path.join(source_record_dir, f'prev_{output_file_name}')
             #  move to the prev file
             try:
                 os.rename(output_file, prev_output_file)

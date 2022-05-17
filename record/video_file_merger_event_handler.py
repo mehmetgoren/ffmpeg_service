@@ -21,10 +21,11 @@ class VideoFileMergerEventHandler(EventHandler):
             return
         logger.info(f'VideoFileMergerEventHandler handle called at {datetime.now()}')
 
-        mapper = RedisMapper(VideoFileMergerRequestEvent)
+        mapper = RedisMapper(VideoFileMergerRequestEvent())
         request: VideoFileMergerRequestEvent = mapper.from_redis_pubsub(dic)
         vfm = VideoFileMerger(self.stream_repository)
         response = VideoFileMergerResponseEvent()
+        response.id = request.id
         response.result = vfm.merge(request.id, request.date_str)
 
         self.event_bus.publish_async(serialize_json(response))
