@@ -71,6 +71,7 @@ class VideoFileMerger:
                 os.rename(output_file, prev_output_file)
             except BaseException as ex:
                 logger.error(f'an error occurred while moving the prev output file, err: {ex}')
+            filenames.remove(output_file)
             filenames.insert(0, prev_output_file)
 
         proc = None
