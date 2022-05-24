@@ -23,6 +23,16 @@ def crate_redis_connection(db: RedisDb, socket_keepalive: bool = False, health_c
                  health_check_interval=health_check_interval)
 
 
+def fix_zero_s(val_str: str) -> str:
+    if len(val_str) == 1:
+        return f'0{val_str}'
+    return val_str
+
+
+def fix_zero(val: int) -> str:
+    return str(val) if val > 9 else f'0{val}'
+
+
 def datetime_now() -> str:
     now = datetime.now()
     sep = '_'
@@ -30,11 +40,11 @@ def datetime_now() -> str:
     for j in [1, 3, 5, 7, 9, 11]:
         strings[j] = sep
     strings[0] = str(now.year)
-    strings[2] = str(now.month)
-    strings[4] = str(now.day)
-    strings[6] = str(now.hour)
-    strings[8] = str(now.minute)
-    strings[10] = str(now.second)
-    strings[12] = str(now.microsecond)
+    strings[2] = fix_zero(now.month)
+    strings[4] = fix_zero(now.day)
+    strings[6] = fix_zero(now.hour)
+    strings[8] = fix_zero(now.minute)
+    strings[10] = fix_zero(now.second)
+    strings[12] = fix_zero(now.microsecond)
 
     return ''.join(strings)

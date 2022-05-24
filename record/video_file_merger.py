@@ -39,7 +39,7 @@ class VideoFileMerger:
         values: List[str] = []
         for split in splits:
             value = split
-            if int(split) < 10:
+            if int(split) < 10 and len(split) == 1:
                 value = '0' + value
             values.append(value)
         return '_'.join(values)

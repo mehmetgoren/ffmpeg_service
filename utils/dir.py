@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List
 
-from common.utilities import config, logger
+from common.utilities import config, logger, fix_zero, fix_zero_s
 
 
 def create_dir_if_not_exists(directory: str):
@@ -52,15 +52,15 @@ def get_ai_clip_dir(source_id: str):
 class TimeIndex:
     def __init__(self, year: str = '', month: str = '', day: str = '', hour: str = ''):
         self.year: str = year
-        self.month: str = month
-        self.day: str = day
-        self.hour: str = hour
+        self.month: str = fix_zero_s(month)
+        self.day: str = fix_zero_s(day)
+        self.hour: str = fix_zero_s(hour)
 
     def set_values(self, date: datetime):
         self.year: str = str(date.year)
-        self.month: str = str(date.month)
-        self.day: str = str(date.day)
-        self.hour: str = str(date.hour)
+        self.month: str = fix_zero(date.month)
+        self.day: str = fix_zero(date.day)
+        self.hour: str = fix_zero(date.hour)
 
     def get_indexed_path(self, root_path: str) -> str:
         return path.join(root_path, self.year, self.month, self.day, self.hour)

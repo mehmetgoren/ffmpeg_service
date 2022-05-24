@@ -244,7 +244,7 @@ def test_concat_demuxer():
     stream_model.id = source_id
     stream_repository.add(stream_model)
     cd = ConcatDemuxer(stream_repository)
-    root_path = path.join(get_record_dir_by(source_id), '2022', '4', '18', '19')
+    root_path = path.join(get_record_dir_by(source_id), '2022', '04', '18', '19')
     lds = os.listdir(root_path)
     filenames = []
     for ld in lds:
@@ -262,7 +262,7 @@ def test_video_file_merger():
     stream_repository = StreamRepository(conn_main)
     source_id = 'e5dbkevdg6l'
     vfm = VideoFileMerger(stream_repository)
-    vfm.merge(source_id, '2022_4_18_19')
+    vfm.merge(source_id, '2022_04_18_19')
 
 
 # test_video_file_merger()
