@@ -17,7 +17,7 @@ from common.data.source_model import RecordFileTypes
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb, logger
-from ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
+from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
 from record.concat_demuxer import ConcatDemuxer
 from record.video_file_indexer import VideoFileIndexer
 from record.video_file_merger import VideoFileMerger

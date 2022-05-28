@@ -37,8 +37,8 @@ class FFmpegReader:
         self.options: FFmpegReaderOptions = options
         self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
 
-        has_external_scale = options.width > 0 and options.height > 0
-        if not has_external_scale:
+        self.has_external_scale = options.width > 0 and options.height > 0
+        if not self.has_external_scale:
             probe = ffmpeg.probe(options.address)
             video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
             options.width = int(video_stream['width'])
@@ -50,12 +50,15 @@ class FFmpegReader:
         logger.info(f'camera ({options.id}) stream fps: {self.stream_fps}')
 
         self.packet_size = options.width * options.height * self.cl_channels
+        self.process = self._create_process(options)
+
+    def _create_process(self, options: FFmpegReaderOptions) -> any:
         stream = ffmpeg.input(options.address)
         stream = ffmpeg.filter(stream, 'fps', fps=options.frame_rate, round='up')
-        if has_external_scale:
+        if self.has_external_scale:
             stream = ffmpeg.filter(stream, 'scale', options.width, options.height)
         stream = ffmpeg.output(stream, 'pipe:', format='rawvideo', pix_fmt='rgb24')
-        self.process = ffmpeg.run_async(stream, pipe_stdout=True)
+        return ffmpeg.run_async(stream, pipe_stdout=True)
 
     @staticmethod
     def __create_base64_img(numpy_img: np.array) -> str:
@@ -91,14 +94,12 @@ class FFmpegReader:
     def is_closed(self) -> bool:
         return self.process.poll() is not None
 
-    # todo: move to stable version powered by Redis-RQ
     def close(self):
         self.process.terminate()
 
     def get_pid(self) -> int:
         return self.process.pid
 
-    # todo: move to stable version powered by Redis-RQ
     def read(self):
         while not self.is_closed():
             np_img = self.__get_img()

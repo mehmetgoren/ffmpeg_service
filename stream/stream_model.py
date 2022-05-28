@@ -92,3 +92,6 @@ class StreamModel:
 
     def is_ffmpeg_reader_enabled(self) -> bool:
         return self.stream_type == StreamType.FFMPEG_READER
+
+    def is_direct_reader_enabled(self) -> bool:
+        return self.stream_type == StreamType.DIRECT_READER
