@@ -44,7 +44,9 @@ class CommandBuilder:
     # noinspection DuplicatedCode
     def build_output(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        args: List[str] = []
+        args: List[str] = ['-strict', '-2']
+        args.extend(['-tune', 'zerolatency'])
+
         # audio starts
         has_size = f.stream_width != 0 and f.stream_height != 0
         if f.stream_audio_codec == AudioCodec.NoAudio:
@@ -86,10 +88,6 @@ class CommandBuilder:
                 args.extend(['-vf', vf_str])
         # video ends
 
-        if f.preset != Preset.Auto:
-            args.extend(['-preset', Preset.str(f.preset)])
-
-        args.extend(['-strict', '-2'])
         args.extend(['-f', 'flv'])
         args.append(self.__add_double_quotes(f.rtmp_address))
         return args
@@ -101,6 +99,8 @@ class CommandBuilder:
         args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.rtmp_address)]
 
         args.extend(['-c:a', 'copy', '-c:v', 'copy'])
+        if f.record_file_type == RecordFileTypes.MP4 and f.record_preset != Preset.Auto:
+            args.extend(['-preset', Preset.str(f.record_preset)])
         # stream starts
         args.extend(['-tune', 'zerolatency', '-g', '1'])  # acceptable only for HLS
         args.extend(['-f', 'hls'])
@@ -153,8 +153,6 @@ class CommandBuilder:
                 args.extend(['-vf', vf_str])
         # video ends
 
-        if f.record_file_type == RecordFileTypes.MP4 and f.record_preset != Preset.Auto:
-            args.extend(['-preset', Preset.str(f.record_preset)])
         args.extend(['-strict', '-2'])
         if f.record_file_type == RecordFileTypes.MP4:
             args.extend(['-movflags', '+faststart'])
