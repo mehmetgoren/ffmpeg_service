@@ -97,6 +97,14 @@ class AiConfig:
         self.plate_recog_instance_count: int = 2
 
 
+class UiConfig:
+    def __init__(self):
+        self.gs_width: int = 4
+        self.gs_height: int = 3
+        self.booster_interval: float = .3
+        self.seek_to_live_edge_internal: int = 30
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -109,6 +117,7 @@ class Config:
         self.general: GeneralConfig = GeneralConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.ai: AiConfig = AiConfig()
+        self.ui: UiConfig = UiConfig()
         self.__connection: Redis = None
 
     @staticmethod

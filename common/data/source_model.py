@@ -477,6 +477,8 @@ class SourceModel(FFmpegModel):
         self.record_enabled: bool = False
         self.ai_clip_enabled: bool = False
 
+        self.booster_enabled: bool = False  # this one is used by FLV and HLS player
+
         self.created_at: str = datetime_now()
 
     def get_id(self):

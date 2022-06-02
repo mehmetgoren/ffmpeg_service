@@ -50,6 +50,8 @@ class StreamModel:
         self.concat_demuxer_pid: int = 0
         self.concat_demuxer_args: str = ''
 
+        self.booster_enabled: bool = False  # this one is used by FLV and HLS player
+
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
         self.id = source.id
@@ -75,6 +77,8 @@ class StreamModel:
         self.record_segment_interval = source.record_segment_interval
 
         self.ai_clip_enabled = source.ai_clip_enabled
+
+        self.booster_enabled = source.booster_enabled
 
         return self
 
