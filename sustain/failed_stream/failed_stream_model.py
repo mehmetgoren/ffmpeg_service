@@ -1,6 +1,7 @@
 from enum import Enum
 
 from common.data.source_model import SourceModel
+from common.utilities import datetime_now
 
 
 class WatchDogOperations(str, Enum):
@@ -20,8 +21,6 @@ class FailedStreamModel:
         self.name: str = ''
         self.address: str = ''
 
-        self.watch_dog_interval: float = .0
-
         self.rtmp_container_failed_count: int = 0
         self.rtmp_feeder_failed_count: int = 0
         self.hls_failed_count: int = 0
@@ -29,12 +28,14 @@ class FailedStreamModel:
         self.record_failed_count: int = 0
         self.snapshot_failed_count: int = 0
         self.record_stuck_process_count: int = 0
+        self.last_check_at: str = ''
 
     def map_from_source(self, source: SourceModel):
         self.id = source.id
         self.brand = source.brand
         self.name = source.name
         self.address = source.address
+        self.last_check_at: str = datetime_now()
         return self
 
     def set_failed_count(self, op: WatchDogOperations):
@@ -56,3 +57,4 @@ class FailedStreamModel:
             self.record_stuck_process_count += 1
         else:
             raise NotImplementedError(op.value)
+        self.last_check_at: str = datetime_now()

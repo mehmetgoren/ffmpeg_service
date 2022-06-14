@@ -31,12 +31,14 @@ class WatchDogTimer:
         self.failed_stream_repository = FailedStreamRepository(self.conn)
         self.zombie_repository = ZombieRepository(self.conn)
         self.restart_stream_event_bus = EventBus('restart_stream_request')
-        self.interval = max(config.ffmpeg.watch_dog_interval, 10)
+        self.interval: int = max(config.ffmpeg.watch_dog_interval, 10)
         logger.info(f'watchdog interval is: {self.interval}')
         self.failed_process_interval: float = max(config.ffmpeg.watch_dog_failed_wait_interval, 1.)
         logger.info(f'watch_dog failed_process_interval is : {self.failed_process_interval}')
         self.zombie_counter = 1
         self.zombie_multiplier: int = 6
+        self.last_check_running_processes_date = datetime.now()
+        self.last_kill_zombie_processes_date = datetime.now()
 
     def __start_prev_streams(self):
         stream_models = self.stream_repository.get_all()
@@ -73,7 +75,6 @@ class WatchDogTimer:
             failed_stream_model: FailedStreamModel = self.failed_stream_repository.get(source_id)
             if failed_stream_model is None:
                 failed_stream_model = FailedStreamModel().map_from_source(source_model)
-            failed_stream_model.watch_dog_interval = self.interval
             failed_stream_model.set_failed_count(op)
             self.failed_stream_repository.add(failed_stream_model)
 
@@ -93,10 +94,15 @@ class WatchDogTimer:
                 logger.warn('a zombie recording stuck model found on recstucks and removed')
 
     def _check_running_processes(self) -> List[StreamModel]:
+        broken_streams: List[StreamModel] = []
+        now = datetime.now()
+        if (now - self.last_check_running_processes_date).seconds < self.interval:
+            logger.warn(f'last_check_running_processes_date({self.last_check_running_processes_date}) is not satisfied with current time({now})')
+            return broken_streams
+        self.last_check_running_processes_date = now
         stream_models = self.stream_repository.get_all()
         rec_stuck_repository = RecStuckRepository(self.conn)
         self.__remove_zombie_rec_stuck_models(stream_models, rec_stuck_repository)
-        broken_streams: List[StreamModel] = []
         for stream_model in stream_models:
             if self.__check_rtmp_container(stream_model):
                 broken_streams.append(stream_model)
@@ -214,6 +220,11 @@ class WatchDogTimer:
         return False
 
     def _kill_zombie_processes(self, broken_streams: List[StreamModel]):
+        now = datetime.now()
+        if (now - self.last_kill_zombie_processes_date).seconds < self.interval:
+            logger.warn(f'last_kill_zombie_processes_date({self.last_kill_zombie_processes_date}) is not satisfied with current time({now})')
+            return broken_streams
+        self.last_kill_zombie_processes_date = now
         stream_models = self.stream_repository.get_all()
         stream_models.extend(broken_streams)
         self.__check_zombie_ffmpeg_processes(stream_models)

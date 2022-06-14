@@ -81,7 +81,7 @@ class FFmpegConfig:
         self.use_double_quotes_for_path: bool = False
         self.max_operation_retry_count: int = 10000000
         self.rtmp_server_init_interval: float = 3.
-        self.watch_dog_interval: int = 21
+        self.watch_dog_interval: int = 23
         self.watch_dog_failed_wait_interval: float = 3.
         self.start_task_wait_for_interval: float = 1.
         self.record_concat_limit: int = 1
