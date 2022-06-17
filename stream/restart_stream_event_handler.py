@@ -13,7 +13,6 @@ class RestartStreamEventHandler(EventHandler):
         self.start_stream_event_handler = StartStreamEventHandler(source_repository, stream_repository)
         logger.info('RestartStreamEventHandler initialized')
 
-    # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
         if RedisMapper.is_pubsub_message_invalid(dic):
             return

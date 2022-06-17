@@ -31,7 +31,6 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         stream_model_json = serialize_json(stream_model)
         self.event_bus.publish_async(stream_model_json)
 
-    # todo: the whole process needs to be handled by rq-redis
     def handle(self, dic: dict):
         is_valid_msg, stream_model, source_model = self.parse_message(dic)
         if not is_valid_msg:

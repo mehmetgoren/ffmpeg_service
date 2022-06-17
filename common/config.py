@@ -21,7 +21,6 @@ class DeviceServices(IntEnum):
     ALL = READ | DETECTION | CLOUD_INTEGRATION | FFMPEG | MNGR
 
 
-# todo: mngr should auto-decide config fields. Implement it later by heartbeat infos.
 class DeviceConfig:
     def __init__(self):
         self.device_name = platform.node()
