@@ -88,11 +88,11 @@ class StreamModel:
     def is_record_enabled(self) -> bool:
         return self.record_enabled
 
-    def is_ai_clip_enabled(self) -> bool:
-        return self.ai_clip_enabled
-
     def is_snapshot_enabled(self) -> bool:
         return self.snapshot_enabled
+
+    def is_ai_clip_enabled(self) -> bool:
+        return self.is_snapshot_enabled() and self.ai_clip_enabled
 
     def is_ffmpeg_reader_enabled(self) -> bool:
         return self.stream_type == StreamType.FFMPEG_READER
