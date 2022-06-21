@@ -10,6 +10,8 @@ from stream.restart_stream_event_handler import RestartStreamEventHandler
 from stream.start_stream_event_handler import StartStreamEventHandler
 from stream.stop_stream_event_handler import StopStreamEventHandler
 from stream.stream_repository import StreamRepository
+from utils.utils import start_thread
+from various.probe_event_handler import ProbeEventHandler
 
 __connection_source = crate_redis_connection(RedisDb.MAIN)
 __source_repository = SourceRepository(__connection_source)
@@ -41,6 +43,18 @@ def listen_restart_stream_event():
 
 
 def listen_various_events():
+    def listen_probe_event():
+        while 1:
+            try:
+                probe_handler = ProbeEventHandler()
+                event_bus = EventBus('probe_request')
+                event_bus.subscribe_async(probe_handler)
+            except BaseException as ex:
+                logger.error(f'an error occurred on ProbeEventHandler at {datetime.now()}, err: {ex}')
+            time.sleep(1.)
+
+    start_thread(listen_probe_event, [])
+
     def fn_listen_vfm():
         while 1:
             try:

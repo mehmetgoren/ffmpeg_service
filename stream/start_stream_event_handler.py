@@ -3,7 +3,6 @@ import subprocess
 import time
 from abc import abstractmethod, ABC
 from datetime import datetime
-from threading import Thread
 from typing import List
 import psutil
 
@@ -19,6 +18,7 @@ from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
 from utils.dir import get_hls_path
 from utils.json_serializer import serialize_json
+from utils.utils import start_thread
 
 
 class StartStreamEventHandler(BaseStreamEventHandler):
@@ -75,12 +75,6 @@ class ProcessStarter(ABC):
         if stream_model.rtmp_server_type == RmtpServerType.LIVEGO:
             time.sleep(config.ffmpeg.rtmp_server_init_interval)  # otherwise, rtmp won't work for LIVEGO
 
-    @staticmethod
-    def __start_thread(target, args):
-        th = Thread(target=target, args=args)
-        th.daemon = True
-        th.start()
-
     def start_process(self, source_model: SourceModel, stream_model: StreamModel):
         try:
             proc = self._create_process(source_model, stream_model)
@@ -101,7 +95,7 @@ class ProcessStarter(ABC):
                 except BaseException as e3:
                     logger.error(f'an error occurred during the disposing subprocess operation, err: {e3} at {datetime.now()}')
 
-        self.__start_thread(fn, [self, proc])
+        start_thread(fn, [self, proc])
 
 
 class SubProcessTemplate(ProcessStarter, ABC):
