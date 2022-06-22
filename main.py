@@ -1,5 +1,6 @@
 import asyncio
 
+from common.config import Config
 from common.data.heartbeat_repository import HeartbeatRepository
 from common.data.service_repository import ServiceRepository
 from common.utilities import logger, crate_redis_connection, RedisDb
@@ -20,6 +21,9 @@ def main():
 
     clean_my_previous()
     clean_others_previous()
+
+    config = Config.create()
+    config.save()
 
     add_tasks()
     logger.info('The FFmpeg Service® has been started...')
