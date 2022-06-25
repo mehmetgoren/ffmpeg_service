@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from redis import Redis
 from enum import IntEnum
 import platform
+import argparse
 
 
 class DeviceType(IntEnum):
@@ -30,10 +31,28 @@ class DeviceConfig:
                                 DeviceServices.FFMPEG, DeviceServices.MNGR]
 
 
+# it is readonly, but it is shown on redis as information
 class ConfigRedis:
     def __init__(self):
-        self.host: str = os.getenv('REDIS_HOST', '127.0.0.1')
-        redis_port_str: str = os.getenv('REDIS_PORT', '6379')
+        self.host: str = '127.0.0.1'
+        self.port: int = 6379
+        self.__init_values()
+
+    def __init_values(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--host')
+        parser.add_argument('--port')
+        args = parser.parse_args()
+
+        if args.host is not None:
+            self.host = args.host
+        else:
+            self.host: str = os.getenv('REDIS_HOST', '127.0.0.1')
+
+        if args.port is not None:
+            redis_port_str: str = args.port
+        else:
+            redis_port_str: str = os.getenv('REDIS_PORT', '6379')
         self.port: int = int(redis_port_str) if redis_port_str.isdigit() else 6379
 
 
