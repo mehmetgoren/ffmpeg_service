@@ -1,22 +1,10 @@
+import argparse
 import json
 import os
 from types import SimpleNamespace
 from redis import Redis
 from enum import IntEnum
 import platform
-import argparse
-
-
-class DeviceType(IntEnum):
-    PC = 0
-    IOT = 1
-
-
-class DeviceConfig:
-    def __init__(self):
-        self.device_name = platform.node()
-        _, _, _, _, machine, _ = platform.uname()
-        self.device_type = DeviceType.PC if 'x86' in machine else DeviceType.IOT
 
 
 # it is readonly, but it is shown on redis as information
@@ -42,6 +30,21 @@ class ConfigRedis:
         else:
             redis_port_str: str = os.getenv('REDIS_PORT', '6379')
         self.port: int = int(redis_port_str) if redis_port_str.isdigit() else 6379
+
+
+config_redis = ConfigRedis()
+
+
+class DeviceType(IntEnum):
+    PC = 0
+    IOT = 1
+
+
+class DeviceConfig:
+    def __init__(self):
+        self.device_name = platform.node()
+        _, _, _, _, machine, _ = platform.uname()
+        self.device_type = DeviceType.PC if 'x86' in machine else DeviceType.IOT
 
 
 class JetsonConfig:
@@ -114,7 +117,6 @@ class UiConfig:
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
-        self.redis: ConfigRedis = ConfigRedis()
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
         self.tensorflow: TensorflowConfig = TensorflowConfig()
@@ -148,7 +150,7 @@ class Config:
 
     def __get_connection(self) -> Redis:
         if self.__connection is None:
-            self.__connection = Redis(host=self.redis.host, port=self.redis.port, charset='utf-8', db=0,
+            self.__connection = Redis(host=config_redis.host, port=config_redis.port, charset='utf-8', db=0,
                                       decode_responses=True)
         return self.__connection
 

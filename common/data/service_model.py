@@ -6,6 +6,7 @@ import re
 import socket
 import uuid
 
+from common.config import config_redis
 from common.utilities import datetime_now
 
 
@@ -21,6 +22,7 @@ class ServiceModel:
         self.processor: str = ''
         self.cpu_count: str = ''
         self.ram: str = ''
+        self.redis_host_port: str = ''
         self.pid: str = ''
         self.created_at: str = ''
         self.heartbeat: str = ''
@@ -41,6 +43,7 @@ class ServiceModel:
         self.processor = platform.processor()
         self.cpu_count = multiprocessing.cpu_count()
         self.ram = str(round(psutil.virtual_memory().total / (1024.0 ** 3)) + 1) + " GB"
+        self.redis_host_port = f'{config_redis.host}:{config_redis.port}'
         self.pid = os.getpid()
         self.created_at = datetime_now()
         self.heartbeat = datetime_now()

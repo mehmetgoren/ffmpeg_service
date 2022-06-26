@@ -3,7 +3,7 @@ from redis import Redis
 from enum import IntEnum
 from datetime import datetime
 
-from common.config import Config
+from common.config import Config, config_redis
 
 logger = logging.getLogger('logger')
 logger.setLevel(logging.WARNING)
@@ -15,11 +15,12 @@ config: Config = Config.create()
 class RedisDb(IntEnum):
     MAIN = 0
     RQ = 1
+    RQ2 = 2
     EVENTBUS = 15
 
 
 def crate_redis_connection(db: RedisDb, socket_keepalive: bool = False, health_check_interval: int = 0) -> Redis:
-    return Redis(host=config.redis.host, port=config.redis.port, charset='utf-8', db=int(db), socket_keepalive=socket_keepalive,
+    return Redis(host=config_redis.host, port=config_redis.port, charset='utf-8', db=int(db), socket_keepalive=socket_keepalive,
                  health_check_interval=health_check_interval)
 
 
