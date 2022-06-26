@@ -12,23 +12,11 @@ class DeviceType(IntEnum):
     IOT = 1
 
 
-class DeviceServices(IntEnum):
-    NONE = 0
-    READ = 1
-    DETECTION = 2
-    CLOUD_INTEGRATION = 4
-    FFMPEG = 8
-    MNGR = 16
-    ALL = READ | DETECTION | CLOUD_INTEGRATION | FFMPEG | MNGR
-
-
 class DeviceConfig:
     def __init__(self):
         self.device_name = platform.node()
         _, _, _, _, machine, _ = platform.uname()
         self.device_type = DeviceType.PC if 'x86' in machine else DeviceType.IOT
-        self.device_services = [DeviceServices.READ, DeviceServices.DETECTION, DeviceServices.CLOUD_INTEGRATION,
-                                DeviceServices.FFMPEG, DeviceServices.MNGR]
 
 
 # it is readonly, but it is shown on redis as information
@@ -82,7 +70,7 @@ class OnceDetectorConfig:
 
 class SourceReaderConfig:
     def __init__(self):
-        self.fps: int = 1
+        self.resize_img: bool = False
         self.buffer_size: int = 2
         self.max_retry: int = 150
         self.max_retry_in: int = 6  # hours

@@ -455,6 +455,11 @@ class FFmpegModel:
         self.log_level: LogLevel = LogLevel.Warning
 
 
+class SnapshotType(IntEnum):
+    FFmpeg = 0
+    OpenCVPersistent = 1
+
+
 class SourceModel(FFmpegModel):
     def __init__(self, identifier: str = '', brand: str = '', name: str = '', address: str = ''):
         super().__init__(identifier, address)
@@ -466,6 +471,7 @@ class SourceModel(FFmpegModel):
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
 
         self.snapshot_enabled: bool = False
+        self.snapshot_type: SnapshotType = SnapshotType.FFmpeg
         self.snapshot_frame_rate: int = 1
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360

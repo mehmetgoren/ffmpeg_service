@@ -25,11 +25,18 @@ class ServiceModel:
         self.created_at: str = ''
         self.heartbeat: str = ''
 
+    @staticmethod
+    def __get_ip_addr() -> str:
+        ret = (([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")] or [
+            [(s.connect(("8.8.8.8", 53)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]]) + [
+                   "no IP found"])[0]
+        return ret if len(ret) > 0 and ret != "no IP found" else socket.gethostbyname_ex(socket.gethostname())
+
     def detect_values(self):
         self.platform = platform.system()
         self.platform_version = platform.version()
         self.hostname = socket.gethostname()
-        self.ip_address = socket.gethostbyname(socket.gethostname())
+        self.ip_address = self.__get_ip_addr()
         self.mac_address = ':'.join(re.findall('..', '%012x' % uuid.getnode()))
         self.processor = platform.processor()
         self.cpu_count = multiprocessing.cpu_count()

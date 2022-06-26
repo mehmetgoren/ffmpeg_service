@@ -47,7 +47,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 starters.append(FFmpegReaderProcessesStarter(self.stream_repository))
             if stream_model.is_record_enabled():
                 starters.append(RecordProcessStarter(self.stream_repository))
-            if stream_model.is_snapshot_enabled():
+            if stream_model.is_ffmpeg_snapshot_enabled():
                 starters.append(SnapshotProcessStarter(self.stream_repository))
             for starter in starters:
                 starter.start_process(source_model, stream_model)

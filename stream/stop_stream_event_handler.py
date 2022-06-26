@@ -26,7 +26,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             except BaseException as e:
                 logger.error(f'Error while removing stream {stream_model.id} from repository: {e}')
 
-            if stream_model.is_snapshot_enabled():
+            if stream_model.is_ffmpeg_snapshot_enabled():
                 try:
                     if stream_model.snapshot_pid > 0:
                         os.kill(stream_model.snapshot_pid, 9)

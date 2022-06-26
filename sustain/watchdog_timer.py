@@ -170,7 +170,7 @@ class WatchDogTimer:
         return self.__check_process(op, stream_model, stream_model.record_pid)
 
     def __check_snapshot_process(self, stream_model: StreamModel):
-        if not stream_model.is_snapshot_enabled():
+        if not stream_model.is_ffmpeg_snapshot_enabled():
             return False
         op = WatchDogOperations.check_snapshot_process
         return self.__check_process(op, stream_model, stream_model.snapshot_pid)
