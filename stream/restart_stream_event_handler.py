@@ -1,3 +1,5 @@
+import time
+
 from common.data.redis_mapper import RedisMapper
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_handler import EventHandler
@@ -18,4 +20,5 @@ class RestartStreamEventHandler(EventHandler):
             return
         logger.info('RestartStreamEventHandler handle called')
         self.stop_stream_event_handler.handle(dic)
+        time.sleep(1.)
         self.start_stream_event_handler.handle(dic)

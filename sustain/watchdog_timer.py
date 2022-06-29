@@ -44,6 +44,7 @@ class WatchDogTimer:
         stream_models = self.stream_repository.get_all()
         for stream_model in stream_models:
             self.__publish_restart(self.source_repository.get(stream_model.id))
+            time.sleep(1.)
 
     def start(self):
         self.__start_prev_streams()
