@@ -35,6 +35,11 @@ class ConfigRedis:
 config_redis = ConfigRedis()
 
 
+class DbType(IntEnum):
+    SQLite = 0
+    MongoDB = 1
+
+
 class DeviceType(IntEnum):
     PC = 0
     IOT = 1
@@ -85,6 +90,12 @@ class GeneralConfig:
         self.heartbeat_interval: int = 30
 
 
+class DbConfig:
+    def __init__(self):
+        self.type: DbType = DbType.SQLite
+        self.connection_string = ''
+
+
 class FFmpegConfig:
     def __init__(self):
         self.use_double_quotes_for_path: bool = False
@@ -123,6 +134,7 @@ class Config:
         self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.general: GeneralConfig = GeneralConfig()
+        self.db: DbConfig = DbConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.ai: AiConfig = AiConfig()
         self.ui: UiConfig = UiConfig()
