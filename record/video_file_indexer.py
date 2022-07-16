@@ -2,11 +2,15 @@ import os
 from os import path
 from typing import List
 import ffmpeg
+from pathlib import Path
 
 from common.data.source_model import RecordFileTypes
+from common.event_bus.event_bus import EventBus
 from common.utilities import config, logger
+from record.req_resp import ProbeResult, VfiResponseEvent
 from stream.stream_repository import StreamRepository
 from utils.dir import get_record_dir_by, get_filename_date_record_dir, create_dir_if_not_exists, get_sorted_valid_files
+from utils.json_serializer import serialize_json
 
 
 class VideoFileIndexer:
@@ -15,6 +19,7 @@ class VideoFileIndexer:
         self.last_file_count = config.ffmpeg.record_concat_limit
         if self.last_file_count < 1:
             self.last_file_count = 1
+        self.eb = EventBus('vfi_response')
 
     @staticmethod
     def __remove_invalid_midget_files(filenames: List[str]) -> List[str]:
@@ -32,16 +37,22 @@ class VideoFileIndexer:
         return ret
 
     @staticmethod
-    def __check_by_ffprobe(filenames: List[str]) -> List[str]:
-        valid_list: List[str] = []
+    def __check_by_ffprobe(filenames: List[str]) -> List[ProbeResult]:
+        valid_list: List[ProbeResult] = []
         for filename in filenames:
             try:
                 probe_result = ffmpeg.probe(filename)
                 print(probe_result)
-                valid_list.append(filename)
+                pr = ProbeResult()
+                pr.video_filename = filename
+                pr.duration = int(float(probe_result['streams'][0]['duration']))
+                valid_list.append(pr)
             except BaseException as ex:
-                os.remove(filename)
-                logger.warn(f'a corrupted video file({filename}) was found and deleted, ex: {ex}')
+                try:
+                    os.remove(filename)
+                    logger.warn(f'a corrupted video file({filename}) was found and deleted, ex: {ex}')
+                except BaseException as ex2:
+                    logger.warn(f'an error occurred during the deleting the file name: {filename}, ex: {ex2}')
         return valid_list
 
     def move(self, source_id: str):
@@ -61,17 +72,31 @@ class VideoFileIndexer:
         if len(filenames) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return
-        filenames = self.__check_by_ffprobe(filenames)
-        if len(filenames) == 0:
+        probe_results = self.__check_by_ffprobe(filenames)
+        if len(probe_results) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return
 
-        for filename in filenames:
+        valid_list: List[ProbeResult] = []
+        for probe_result in probe_results:
+            filename = probe_result.video_filename
             dest_dir = get_filename_date_record_dir(source_id, filename)
             create_dir_if_not_exists(dest_dir)
             dest_filename = path.join(dest_dir, path.basename(filename))
             try:
                 os.rename(filename, dest_filename)
+                logger.info(f'{filename} was removed to {dest_filename}')
+                pr = ProbeResult()
+                pr.source_id = source_id
+                pr.video_filename = dest_filename
+                pr.date_str = Path(dest_filename).stem
+                pr.duration = probe_result.duration
+                valid_list.append(pr)
+                print(f'source_id: {source_id}, video_filename: {pr.video_filename}, duration: {pr.duration}')
             except BaseException as ex:
                 logger.error(f'an error occurred while moving files to indexed folders, err: {ex}')
-            logger.info(f'{filename} was removed to {dest_filename}')
+        # publish them
+        if len(valid_list) > 0:
+            event = VfiResponseEvent()
+            event.results = valid_list
+            self.eb.publish_async(serialize_json(event))
