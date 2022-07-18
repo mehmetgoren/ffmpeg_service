@@ -44,16 +44,16 @@ class VideoFileMerger:
             values.append(value)
         return '_'.join(values)
 
-    def merge(self, source_id: str, date_str: str) -> bool:
+    def merge(self, source_id: str, date_str: str) -> (str, List[str]):
         source_record_dir = get_given_date_record_dir(source_id, date_str)
         if len(source_record_dir) == 0:
             logger.warning(f'video file merge operation is now exiting since the source_id({source_id}) and/or date_str({date_str}) is invalid')
-            return False
+            return '', []
         lds = os.listdir(source_record_dir)
         if len(lds) < 2:
             logger.warning(
                 f'video file merge operation is now exiting since there is not enough video file for source_id({source_id}) and/or date_str({date_str})')
-            return False
+            return '', []
         filenames: List[str] = []
         for ld in lds:
             filenames.append(path.join(source_record_dir, ld))
@@ -83,11 +83,11 @@ class VideoFileMerger:
                         os.remove(filename)
                     except BaseException as ex:
                         logger.error(f'an error occurred while deleting merging file, err: {ex}')
-                return True
+                return output_file, filenames
             else:
                 if prev_output_file_exists:
                     os.rename(prev_output_file, output_file)  # rollback the output file
-                return False
+                return '', []
         finally:
             try:
                 if proc is not None:

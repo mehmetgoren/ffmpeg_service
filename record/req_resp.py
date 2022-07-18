@@ -12,12 +12,14 @@ class VfiResponseEvent:
     results: List[ProbeResult] = []
 
 
-class VideoFileMergerRequestEvent:
+class VfmRequestEvent:
     def __init__(self):
-        self.id: str = ''
+        self.source_id: str = ''
         self.date_str: str = ''
 
 
-class VideoFileMergerResponseEvent:
-    id: str = ''
-    result: bool = False
+class VfmResponseEvent:
+    source_id: str = ''
+    output_file_name: str = ''
+    merged_video_filenames: List[str] = []
+    merged_video_file_duration: int = 0

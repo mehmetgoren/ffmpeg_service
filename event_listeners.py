@@ -5,7 +5,7 @@ from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb, logger
 from editor.editor_event_handler import EditorEventHandler
-from record.video_file_merger_event_handler import VideoFileMergerEventHandler
+from record.vfm_event_handler import VfmEventHandler
 from stream.restart_stream_event_handler import RestartStreamEventHandler
 from stream.start_stream_event_handler import StartStreamEventHandler
 from stream.stop_stream_event_handler import StopStreamEventHandler
@@ -58,7 +58,7 @@ def listen_various_events():
     def fn_listen_vfm():
         while 1:
             try:
-                vfm_handler = VideoFileMergerEventHandler(__stream_repository)
+                vfm_handler = VfmEventHandler(__stream_repository)
                 event_bus = EventBus('vfm_request')
                 event_bus.subscribe_async(vfm_handler)
             except BaseException as ex:

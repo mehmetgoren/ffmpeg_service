@@ -37,7 +37,7 @@ class VideoFileIndexer:
         return ret
 
     @staticmethod
-    def __check_by_ffprobe(filenames: List[str]) -> List[ProbeResult]:
+    def check_by_ffprobe(filenames: List[str]) -> List[ProbeResult]:
         valid_list: List[ProbeResult] = []
         for filename in filenames:
             try:
@@ -72,7 +72,7 @@ class VideoFileIndexer:
         if len(filenames) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return
-        probe_results = self.__check_by_ffprobe(filenames)
+        probe_results = self.check_by_ffprobe(filenames)
         if len(probe_results) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return
