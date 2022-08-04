@@ -10,8 +10,10 @@ from command_builder import CommandBuilder
 from common.data.source_model import SourceModel, RmtpServerType
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
-from readers.direct_reader import DirectReader
-from readers.ffmpeg_reader import FFmpegReaderOptions, FFmpegReader
+
+from readers.base_pipe_reader import PipeReaderOptions
+from readers.ffmpeg_pipe_reader import FFmpegPipeReader
+from readers.mp_ffmpeg_pipe_reader import MpFFmpegPipeReader
 from rtmp.docker_manager import DockerManager
 from stream.base_stream_event_handler import BaseStreamEventHandler
 from stream.stream_model import StreamModel
@@ -43,8 +45,6 @@ class StartStreamEventHandler(BaseStreamEventHandler):
             starters: List[ProcessStarter] = [RtmpProcessStarter(self.source_repository, self.stream_repository)]
             if stream_model.is_hls_enabled():
                 starters.append(HlsProcessStarter(self.stream_repository))
-            elif stream_model.is_ffmpeg_reader_enabled():
-                starters.append(FFmpegReaderProcessesStarter(self.stream_repository))
             if stream_model.is_record_enabled():
                 starters.append(RecordProcessStarter(self.stream_repository))
             if stream_model.is_ffmpeg_snapshot_enabled():
@@ -129,13 +129,21 @@ class RtmpProcessStarter(SubProcessTemplate):
         cmd_builder = CommandBuilder(source_model)
         args = cmd_builder.build_input()
         args.extend(cmd_builder.build_output())
-        if not stream_model.is_direct_reader_enabled():
+        if not stream_model.is_mp_ffmpeg_pipe_reader_enabled():
             proc = subprocess.Popen(args)  # do not use PIPE, otherwise FFmpeg recording process will be stuck.
             logger.info(f'stream RTMP feeder subprocess has been opened at {datetime.now()}')
             stream_model.rtmp_feeder_pid = proc.pid
         else:
-            options = _create_ffmpeg_reader_options(stream_model)
-            dr = DirectReader(options, args)
+            options = PipeReaderOptions()
+            options.id = stream_model.id
+            options.name = stream_model.name
+            options.address = stream_model.rtmp_address
+            options.frame_rate = stream_model.ffmpeg_reader_frame_rate
+            options.width = stream_model.ffmpeg_reader_width
+            options.height = stream_model.ffmpeg_reader_height
+            options.pubsub_channel = f'ffrs{stream_model.id}'
+
+            dr = MpFFmpegPipeReader(options, args)
             stream_model.rtmp_feeder_pid = dr.get_pid()
             logger.info(f'starting Direct Reader process at {datetime.now()}')
             proc = dr.create_process_proxy()
@@ -191,7 +199,7 @@ class RecordProcessStarter(SubProcessTemplate):
         return proc
 
 
-class FFmpegReaderTemplate(ProcessStarter, ABC):
+class SnapshotProcessStarter(ProcessStarter):
     def __init__(self, stream_repository: StreamRepository):
         super().__init__(stream_repository)
 
@@ -201,13 +209,8 @@ class FFmpegReaderTemplate(ProcessStarter, ABC):
     def _dispose_process(self, ffmpeg_reader: any):
         ffmpeg_reader.close()
 
-
-class SnapshotProcessStarter(FFmpegReaderTemplate):
-    def __init__(self, stream_repository: StreamRepository):
-        super().__init__(stream_repository)
-
     def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
-        options = FFmpegReaderOptions()
+        options = PipeReaderOptions()
         options.id = stream_model.id
         options.name = stream_model.name
         options.address = stream_model.rtmp_address
@@ -215,32 +218,7 @@ class SnapshotProcessStarter(FFmpegReaderTemplate):
         options.width = stream_model.snapshot_width
         options.height = stream_model.snapshot_height
         options.ai_clip_enabled = stream_model.ai_clip_enabled
-        ffmpeg_reader = FFmpegReader(options)
+        ffmpeg_reader = FFmpegPipeReader(options)
         stream_model.snapshot_pid = ffmpeg_reader.get_pid()
         logger.info(f'starting Snapshot process at {datetime.now()}')
         return ffmpeg_reader
-
-
-class FFmpegReaderProcessesStarter(FFmpegReaderTemplate):
-    def __init__(self, stream_repository: StreamRepository):
-        super().__init__(stream_repository)
-
-    def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
-        self._wait_extra(stream_model)
-        options = _create_ffmpeg_reader_options(stream_model)
-        ffmpeg_reader = FFmpegReader(options)
-        stream_model.ffmpeg_reader_pid = ffmpeg_reader.get_pid()
-        logger.info(f'starting FFmpegReader process at {datetime.now()}')
-        return ffmpeg_reader
-
-
-def _create_ffmpeg_reader_options(stream_model: StreamModel) -> FFmpegReaderOptions:
-    options = FFmpegReaderOptions()
-    options.id = stream_model.id
-    options.name = stream_model.name
-    options.address = stream_model.rtmp_address
-    options.frame_rate = stream_model.ffmpeg_reader_frame_rate
-    options.width = stream_model.ffmpeg_reader_width
-    options.height = stream_model.ffmpeg_reader_height
-    options.pubsub_channel = f'ffrs{stream_model.id}'
-    return options

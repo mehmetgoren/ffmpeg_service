@@ -7,6 +7,20 @@ from redis.client import Redis
 from common.utilities import logger
 from rtmp.docker_manager import DockerManager
 from rtmp.rtmp_models import RtmpServerImages
+from stream.stream_repository import StreamRepository
+
+
+def kill_all_mp_ffmpeg_reader_owner_procs(connection_main: Redis):
+    rep = StreamRepository(connection_main)
+    streams = rep.get_all()
+    for stream in streams:
+        if stream.is_mp_ffmpeg_pipe_reader_enabled():
+            try:
+                if stream.mp_ffmpeg_reader_owner_pid > 0:
+                    os.kill(stream.mp_ffmpeg_reader_owner_pid, signal.SIGKILL)
+                    logger.info(f'FFmpegReader owner process has been killed, pid: {stream.mp_ffmpeg_reader_owner_pid}')
+            except BaseException as e:
+                logger.error(f'Error while killing FFmpegReader owner process, pid: {stream.mp_ffmpeg_reader_owner_pid}: {e}')
 
 
 def kill_all_prev_ffmpeg_procs():

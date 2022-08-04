@@ -1,9 +1,10 @@
 import base64
 import json
+from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import IntEnum
 from io import BytesIO
-from threading import Thread
+
 import ffmpeg
 import numpy as np
 import requests
@@ -12,6 +13,7 @@ from PIL import Image
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger
 from utils.json_serializer import serialize_json_dic
+from utils.utils import start_thread
 
 
 class PushMethod(IntEnum):
@@ -19,7 +21,7 @@ class PushMethod(IntEnum):
     REST_API = 1
 
 
-class FFmpegReaderOptions:
+class PipeReaderOptions:
     id: str = ''
     name: str = ''
     method: PushMethod = PushMethod.REDIS_PUBSUB
@@ -32,11 +34,10 @@ class FFmpegReaderOptions:
     ai_clip_enabled: bool = False
 
 
-class FFmpegReader:
-    def __init__(self, options: FFmpegReaderOptions):
-        self.options: FFmpegReaderOptions = options
+class BasePipeReader(ABC):
+    def __init__(self, options: PipeReaderOptions):
+        self.options: PipeReaderOptions = options
         self.event_bus = EventBus(options.pubsub_channel) if self.options.method == PushMethod.REDIS_PUBSUB else None
-
         self.has_external_scale = options.width > 0 and options.height > 0
         if not self.has_external_scale:
             probe = ffmpeg.probe(options.address)
@@ -52,13 +53,21 @@ class FFmpegReader:
         self.packet_size = options.width * options.height * self.cl_channels
         self.process = self._create_process(options)
 
-    def _create_process(self, options: FFmpegReaderOptions) -> any:
-        stream = ffmpeg.input(options.address)
-        stream = ffmpeg.filter(stream, 'fps', fps=options.frame_rate, round='up')
-        if self.has_external_scale:
-            stream = ffmpeg.filter(stream, 'scale', options.width, options.height)
-        stream = ffmpeg.output(stream, 'pipe:', format='rawvideo', pix_fmt='rgb24')
-        return ffmpeg.run_async(stream, pipe_stdout=True)
+    @abstractmethod
+    def _create_process(self, options: PipeReaderOptions) -> any:
+        raise NotImplementedError('BaseReader._create_process() must be implemented')
+
+    @abstractmethod
+    def is_closed(self) -> any:
+        raise NotImplementedError('BaseReader.is_closed() must be implemented')
+
+    @abstractmethod
+    def close(self) -> any:
+        raise NotImplementedError('BaseReader.close() must be implemented')
+
+    @abstractmethod
+    def read(self) -> any:
+        raise NotImplementedError('BaseReader.read() must be implemented')
 
     @staticmethod
     def __create_base64_img(numpy_img: np.array) -> str:
@@ -68,7 +77,7 @@ class FFmpegReader:
         img_str = base64.b64encode(buffered.getvalue()).decode()
         return img_str
 
-    def __send(self, img_data):
+    def send(self, img_data):
         img_str = self.__create_base64_img(img_data)
         dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id, 'ai_clip_enabled': self.options.ai_clip_enabled}
         if self.options.method == PushMethod.REDIS_PUBSUB:
@@ -82,29 +91,9 @@ class FFmpegReader:
                 logger.info(
                     f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
 
-            th = Thread(target=_post)
-            th.daemon = True
-            th.start()
+            start_thread(_post, [])
 
-    def __get_img(self) -> np.array:
+    def get_img(self) -> np.array:
         packet = self.process.stdout.read(self.packet_size)
         numpy_img = np.frombuffer(packet, np.uint8).reshape([self.options.height, self.options.width, self.cl_channels])
         return numpy_img
-
-    def is_closed(self) -> bool:
-        return self.process.poll() is not None
-
-    def close(self):
-        self.process.terminate()
-
-    def get_pid(self) -> int:
-        return self.process.pid
-
-    def read(self):
-        while not self.is_closed():
-            np_img = self.__get_img()
-            if np_img is None:
-                # _close_stream(source, name, 1)
-                break
-            self.__send(np_img)
-        logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')

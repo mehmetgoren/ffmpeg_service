@@ -8,6 +8,7 @@ import os.path as path
 import docker
 import ffmpeg
 import numpy as np
+import psutil
 from PIL import Image
 
 from common.config import Config
@@ -17,7 +18,8 @@ from common.data.source_model import RecordFileTypes
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import crate_redis_connection, RedisDb, logger
-from readers.ffmpeg_reader import FFmpegReader, FFmpegReaderOptions, PushMethod
+from readers.base_pipe_reader import PushMethod
+from readers.ffmpeg_pipe_reader import FFmpegPipeReader, PipeReaderOptions
 from record.concat_demuxer import ConcatDemuxer
 from record.video_file_indexer import VideoFileIndexer
 from record.video_file_merger import VideoFileMerger
@@ -124,7 +126,7 @@ def rc_test():
 
 
 def read_test():
-    opts = FFmpegReaderOptions()
+    opts = PipeReaderOptions()
     opts.id = 'ayufisdvbuw'
     opts.name = 'eufy'
     opts.address = 'rtsp://Admin1:Admin1@192.168.1.183/live0'
@@ -133,7 +135,7 @@ def read_test():
     opts.width = 640
     opts.height = 360
     opts.pubsub_channel = 'read_service'
-    reader = FFmpegReader(opts)
+    reader = FFmpegPipeReader(opts)
     reader.read()
 
 
@@ -155,7 +157,7 @@ def config_save():
     print(config.to_json())
 
 
-config_save()
+# config_save()
 
 
 def add_rtsp_templates():
@@ -312,3 +314,15 @@ def restuck_test():
 
 
 # restuck_test()
+
+def psutil_perf_test():
+    proc_info = psutil.Process(1)
+    start = datetime.now()
+    for j in range(1000000):
+        _ = proc_info.status() == psutil.STATUS_ZOMBIE
+    end = datetime.now()
+    diff = end - start
+    print(f'psutil_perf_test result in sec: {diff.seconds}:{diff.microseconds}')
+
+
+psutil_perf_test()

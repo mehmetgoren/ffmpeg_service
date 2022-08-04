@@ -1,4 +1,5 @@
 import os
+from signal import SIGKILL
 
 from common.utilities import logger
 from rtmp.docker_manager import DockerManager
@@ -29,7 +30,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             if stream_model.is_ffmpeg_snapshot_enabled():
                 try:
                     if stream_model.snapshot_pid > 0:
-                        os.kill(stream_model.snapshot_pid, 9)
+                        os.kill(stream_model.snapshot_pid, SIGKILL)
                         logger.info(f'a FFMpeg Snapshot process has been killed, pid: {stream_model.snapshot_pid}')
                 except BaseException as e:
                     logger.error(f'Error while killing a FFmpeg Snapshot stream process, pid: {stream_model.snapshot_pid}, err: {e}')
@@ -37,7 +38,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             if stream_model.is_record_enabled():
                 try:
                     if stream_model.record_pid > 0:
-                        os.kill(stream_model.record_pid, 9)
+                        os.kill(stream_model.record_pid, SIGKILL)
                         logger.info(f'a FFMpeg Recording process has been killed, pid: {stream_model.record_pid}')
                 except BaseException as e:
                     logger.error(f'Error while killing a FFmpeg Recording process, pid: {stream_model.record_pid}, err: {e}')
@@ -49,24 +50,25 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                     logger.error(f'Error while deleting stream files for {stream_model.id}, err: {e}')
                 try:
                     if stream_model.hls_pid > 0:
-                        os.kill(stream_model.hls_pid, 9)
+                        os.kill(stream_model.hls_pid, SIGKILL)
                         logger.info(f'a FFMpeg HLS process has been killed, pid: {stream_model.hls_pid}')
                 except BaseException as e:
                     logger.error(f'Error while killing a FFmpeg HLS stream process, pid: {stream_model.hls_pid}, err: {e}')
-            elif stream_model.is_ffmpeg_reader_enabled():
-                try:
-                    if stream_model.ffmpeg_reader_pid > 0:
-                        os.kill(stream_model.ffmpeg_reader_pid, 9)
-                        logger.info(f'a FFMpeg FFmpeg Reader process has been killed, pid: {stream_model.ffmpeg_reader_pid}')
-                except BaseException as e:
-                    logger.error(f'Error while killing a FFmpeg Reader process, pid: {stream_model.ffmpeg_reader_pid}, err: {e}')
 
             try:
                 if stream_model.rtmp_feeder_pid > 0:
-                    os.kill(stream_model.rtmp_feeder_pid, 9)
+                    os.kill(stream_model.rtmp_feeder_pid, SIGKILL)
                     logger.info(f'a FFMpeg RTMP feeder process has been killed, pid: {stream_model.rtmp_feeder_pid}')
             except BaseException as e:
                 logger.error(f'Error while killing process, pid: {stream_model.rtmp_feeder_pid}, err: {e}')
+
+            if stream_model.is_mp_ffmpeg_pipe_reader_enabled():
+                try:
+                    if stream_model.mp_ffmpeg_reader_owner_pid > 0:
+                        os.kill(stream_model.mp_ffmpeg_reader_owner_pid, SIGKILL)
+                        logger.info(f'a FFMpeg FFmpeg Reader process has been killed, pid: {stream_model.mp_ffmpeg_reader_owner_pid}')
+                except BaseException as e:
+                    logger.error(f'Error while killing a FFmpeg Reader process, pid: {stream_model.mp_ffmpeg_reader_owner_pid}, err: {e}')
 
             try:
                 docker_manager = DockerManager(self.stream_repository.connection)

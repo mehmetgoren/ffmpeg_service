@@ -187,8 +187,7 @@ class Rotate(IntEnum):
 class StreamType(IntEnum):
     FLV = 0
     HLS = 1
-    DIRECT_READER = 2
-    FFMPEG_READER = 3
+    PIPE_READER = 2
 
 
 class AudioCodec(IntEnum):

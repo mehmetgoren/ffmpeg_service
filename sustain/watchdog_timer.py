@@ -114,7 +114,7 @@ class WatchDogTimer:
             if self.__check_hls_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
-            if self.__check_ffmpeg_reader_process(stream_model):
+            if self.__check_mp_ffmpeg_reader_process(stream_model):
                 broken_streams.append(stream_model)
                 continue
             if self.__check_record_process(stream_model):
@@ -158,11 +158,11 @@ class WatchDogTimer:
         op = WatchDogOperations.check_hls_process
         return self.__check_process(op, stream_model, stream_model.hls_pid)
 
-    def __check_ffmpeg_reader_process(self, stream_model: StreamModel):
-        if not stream_model.is_ffmpeg_reader_enabled():
+    def __check_mp_ffmpeg_reader_process(self, stream_model: StreamModel):
+        if not stream_model.is_mp_ffmpeg_pipe_reader_enabled():
             return False
-        op = WatchDogOperations.check_ffmpeg_reader_process
-        return self.__check_process(op, stream_model, stream_model.ffmpeg_reader_pid)
+        op = WatchDogOperations.check_mp_ffmpeg_reader_process
+        return self.__check_process(op, stream_model, stream_model.mp_ffmpeg_reader_owner_pid)
 
     def __check_record_process(self, stream_model: StreamModel):
         if not stream_model.is_record_enabled():
@@ -242,7 +242,7 @@ class WatchDogTimer:
         for stream_model in stream_models:
             add_pid(stream_model.rtmp_feeder_pid)
             add_pid(stream_model.hls_pid)
-            add_pid(stream_model.ffmpeg_reader_pid)
+            add_pid(stream_model.mp_ffmpeg_reader_owner_pid)
             add_pid(stream_model.record_pid)
             add_pid(stream_model.snapshot_pid)
             add_pid(stream_model.concat_demuxer_pid)
