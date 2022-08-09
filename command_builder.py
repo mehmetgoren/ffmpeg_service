@@ -45,7 +45,8 @@ class CommandBuilder:
     def build_output(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
         args: List[str] = ['-strict', '-2']
-        args.extend(['-tune', 'zerolatency'])
+        if f.stream_video_codec == StreamVideoCodec.copy:
+            args.extend(['-tune', 'zerolatency'])
 
         # audio starts
         has_size = f.stream_width != 0 and f.stream_height != 0

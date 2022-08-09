@@ -16,20 +16,30 @@ class ConfigRedis:
 
     def __init_values(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--host')
-        parser.add_argument('--port')
+        parser.add_argument('--redis-host')
+        parser.add_argument('--redis-port')
         args = parser.parse_args()
 
-        if args.host is not None:
-            self.host = args.host
-        else:
-            self.host: str = os.getenv('REDIS_HOST', '127.0.0.1')
+        self.host: str = ''
+        self.port: int = 0
 
-        if args.port is not None:
-            redis_port_str: str = args.port
+        eh = os.getenv('REDIS_HOST', '')
+        if len(eh) > 0:
+            self.host = eh
+        elif args.redis_host is not None and len(args.redis_host) > 0:
+            self.host = args.redis_host
         else:
-            redis_port_str: str = os.getenv('REDIS_PORT', '6379')
-        self.port: int = int(redis_port_str) if redis_port_str.isdigit() else 6379
+            self.host = '127.0.0.1'
+        print(f'Redis host: {self.host}')
+
+        ep = os.getenv('REDIS_PORT', '')
+        if len(ep) > 0:
+            self.port = int(ep)
+        elif args.redis_port is not None and len(args.redis_port) > 0:
+            self.port = int(args.redis_port)
+        else:
+            self.port = 6379
+        print(f'Redis port: {self.port}')
 
 
 config_redis = ConfigRedis()

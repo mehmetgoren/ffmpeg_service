@@ -13,7 +13,7 @@ def register_ffmpeg_service():
     heartbeat = HeartbeatRepository(connection_service, service_name)
     heartbeat.start()
     service_repository = ServiceRepository(connection_service)
-    service_repository.add(service_name, 'The FFmpeg Service®')
+    service_repository.add(service_name, 'ffmpeg_service-instance', 'The FFmpeg Service®')
 
 
 def main():

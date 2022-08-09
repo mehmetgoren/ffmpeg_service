@@ -1,0 +1,13 @@
+docker build -t ffmpeg_service:v1.0.0-amd64 .
+docker run -it --restart unless-stopped --name ffmpeg_service-instance --net host -v /mnt/sdg1:/mnt/sdg1 -v /var/run/docker.sock:/var/run/docker.sock ffmpeg_service:v1.0.0-amd64
+
+gokalpgoren
+    amd64:
+        docker build -t gokalpgoren/ffmpeg_service:v1.0.0-amd64 .
+        docker run -it --restart unless-stopped --name ffmpeg_service-instance --net host -v /mnt/sdg1:/mnt/sdg1 -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.0-amd64
+
+        with nvidia container toolkit (cuda enabled)
+        docker run -it --restart unless-stopped --name ffmpeg_service-instance --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all --net host -v /mnt/sdg1:/mnt/sdg1 -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.0-amd64
+    raspi4:
+        docker build -t gokalpgoren/ffmpeg_service:v1.0.0-raspi4 .
+        docker run -it --restart unless-stopped --name ffmpeg_service-instance --net host -v /mnt/sdg1:/mnt/sdg1 -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.0-raspi4

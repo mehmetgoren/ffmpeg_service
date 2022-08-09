@@ -1,6 +1,8 @@
 import multiprocessing
 import os
 import platform
+from enum import IntEnum
+
 import psutil
 import re
 import socket
@@ -10,8 +12,13 @@ from common.config import config_redis
 from common.utilities import datetime_now
 
 
+class InstanceType(IntEnum):
+    SystemD = 0
+    Container = 1
+
+
 class ServiceModel:
-    def __init__(self, name: str):
+    def __init__(self, name: str, instance_name: str):
         self.name: str = name
         self.description: str = ''
         self.platform: str = ''
@@ -24,6 +31,8 @@ class ServiceModel:
         self.ram: str = ''
         self.redis_host_port: str = ''
         self.pid: str = ''
+        self.instance_type: InstanceType = InstanceType.Container
+        self.instance_name: str = instance_name
         self.created_at: str = ''
         self.heartbeat: str = ''
 
