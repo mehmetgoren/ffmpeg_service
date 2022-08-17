@@ -96,14 +96,14 @@ class SourceReaderConfig:
 
 class GeneralConfig:
     def __init__(self):
-        self.root_folder_path: str = '/mnt/sde1'
+        self.root_folder_path: str = '/mnt/sda1'
         self.heartbeat_interval: int = 30
 
 
 class DbConfig:
     def __init__(self):
-        self.type: DbType = DbType.SQLite
-        self.connection_string = ''
+        self.type: DbType = DbType.MongoDB
+        self.connection_string = 'mongodb://localhost:27017'
 
 
 class FFmpegConfig:
