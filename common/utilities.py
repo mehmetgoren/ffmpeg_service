@@ -6,8 +6,8 @@ from datetime import datetime
 from common.config import Config, config_redis
 
 logger = logging.getLogger('logger')
-logger.setLevel(logging.WARNING)
-logging.basicConfig(level=logging.WARNING)
+logger.setLevel(logging.WARN)
+logging.basicConfig(level=logging.WARN)
 
 config: Config = Config.create()
 

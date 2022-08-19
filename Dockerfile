@@ -8,6 +8,8 @@ RUN apt-get install -y tzdata
 RUN apt-get install -y curl
 RUN apt-get -qq install --no-install-recommends -y python3-pip
 RUN apt install ffmpeg --no-install-recommends -y
+RUN apt-get -y install net-tools
+
 RUN pip3 install docker
 RUN pip3 install ffmpeg-python
 RUN pip3 install numpy
@@ -18,6 +20,7 @@ RUN pip3 install requests
 RUN pip3 install rq
 RUN pip3 install schedule
 RUN pip3 install shortuuid
+RUN pip3 install getmac
 
 COPY . .
 

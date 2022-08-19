@@ -1,4 +1,5 @@
 import base64
+import time
 from datetime import datetime
 import glob
 import os
@@ -10,6 +11,8 @@ import ffmpeg
 import numpy as np
 import psutil
 from PIL import Image
+from getmac import get_mac_address
+from subprocess import Popen, PIPE
 
 from common.config import Config
 from common.data.rtsp_template_model import RtspTemplateModel
@@ -46,7 +49,8 @@ def _send(img_data):
 
 
 def pipe_test():
-    args = 'ffmpeg -i rtmp://127.0.0.1:9010/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk -filter_complex [0]fps=fps=1:round=up[s0];[s0]scale=1280:720[s1] -map [s1] -f rawvideo -pix_fmt rgb24 pipe:'
+    args = 'ffmpeg -i rtmp://127.0.0.1:9010/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk -filter_complex ' \
+           '[0]fps=fps=1:round=up[s0];[s0]scale=1280:720[s1] -map [s1] -f rawvideo -pix_fmt rgb24 pipe:'
     args = args.split(' ')
     proc = subprocess.Popen(args, stdout=subprocess.PIPE)
     width, height, cl_channels = 1280, 720, 3
@@ -325,4 +329,94 @@ def psutil_perf_test():
     print(f'psutil_perf_test result in sec: {diff.seconds}:{diff.microseconds}')
 
 
-psutil_perf_test()
+# psutil_perf_test()
+
+
+# noinspection DuplicatedCode
+def get_mac_address_test(ip_address) -> str:
+    ret = ''
+    max_retry = 10
+    index = 0
+    while index <= max_retry:
+        ip_mac = get_mac_address(ip=ip_address, network_request=True)
+        # print(ip_mac)
+        if ip_mac is not None and ip_mac != '00:00:00:00:00:00':
+            ret = ip_mac
+            break
+        index += 1
+        time.sleep(.2)
+    return ret.upper() if len(ret) > 0 else ret
+
+
+# noinspection DuplicatedCode
+def get_ip_address_test(mac_addr: str):
+    mac_addr = mac_addr.upper()
+    # x = ' '.join(args)
+    proc = None
+    try:
+        args = ['ip', 'neighbor']
+        proc = Popen(args, stdout=PIPE, stderr=PIPE)
+        proc.wait()
+        output, error_output = proc.communicate()
+        if len(error_output) == 0 and len(output) > 0:
+            result = output.decode('utf-8')
+            splits = result.split('\n')
+            for split in splits:
+                sp = split.split(' ')
+                if len(sp) == 6:
+                    ip_val = sp[0]
+                    mac_val = sp[4]
+                    if mac_val.upper() == mac_addr:
+                        return ip_val
+        else:
+            logger.warn(f'an IP address was not found from this mac address: {mac_addr}')
+    except BaseException as ex:
+        logger.error(f'an error occurred while getting the ip address by a mac address, ex: {ex}')
+    finally:
+        if proc is not None:
+            try:
+                proc.terminate()
+            except BaseException as ex:
+                logger.error(f'an error occurred while terminating the get ip address by mac address process, ex: {ex}')
+    return ''
+
+
+ip_addr = '192.168.68.112'
+mac = get_mac_address_test(ip_addr)
+print(f'found mac address is {mac}')
+print(f'found ip address is {get_ip_address_test(mac)}')
+
+
+def mac_ip_gather_perf_tests():
+    limit = 1000
+
+    start = datetime.now()
+    for j in range(limit):
+        get_mac_address_test(ip_addr)
+    end = datetime.now()
+    diff = end - start
+    print(f'get_mac_address_test diff: {diff.seconds}:{diff.microseconds}')
+
+    start = datetime.now()
+    for j in range(limit):
+        get_ip_address_test(ip_addr)
+    end = datetime.now()
+    diff = end - start
+    print(f'get_ip_address_test diff: {diff.seconds}:{diff.microseconds}')
+    # results are after 100000 iterations
+    # get_mac_address_test
+    # diff: 4:122835
+    # get_ip_address_test
+    # diff: 343:713839
+
+
+mac_ip_gather_perf_tests()
+
+
+# def get_ip_test():
+#     url = "rtsp://admin12:admin12@192.168.68.111:554/stream1"
+#     pattern = re.compile(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})')
+#     print("IP:", pattern.search(url)[0])
+#
+#
+# get_ip_test()

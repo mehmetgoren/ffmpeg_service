@@ -133,7 +133,7 @@ class WatchDogTimer:
         docker_manager = DockerManager(self.conn)
         container = docker_manager.get_container(stream_model)
         if container is None or container.status != 'running':
-            logger.warning(
+            logger.warn(
                 f'a failed RTMP container was detected for model {stream_model.name} (container name:{stream_model.rtmp_container_name}) and will be recovered')
             self.__recover(op, stream_model)
             return True
@@ -142,8 +142,7 @@ class WatchDogTimer:
     def __check_process(self, op: WatchDogOperations, stream_model: StreamModel, pid: int) -> bool:
         logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
         if not psutil.pid_exists(pid):
-            logger.warning(
-                f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
+            logger.warn(f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
             self.__recover(op, stream_model)
             return True
         return False

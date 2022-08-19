@@ -466,6 +466,9 @@ class SourceModel(FFmpegModel):
         self.name: str = name
         self.description: str = ''
 
+        self.mac_address: str = ''
+        self.ip_address: str = ''
+
         self.enabled: bool = True  # reserved for future using
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
 

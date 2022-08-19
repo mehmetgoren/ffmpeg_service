@@ -135,6 +135,12 @@ class UiConfig:
         self.seek_to_live_edge_internal: int = 30
 
 
+class JobsConfig:
+    def __init__(self):
+        self.mac_ip_matching_enabled: bool = True
+        self.mac_ip_matching_interval: int = 120
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -148,6 +154,7 @@ class Config:
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.ai: AiConfig = AiConfig()
         self.ui: UiConfig = UiConfig()
+        self.jobs: JobsConfig = JobsConfig()
         self.__connection: Redis = None
 
     @staticmethod

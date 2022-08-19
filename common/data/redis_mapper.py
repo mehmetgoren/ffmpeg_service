@@ -83,7 +83,7 @@ class RedisMapper:
             else:
                 raise NotImplementedError(type(default_value))
         RedisMapper.__cache[type_name] = typed_dic
-        logger.warning(f'new type ({type_name}) added to RedisMapper cache')
+        logger.warn(f'new type ({type_name}) added to RedisMapper cache')
 
     @staticmethod
     def __set_value(field_types: dict, key: str, value: str, dest_dict: dict):
@@ -115,5 +115,5 @@ class RedisMapper:
         fns[DataTypes.BOOL] = fn_bool
         fns[DataTypes.INT_ENUM] = fn_int_enum
         fns[DataTypes.INT] = fn_int
-        logger.warning(f'new cached functions dictionary has been initialized')
+        logger.warn(f'new cached functions dictionary has been initialized')
         return fns

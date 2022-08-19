@@ -47,11 +47,11 @@ class VideoFileMerger:
     def merge(self, source_id: str, date_str: str) -> (str, List[str]):
         source_record_dir = get_given_date_record_dir(source_id, date_str)
         if len(source_record_dir) == 0:
-            logger.warning(f'video file merge operation is now exiting since the source_id({source_id}) and/or date_str({date_str}) is invalid')
+            logger.warn(f'video file merge operation is now exiting since the source_id({source_id}) and/or date_str({date_str}) is invalid')
             return '', []
         lds = os.listdir(source_record_dir)
         if len(lds) < 2:
-            logger.warning(
+            logger.warn(
                 f'video file merge operation is now exiting since there is not enough video file for source_id({source_id}) and/or date_str({date_str})')
             return '', []
         filenames: List[str] = []

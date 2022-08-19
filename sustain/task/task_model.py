@@ -10,6 +10,7 @@ class TaskOp(IntEnum):
     listen_various_events = 5
     watchdog = 6
     schedule_video_file_indexer = 7
+    execute_various_jobs = 8
 
     @staticmethod
     def create_dict():
@@ -20,7 +21,8 @@ class TaskOp(IntEnum):
             TaskOp.listen_editor_event: 'listen_editor_event',
             TaskOp.listen_various_events: 'listen_various_events',
             TaskOp.watchdog: 'watchdog',
-            TaskOp.schedule_video_file_indexer: 'schedule_video_file_indexer'
+            TaskOp.schedule_video_file_indexer: 'schedule_video_file_indexer',
+            TaskOp.execute_various_jobs: 'execute_various_jobs'
         }
 
     @staticmethod

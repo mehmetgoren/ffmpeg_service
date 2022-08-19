@@ -10,8 +10,8 @@ from rq.command import send_stop_job_command, send_kill_horse_command, send_shut
 from rq.job import Job, get_current_job, Retry
 
 from common.utilities import crate_redis_connection, RedisDb, logger, config
-from event_listeners import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event, \
-    listen_various_events
+from event_listeners_and_jobs import listen_editor_event, listen_start_stream_event, listen_stop_stream_event, listen_restart_stream_event, \
+    listen_various_events, execute_various_jobs
 from sustain.failed_stream.failed_stream_repository import FailedStreamRepository
 from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
@@ -38,7 +38,8 @@ __func_dic = {
     TaskOp.listen_editor_event: listen_editor_event,
     TaskOp.listen_various_events: listen_various_events,
     TaskOp.watchdog: __watchdog.start,
-    TaskOp.schedule_video_file_indexer: schedule_video_file_indexer
+    TaskOp.schedule_video_file_indexer: schedule_video_file_indexer,
+    TaskOp.execute_various_jobs: execute_various_jobs
 }
 __wait_for = config.ffmpeg.start_task_wait_for_interval
 
@@ -143,6 +144,7 @@ def clean_my_previous():
     __zombie_repository.remove_all()
 
 
+# noinspection DuplicatedCode
 def add_tasks():
     task = TaskModel()
     task.set_op(TaskOp.listen_start_stream_event)
@@ -158,6 +160,8 @@ def add_tasks():
     task.set_op(TaskOp.watchdog)
     __task_repository.add(task)
     task.set_op(TaskOp.schedule_video_file_indexer)
+    __task_repository.add(task)
+    task.set_op(TaskOp.execute_various_jobs)
     __task_repository.add(task)
 
 
