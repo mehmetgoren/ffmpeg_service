@@ -69,6 +69,10 @@ class BasePipeReader(ABC):
     def read(self) -> any:
         raise NotImplementedError('BaseReader.read() must be implemented')
 
+    @abstractmethod
+    def get_img(self) -> np.array:
+        raise NotImplementedError('BaseReader.get_img() must be implemented')
+
     @staticmethod
     def __create_base64_img(numpy_img: np.array) -> str:
         img = Image.fromarray(numpy_img)
@@ -92,8 +96,3 @@ class BasePipeReader(ABC):
                     f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
 
             start_thread(_post, [])
-
-    def get_img(self) -> np.array:
-        packet = self.process.stdout.read(self.packet_size)
-        numpy_img = np.frombuffer(packet, np.uint8).reshape([self.options.height, self.options.width, self.cl_channels])
-        return numpy_img
