@@ -24,7 +24,7 @@ class BaseStreamEventHandler(EventHandler, ABC):
         mapper = RedisMapper(SourceModel())
         source_model: SourceModel = mapper.from_redis_pubsub(dic)
         if not source_model.id:
-            logger.warn('invalid source model was requested but the stream will not be  started.')
+            logger.warning('invalid source model was requested but the stream will not be  started.')
             return False, None, None, ''
         prev_stream_model = self.stream_repository.get(source_model.id)
 

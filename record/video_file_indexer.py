@@ -31,7 +31,7 @@ class VideoFileIndexer:
                     os.remove(filename)
                 except BaseException as ex:
                     logger.error(f'an error occurred while removing midget files, err: {ex}')
-                logger.warn(f'a invalid file size({file_size}) found on a valid video file({filename}) and removed')
+                logger.warning(f'a invalid file size({file_size}) found on a valid video file({filename}) and removed')
                 continue
             ret.append(filename)
         return ret
@@ -50,9 +50,9 @@ class VideoFileIndexer:
             except BaseException as ex:
                 try:
                     os.remove(filename)
-                    logger.warn(f'a corrupted video file({filename}) was found and deleted, ex: {ex}')
+                    logger.warning(f'a corrupted video file({filename}) was found and deleted, ex: {ex}')
                 except BaseException as ex2:
-                    logger.warn(f'an error occurred during the deleting the file name: {filename}, ex: {ex2}')
+                    logger.warning(f'an error occurred during the deleting the file name: {filename}, ex: {ex2}')
         return valid_list
 
     def move(self, source_id: str):

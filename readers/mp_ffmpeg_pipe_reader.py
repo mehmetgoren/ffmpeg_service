@@ -43,7 +43,7 @@ class MpFFmpegPipeReader(BasePipeReader):
         packet = self.process.stdout.read(self.packet_size)
         if len(packet) != self.packet_size:
             msg = f'camera ({self.options.name}) could not capture any frame, packet size: {len(packet)} is not equal to packet size: {self.packet_size}.'
-            logger.warn(msg)
+            logger.warning(msg)
             return None
         numpy_img = np.frombuffer(packet, np.uint8).reshape([self.options.height, self.options.width, self.cl_channels])
         return numpy_img
@@ -87,7 +87,7 @@ class MpFFmpegPipeReader(BasePipeReader):
         self.owner_proc.daemon = True  # ????
         self.owner_proc.start()
         self.owner_proc.join()
-        logger.warn(f"FFmpeg Reader owner process has been joined, pid: {self.owner_proc.pid}")
+        logger.warning(f"FFmpeg Reader owner process has been joined, pid: {self.owner_proc.pid}")
         logger.error(f'camera ({self.options.name}) could not capture any frame and is now being released')
 
 

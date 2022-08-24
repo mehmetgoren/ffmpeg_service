@@ -61,7 +61,7 @@ class MacIpMatching:
                             return ip_val
                     reverse_index -= 1
             else:
-                logger.warn(f'an IP address was not found from this mac address: {mac_addr}')
+                logger.warning(f'an IP address was not found from this mac address: {mac_addr}')
         except BaseException as ex:
             logger.error(f'an error occurred while getting the ip address by a mac address, ex: {ex}')
         finally:
@@ -86,7 +86,7 @@ class MacIpMatching:
 
             ip_addr = self.__parse_ip_address(source_model.address)
             if len(ip_addr) == 0:
-                logger.warn(f'could not grab an ip address from the source address, source name: {source_model.name}, address: {source_model.address}')
+                logger.warning(f'could not grab an ip address from the source address, source name: {source_model.name}, address: {source_model.address}')
                 continue
             if len(source_model.ip_address) == 0:
                 source_model.ip_address = ip_addr
@@ -95,7 +95,7 @@ class MacIpMatching:
             if len(source_model.mac_address) == 0:
                 mac_addr = self.__run_mac_address(ip_addr)
                 if len(mac_addr) == 0:
-                    logger.warn(f'could not grabbed an mac address for source name: {source_model.name}, ip: {source_model.ip_address}')
+                    logger.warning(f'could not grabbed an mac address for source name: {source_model.name}, ip: {source_model.ip_address}')
                     continue
                 source_model.mac_address = mac_addr
                 self.source_repository.add(source_model)
@@ -103,7 +103,7 @@ class MacIpMatching:
             # the __get_ip_address function cost too much cpu time.
             check_ip_addr = self.__run_ip_address(source_model.mac_address)
             if len(check_ip_addr) == 0:
-                logger.warn(f'ip address could not be grabbed by mac address for source name: {source_model.name}, mac: {source_model.mac_address}')
+                logger.warning(f'ip address could not be grabbed by mac address for source name: {source_model.name}, mac: {source_model.mac_address}')
                 continue
             if check_ip_addr != ip_addr:
                 logger.error(f'a changed ip address has ben detected for source name: {source_model.name}, it will be restart')

@@ -55,6 +55,20 @@ class DeviceType(IntEnum):
     IOT = 1
 
 
+class DeepStackPerformanceMode(IntEnum):
+    Low = 0
+    Medium = 1
+    High = 2
+
+
+class DeepStackDockerType(IntEnum):
+    CPU = 0
+    GPU = 1
+    NVIDIA_JETSON = 2
+    ARM64 = 3
+    ARM64_SERVER = 4
+
+
 class DeviceConfig:
     def __init__(self):
         self.device_name = platform.node()
@@ -137,8 +151,21 @@ class UiConfig:
 
 class JobsConfig:
     def __init__(self):
-        self.mac_ip_matching_enabled: bool = True
+        self.mac_ip_matching_enabled: bool = False
         self.mac_ip_matching_interval: int = 120
+
+
+class DeepStackConfig:
+    def __init__(self):
+        self.server_url: str = 'http://127.0.0.1'
+        self.server_port: int = 1009
+        self.performance_mode: DeepStackPerformanceMode = DeepStackPerformanceMode.Medium
+        self.api_key: str = ''
+        self.od_enabled: bool = True
+        self.od_threshold: float = .45
+        self.fr_enabled: bool = True
+        self.fr_threshold: float = .7
+        self.docker_type: DeepStackDockerType = DeepStackDockerType.GPU
 
 
 class Config:
@@ -155,6 +182,7 @@ class Config:
         self.ai: AiConfig = AiConfig()
         self.ui: UiConfig = UiConfig()
         self.jobs: JobsConfig = JobsConfig()
+        self.deep_stack: DeepStackConfig = DeepStackConfig()
         self.__connection: Redis = None
 
     @staticmethod

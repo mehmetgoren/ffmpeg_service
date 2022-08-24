@@ -82,3 +82,5 @@ def execute_various_jobs():
 
     if config.jobs.mac_ip_matching_enabled:
         fn_check_mac_and_ip_mathing()
+    else:
+        logger.warning('IP match making is not enabled')

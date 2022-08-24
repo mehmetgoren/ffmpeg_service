@@ -29,7 +29,7 @@ def kill_all_prev_ffmpeg_procs():
         if proc.name() == "ffmpeg":
             try:
                 os.kill(proc.pid, signal.SIGKILL)
-                logger.warn(f'a previous FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
+                logger.warning(f'a previous FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
             except BaseException as e:
                 logger.error(f'an error occurred during killing a previous FFmpeg process, ex: {e} at {datetime.now()}')
 
@@ -48,6 +48,6 @@ def remove_all_prev_rtmp_containers(connection_main: Redis):
             continue
         try:
             docker_manager.stop_container(container)
-            logger.warn(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
+            logger.warning(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
         except BaseException as e:
             logger.error(f'an error occurred during stopping a zombie rtmp server container ({container.name}), ex: {e} at {datetime.now()}')

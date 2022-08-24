@@ -92,13 +92,13 @@ class WatchDogTimer:
         for rec_stuck_model in rec_stuck_models:
             if rec_stuck_model.id not in streams_dic:
                 rec_stuck_repository.remove(rec_stuck_model)
-                logger.warn('a zombie recording stuck model found on recstucks and removed')
+                logger.warning('a zombie recording stuck model found on recstucks and removed')
 
     def _check_running_processes(self) -> List[StreamModel]:
         broken_streams: List[StreamModel] = []
         now = datetime.now()
         if (now - self.last_check_running_processes_date).seconds < self.interval:
-            logger.warn(f'last_check_running_processes_date({self.last_check_running_processes_date}) is not satisfied with current time({now})')
+            logger.warning(f'last_check_running_processes_date({self.last_check_running_processes_date}) is not satisfied with current time({now})')
             return broken_streams
         self.last_check_running_processes_date = now
         stream_models = self.stream_repository.get_all()
@@ -133,7 +133,7 @@ class WatchDogTimer:
         docker_manager = DockerManager(self.conn)
         container = docker_manager.get_container(stream_model)
         if container is None or container.status != 'running':
-            logger.warn(
+            logger.warning(
                 f'a failed RTMP container was detected for model {stream_model.name} (container name:{stream_model.rtmp_container_name}) and will be recovered')
             self.__recover(op, stream_model)
             return True
@@ -142,7 +142,7 @@ class WatchDogTimer:
     def __check_process(self, op: WatchDogOperations, stream_model: StreamModel, pid: int) -> bool:
         logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
         if not psutil.pid_exists(pid):
-            logger.warn(f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
+            logger.warning(f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
             self.__recover(op, stream_model)
             return True
         return False
@@ -222,7 +222,7 @@ class WatchDogTimer:
     def _kill_zombie_processes(self, broken_streams: List[StreamModel]):
         now = datetime.now()
         if (now - self.last_kill_zombie_processes_date).seconds < self.interval:
-            logger.warn(f'last_kill_zombie_processes_date({self.last_kill_zombie_processes_date}) is not satisfied with current time({now})')
+            logger.warning(f'last_kill_zombie_processes_date({self.last_kill_zombie_processes_date}) is not satisfied with current time({now})')
             return broken_streams
         self.last_kill_zombie_processes_date = now
         stream_models = self.stream_repository.get_all()
@@ -254,7 +254,7 @@ class WatchDogTimer:
                         continue  # which means it is RtspVideoEditor' FFmpeg subprocess
                     self.zombie_repository.add('ffmpeg', str(proc.pid))
                     os.kill(proc.pid, signal.SIGKILL)
-                    logger.warn(f'a zombie FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
+                    logger.warning(f'a zombie FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
                 except BaseException as e:
                     logger.error(f'an error occurred during killing a zombie FFmpeg process, ex: {e} at {datetime.now()}')
 
@@ -276,6 +276,6 @@ class WatchDogTimer:
                 try:
                     self.zombie_repository.add('docker', container.name)
                     docker_manager.stop_container(container)
-                    logger.warn(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
+                    logger.warning(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
                 except BaseException as e:
                     logger.error(f'an error occurred during stopping a zombie rtmp server container, ex: {e} at {datetime.now()}')

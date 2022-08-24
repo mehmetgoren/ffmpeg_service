@@ -369,7 +369,7 @@ def get_ip_address_test(mac_addr: str):
                     if mac_val.upper() == mac_addr:
                         return ip_val
         else:
-            logger.warn(f'an IP address was not found from this mac address: {mac_addr}')
+            logger.warning(f'an IP address was not found from this mac address: {mac_addr}')
     except BaseException as ex:
         logger.error(f'an error occurred while getting the ip address by a mac address, ex: {ex}')
     finally:
