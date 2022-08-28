@@ -246,6 +246,7 @@ class WatchDogTimer:
             add_pid(stream_model.snapshot_pid)
             add_pid(stream_model.concat_demuxer_pid)
         all_process_list = psutil.process_iter()
+        zombie_ppids = set()
         for proc in all_process_list:
             if proc.name() == "ffmpeg" and proc.pid not in models_pid_dic:
                 try:
@@ -255,8 +256,24 @@ class WatchDogTimer:
                     self.zombie_repository.add('ffmpeg', str(proc.pid))
                     os.kill(proc.pid, signal.SIGKILL)
                     logger.warning(f'a zombie FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')
+                    try:
+                        time.sleep(1.)
+                        p = psutil.Process(proc.pid)
+                        if p.status() == psutil.STATUS_ZOMBIE:
+                            zombie_ppids.add(p.ppid())
+                        else:
+                            logger.warning(f'No zombie found for {proc.pid} at {datetime.now()}')
+                    except psutil.NoSuchProcess:
+                        logger.warning(f'a zombie FFmpeg process raises NoSuchProcess, it is expected result - {proc.pid} at {datetime.now()}')
+                        continue
                 except BaseException as e:
                     logger.error(f'an error occurred during killing a zombie FFmpeg process, ex: {e} at {datetime.now()}')
+        for ppid in zombie_ppids:
+            try:
+                os.kill(ppid, signal.SIGKILL)
+                logger.warning(f'a PARENT zombie process has been found and has been killed ppid: {ppid} at {datetime.now()}')
+            except BaseException as e:
+                logger.error(f'an error occurred during killing a PARENT zombie FFmpeg process, ex: {e} at {datetime.now()}')
 
     def __check_unstopped_rtmp_server_containers(self, stream_models: List[StreamModel]):
         logger.info(f'check_unstopped_rtmp_server_containers is being executed at {datetime.now()}')

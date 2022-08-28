@@ -19,6 +19,14 @@ class RestartStreamEventHandler(EventHandler):
         if RedisMapper.is_pubsub_message_invalid(dic):
             return
         logger.info('RestartStreamEventHandler handle called')
-        self.stop_stream_event_handler.handle(dic)
-        time.sleep(1.)
-        self.start_stream_event_handler.handle(dic)
+
+        try:
+            self.stop_stream_event_handler.handle(dic)
+        except BaseException as ex:
+            logger.error(f'an error occurred while stopping a stream bu restart stream event handler, ex: {ex}')
+        finally:
+            time.sleep(3.)
+            try:
+                self.start_stream_event_handler.handle(dic)
+            except BaseException as ex:
+                logger.error(f'an error occurred while starting a stream bu restart stream event handler, ex: {ex}')
