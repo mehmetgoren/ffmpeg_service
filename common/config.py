@@ -69,6 +69,11 @@ class DeepStackDockerType(IntEnum):
     ARM64_SERVER = 4
 
 
+class ArchiveActionType(IntEnum):
+    Delete = 0
+    MoveToNewLocation = 1
+
+
 class DeviceConfig:
     def __init__(self):
         self.device_name = platform.node()
@@ -168,6 +173,13 @@ class DeepStackConfig:
         self.docker_type: DeepStackDockerType = DeepStackDockerType.GPU
 
 
+class ArchiveConfig:
+    def __init__(self):
+        self.limit_percent: int = 95
+        self.action_type: ArchiveActionType = ArchiveActionType.Delete
+        self.move_location: str = ''
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -183,6 +195,7 @@ class Config:
         self.ui: UiConfig = UiConfig()
         self.jobs: JobsConfig = JobsConfig()
         self.deep_stack: DeepStackConfig = DeepStackConfig()
+        self.archive: ArchiveConfig = ArchiveConfig()
         self.__connection: Redis = None
 
     @staticmethod
