@@ -13,6 +13,7 @@ from common.utilities import logger, config, datetime_now
 from rtmp.docker_manager import DockerManager
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
+from sustain.failed_stream.notify_failed_stream_model import NotifyFailedStreamModel
 from sustain.failed_stream.failed_stream_model import FailedStreamModel, WatchDogOperations
 from sustain.failed_stream.failed_stream_repository import FailedStreamRepository
 from sustain.failed_stream.zombie_repository import ZombieRepository
@@ -31,6 +32,7 @@ class WatchDogTimer:
         self.failed_stream_repository = FailedStreamRepository(self.conn)
         self.zombie_repository = ZombieRepository(self.conn)
         self.restart_stream_event_bus = EventBus('restart_stream_request')
+        self.notify_failed_event_bus = EventBus('notify_failed')
         self.interval: int = max(config.ffmpeg.watch_dog_interval, 10)
         logger.info(f'watchdog interval is: {self.interval}')
         self.failed_process_interval: float = max(config.ffmpeg.watch_dog_failed_wait_interval, 1.)
@@ -66,6 +68,12 @@ class WatchDogTimer:
         dic = source_model.__dict__
         self.restart_stream_event_bus.publish_async(serialize_json_dic(dic))
 
+    def __publish_failed_notification(self, op: WatchDogOperations, stream_model: StreamModel):
+        model = NotifyFailedStreamModel().map_from(op, stream_model)
+        dic = model.__dict__
+        self.notify_failed_event_bus.publish_async(serialize_json_dic(dic))
+        logger.warning(f'a failed source ({model.name}) has been notified at {model.created_at}')
+
     def __recover(self, op: WatchDogOperations, stream_model: StreamModel):
         source_id = stream_model.id
         source_model = self.source_repository.get(source_id)  # if it wasn't deleted before.
@@ -82,6 +90,7 @@ class WatchDogTimer:
         log_failed()
         self.__publish_restart(source_model)
         time.sleep(self.failed_process_interval)
+        self.__publish_failed_notification(op, stream_model)
 
     @staticmethod
     def __remove_zombie_rec_stuck_models(stream_models: List[StreamModel], rec_stuck_repository: RecStuckRepository):
