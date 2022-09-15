@@ -41,6 +41,7 @@ class WatchDogTimer:
         self.zombie_multiplier: int = 6
         self.last_check_running_processes_date = datetime.now()
         self.last_kill_zombie_processes_date = datetime.now()
+        self.work_in_progress: bool = False
 
     def __start_prev_streams(self):
         stream_models = self.stream_repository.get_all()
@@ -53,16 +54,25 @@ class WatchDogTimer:
         setup_scheduler(self.interval, self.__tick, True)
 
     def __tick(self):
-        logger.info(f'watchdog timer is starting at {datetime.now()}')
+        if self.work_in_progress:
+            logger.warning(f'work in progress is True, skipping Watchdog timer tick at {datetime_now()}')
+            return
+        self.work_in_progress = True
+        try:
+            logger.info(f'watchdog timer is starting at {datetime.now()}')
 
-        broken_streams = self._check_running_processes()
-        if self.zombie_counter % self.zombie_multiplier == 0:
-            self._kill_zombie_processes(broken_streams)
-        self.zombie_counter += 1
-        if self.zombie_counter > self.zombie_multiplier * 1000:
-            self.zombie_counter = 1
+            broken_streams = self._check_running_processes()
+            if self.zombie_counter % self.zombie_multiplier == 0:
+                self._kill_zombie_processes(broken_streams)
+            self.zombie_counter += 1
+            if self.zombie_counter > self.zombie_multiplier * 1000:
+                self.zombie_counter = 1
 
-        logger.info(f'watchdog timer has been finished at {datetime.now()}')
+            logger.info(f'watchdog timer has been finished at {datetime.now()}')
+        except BaseException as ex:
+            logger.error(f'an error occurred while running Watchdog timer, err: {ex}')
+        finally:
+            self.work_in_progress = False
 
     def __publish_restart(self, source_model: SourceModel):
         dic = source_model.__dict__
@@ -116,21 +126,33 @@ class WatchDogTimer:
         for stream_model in stream_models:
             if self.__check_rtmp_container(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for RTMP Container, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_rtmp_feeder_process(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for RTMP Feeder, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_hls_process(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for HLS Process, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_mp_ffmpeg_reader_process(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for FFmpeg Reader Process, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_record_process(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for Recording Process, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_snapshot_process(stream_model):
                 broken_streams.append(stream_model)
+                logger.warning(f'a broken stream has been found for Snapshot Process, waiting for {self.failed_process_interval}')
+                time.sleep(self.failed_process_interval)
                 continue
             if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
                 broken_streams.append(stream_model)
