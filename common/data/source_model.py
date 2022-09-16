@@ -459,6 +459,11 @@ class SnapshotType(IntEnum):
     OpenCVPersistent = 1
 
 
+class FlvPlayerType(IntEnum):
+    MpegTsJs = 0
+    FlvJs = 1
+
+
 class SourceModel(FFmpegModel):
     def __init__(self, identifier: str = '', brand: str = '', name: str = '', address: str = ''):
         super().__init__(identifier, address)
@@ -485,6 +490,7 @@ class SourceModel(FFmpegModel):
         self.record_enabled: bool = False
         self.ai_clip_enabled: bool = False
 
+        self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
 
         self.created_at: str = datetime_now()

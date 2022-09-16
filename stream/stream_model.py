@@ -1,4 +1,4 @@
-from common.data.source_model import RmtpServerType, SourceModel, StreamType, RecordFileTypes, SnapshotType
+from common.data.source_model import RmtpServerType, SourceModel, StreamType, RecordFileTypes, SnapshotType, FlvPlayerType
 from common.utilities import datetime_now
 
 
@@ -51,6 +51,7 @@ class StreamModel:
         self.concat_demuxer_pid: int = 0
         self.concat_demuxer_args: str = ''
 
+        self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
 
     def map_from_source(self, source: SourceModel):
@@ -80,6 +81,7 @@ class StreamModel:
 
         self.ai_clip_enabled = source.ai_clip_enabled
 
+        self.flv_player_type = source.flv_player_type
         self.booster_enabled = source.booster_enabled
 
         return self
