@@ -464,6 +464,12 @@ class FlvPlayerType(IntEnum):
     FlvJs = 1
 
 
+class SourceState(IntEnum):
+    NotStartedYet = 0
+    Started = 1
+    Stopped = 2
+
+
 class SourceModel(FFmpegModel):
     def __init__(self, identifier: str = '', brand: str = '', name: str = '', address: str = ''):
         super().__init__(identifier, address)
@@ -474,6 +480,7 @@ class SourceModel(FFmpegModel):
         self.mac_address: str = ''
         self.ip_address: str = ''
 
+        self.state: SourceState = SourceState.NotStartedYet
         self.enabled: bool = True  # reserved for future using
         self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
 

@@ -3,7 +3,8 @@ import shutil
 from abc import ABC
 
 from common.data.redis_mapper import RedisMapper
-from common.data.source_model import SourceModel
+from common.data.source_model import SourceModel, SourceState
+from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.event_bus.event_handler import EventHandler
 from common.utilities import logger
@@ -13,8 +14,9 @@ from utils.dir import get_hls_path
 
 
 class BaseStreamEventHandler(EventHandler, ABC):
-    def __init__(self, stream_repository: StreamRepository, response_channel_name: str):
+    def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository, response_channel_name: str):
         self.event_bus = EventBus(response_channel_name)
+        self.source_repository = source_repository
         self.stream_repository = stream_repository
 
     def parse_message(self, dic: dict) -> (bool, StreamModel, SourceModel):
@@ -24,7 +26,7 @@ class BaseStreamEventHandler(EventHandler, ABC):
         mapper = RedisMapper(SourceModel())
         source_model: SourceModel = mapper.from_redis_pubsub(dic)
         if not source_model.id:
-            logger.warning('invalid source model was requested but the stream will not be  started.')
+            logger.warning('invalid source model was requested but the stream will not be started.')
             return False, None, None, ''
         prev_stream_model = self.stream_repository.get(source_model.id)
 
@@ -43,3 +45,8 @@ class BaseStreamEventHandler(EventHandler, ABC):
                     shutil.rmtree(file_path)
             except Exception as e:
                 logger.error(f'Failed to delete {file_path}. Reason: {e}')
+
+    def set_source_state(self, source_id: str, state: SourceState):
+        db_source = self.source_repository.get(source_id)
+        db_source.state = state
+        self.source_repository.add(db_source)

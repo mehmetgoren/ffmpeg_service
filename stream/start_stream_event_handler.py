@@ -7,7 +7,7 @@ from typing import List
 import psutil
 
 from command_builder import CommandBuilder
-from common.data.source_model import SourceModel, RmtpServerType
+from common.data.source_model import SourceModel, RmtpServerType, SourceState
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
 
@@ -25,7 +25,7 @@ from utils.utils import start_thread
 
 class StartStreamEventHandler(BaseStreamEventHandler):
     def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
-        super().__init__(stream_repository, 'start_stream_response')
+        super().__init__(source_repository, stream_repository, 'start_stream_response')
         self.source_repository = source_repository
         logger.info(f'StartStreamEventHandler initialized at {datetime.now()}')
 
@@ -51,6 +51,7 @@ class StartStreamEventHandler(BaseStreamEventHandler):
                 starters.append(SnapshotProcessStarter(self.stream_repository))
             for starter in starters:
                 starter.start_process(source_model, stream_model)
+        self.set_source_state(source_model.id, SourceState.Started)
         self.publish_async(stream_model)
 
 

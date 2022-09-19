@@ -11,7 +11,7 @@ from stream.stream_repository import StreamRepository
 
 class RestartStreamEventHandler(EventHandler):
     def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
-        self.stop_stream_event_handler = StopStreamEventHandler(stream_repository)
+        self.stop_stream_event_handler = StopStreamEventHandler(source_repository, stream_repository)
         self.start_stream_event_handler = StartStreamEventHandler(source_repository, stream_repository)
         logger.info('RestartStreamEventHandler initialized')
 

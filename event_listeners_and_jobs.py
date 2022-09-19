@@ -33,7 +33,7 @@ def listen_start_stream_event():
 
 
 def listen_stop_stream_event():
-    handler = StopStreamEventHandler(__stream_repository)
+    handler = StopStreamEventHandler(__source_repository, __stream_repository)
     event_bus = EventBus('stop_stream_request')
     event_bus.subscribe_async(handler)
 

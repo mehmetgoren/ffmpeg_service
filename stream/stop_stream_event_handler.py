@@ -1,6 +1,8 @@
 import os
 from signal import SIGKILL
 
+from common.data.source_model import SourceState
+from common.data.source_repository import SourceRepository
 from common.utilities import logger
 from rtmp.docker_manager import DockerManager
 from stream.stream_model import StreamModel
@@ -10,8 +12,8 @@ from utils.json_serializer import serialize_json
 
 
 class StopStreamEventHandler(BaseStreamEventHandler):
-    def __init__(self, stream_repository: StreamRepository):
-        super().__init__(stream_repository, 'stop_stream_response')
+    def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
+        super().__init__(source_repository, stream_repository, 'stop_stream_response')
         logger.info('StopStreamEventHandler initialized')
 
     def handle(self, dic: dict):  # which means operation is being stopped by a ruler, not by FFmpeg service itself.
@@ -76,6 +78,8 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                 logger.info(f'a FFMpeg RTMP feeder container has been stopped and removed, pid: {stream_model.rtmp_feeder_pid}')
             except BaseException as e:
                 logger.error(f'Error while removing RTMP container for {stream_model.id}, err: {e}')
+
+        self.set_source_state(source_model.id, SourceState.Stopped)
 
         source_json = serialize_json(source_model)
         self.event_bus.publish_async(source_json)

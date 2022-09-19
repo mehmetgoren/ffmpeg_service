@@ -6,7 +6,7 @@ from typing import List
 import psutil
 from redis.client import Redis
 
-from common.data.source_model import SourceModel
+from common.data.source_model import SourceModel, SourceState
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, config, datetime_now
@@ -84,20 +84,20 @@ class WatchDogTimer:
         self.notify_failed_event_bus.publish_async(serialize_json_dic(dic))
         logger.warning(f'a failed source ({model.name}) has been notified at {model.created_at}')
 
+    def __log_failed_stream(self, op: WatchDogOperations, source_model: SourceModel):
+        if source_model is None:
+            return
+        failed_stream_model: FailedStreamModel = self.failed_stream_repository.get(source_model.id)
+        if failed_stream_model is None:
+            failed_stream_model = FailedStreamModel().map_from_source(source_model)
+        failed_stream_model.set_failed_count(op)
+        self.failed_stream_repository.add(failed_stream_model)
+
     def __recover(self, op: WatchDogOperations, stream_model: StreamModel):
         source_id = stream_model.id
         source_model = self.source_repository.get(source_id)  # if it wasn't deleted before.
 
-        def log_failed():
-            if source_model is None:
-                return
-            failed_stream_model: FailedStreamModel = self.failed_stream_repository.get(source_id)
-            if failed_stream_model is None:
-                failed_stream_model = FailedStreamModel().map_from_source(source_model)
-            failed_stream_model.set_failed_count(op)
-            self.failed_stream_repository.add(failed_stream_model)
-
-        log_failed()
+        self.__log_failed_stream(op, source_model)
         self.__publish_restart(source_model)
         time.sleep(self.failed_process_interval)
         self.__publish_failed_notification(op, stream_model)
@@ -126,36 +126,39 @@ class WatchDogTimer:
         for stream_model in stream_models:
             if self.__check_rtmp_container(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for RTMP Container, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for RTMP Container, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_rtmp_feeder_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for RTMP Feeder, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for RTMP Feeder, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_hls_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for HLS Process, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for HLS Process, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_mp_ffmpeg_reader_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for FFmpeg Reader Process, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for FFmpeg Reader Process, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_record_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for Recording Process, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for Recording Process, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_snapshot_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for Snapshot Process, waiting for {self.failed_process_interval}')
+                logger.warning(f'a broken stream has been found for Snapshot Process, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
                 broken_streams.append(stream_model)
+
+        if len(broken_streams) == 0:  # if everything goes well
+            self.__check_source_state_conflict(stream_models)
         return broken_streams
 
     def __check_rtmp_container(self, stream_model: StreamModel) -> bool:
@@ -250,6 +253,19 @@ class WatchDogTimer:
                 return True
         return False
 
+    def __check_source_state_conflict(self, stream_models: List[StreamModel]):
+        source_models = self.source_repository.get_all()
+        if len(source_models) > len(stream_models):
+            stream_dic = dict()
+            for stream_model in stream_models:
+                stream_dic[stream_model.id] = stream_model
+            for source_model in source_models:
+                if source_model.id not in stream_dic and source_model.state == SourceState.Started:
+                    logger.warning(f'an conflicted source({source_model.id} - {source_model.name}) found and wil be recovered soon')
+                    self.__log_failed_stream(WatchDogOperations.check_source_state_conflict, source_model)
+                    self.__publish_restart(source_model)
+                    time.sleep(self.failed_process_interval)
+
     def _kill_zombie_processes(self, broken_streams: List[StreamModel]):
         now = datetime.now()
         if (now - self.last_kill_zombie_processes_date).seconds < self.interval:
@@ -283,7 +299,7 @@ class WatchDogTimer:
                 try:
                     args = proc.cmdline()
                     if len(args) == 8 and args[4] == 'image2' and args[5] == '-vframes':
-                        continue  # which means it is RtspVideoEditor' FFmpeg subprocess
+                        continue  # which means it is RtspVideoEditor FFmpeg subprocess
                     self.zombie_repository.add('ffmpeg', str(proc.pid))
                     os.kill(proc.pid, signal.SIGKILL)
                     logger.warning(f'a zombie FFmpeg process was detected and killed - {proc.pid} at {datetime.now()}')

@@ -43,7 +43,7 @@ class RedisMapper:
             RedisMapper.__set_value(field_types, key, value, model_dic)
         return self.model
 
-    # do not mutate the model' s dictionary. Otherwise, it can cause big troubles
+    # do not mutate the model dictionary. Otherwise, it can cause big troubles
     def to_redis(self) -> dict:
         field_types = self.__get_field_types()
         model_dic = self.model.__dict__.copy()

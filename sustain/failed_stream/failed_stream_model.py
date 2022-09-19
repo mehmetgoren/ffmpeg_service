@@ -12,6 +12,7 @@ class WatchDogOperations(str, Enum):
     check_record_process = 'check_record_process'
     check_snapshot_process = 'check_snapshot_process'
     check_record_stuck_process = 'check_record_stuck_process'
+    check_source_state_conflict = 'check_source_state_conflict'
 
 
 class FailedStreamModel:
@@ -28,6 +29,7 @@ class FailedStreamModel:
         self.record_failed_count: int = 0
         self.snapshot_failed_count: int = 0
         self.record_stuck_process_count: int = 0
+        self.source_state_conflict_count: int = 0
         self.last_check_at: str = ''
 
     def map_from_source(self, source: SourceModel):
@@ -55,6 +57,8 @@ class FailedStreamModel:
             self.snapshot_failed_count += 1
         elif op == WatchDogOperations.check_record_stuck_process:
             self.record_stuck_process_count += 1
+        elif op == WatchDogOperations.check_source_state_conflict:
+            self.source_state_conflict_count += 1
         else:
             raise NotImplementedError(op.value)
         self.last_check_at: str = datetime_now()
