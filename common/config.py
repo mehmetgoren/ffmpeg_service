@@ -142,14 +142,14 @@ class AiConfig:
         self.overlay: bool = True
         self.video_clip_duration: int = 10
         self.face_recog_mtcnn_threshold: float = .86
-        self.face_recog_prob_threshold: float = .95
+        self.face_recog_prob_threshold: float = .98
         self.plate_recog_instance_count: int = 2
 
 
 class UiConfig:
     def __init__(self):
         self.gs_width: int = 4
-        self.gs_height: int = 3
+        self.gs_height: int = 2
         self.booster_interval: float = .3
         self.seek_to_live_edge_internal: int = 30
 
