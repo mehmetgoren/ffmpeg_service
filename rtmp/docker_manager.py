@@ -75,5 +75,6 @@ class DockerManager:
         container.remove()
 
     @staticmethod
-    def parse_image_name(container):
-        return container.image.tags[0].replace(':latest', '')
+    def parse_image_name(container) -> str:
+        tags = container.image.tags
+        return tags[0].replace(':latest', '') if len(tags) > 0 else ''
