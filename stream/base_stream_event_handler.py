@@ -28,6 +28,8 @@ class BaseStreamEventHandler(EventHandler, ABC):
         if not source_model.id:
             logger.warning('invalid source model was requested but the stream will not be started.')
             return False, None, None, ''
+        # added for SourceModel.enabled
+        source_model = self.source_repository.get(source_model.id)
         prev_stream_model = self.stream_repository.get(source_model.id)
 
         return True, prev_stream_model, source_model

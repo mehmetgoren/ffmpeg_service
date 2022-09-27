@@ -37,6 +37,9 @@ class StartStreamEventHandler(BaseStreamEventHandler):
         is_valid_msg, stream_model, source_model = self.parse_message(dic)
         if not is_valid_msg:
             return
+        if not source_model.enabled:
+            logger.warning(f'streaming will not be started for source (id:{source_model.id}, name: {source_model.name}) since it is not enabled')
+            return
         logger.info(f'StartStreamEventHandler handle called {datetime.now()}')
         need_reload = stream_model is None or not psutil.pid_exists(stream_model.rtmp_feeder_pid)
         if need_reload:
