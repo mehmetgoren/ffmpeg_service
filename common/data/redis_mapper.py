@@ -10,7 +10,8 @@ class DataTypes(IntEnum):
     STR = 0
     BOOL = 1
     INT = 2
-    INT_ENUM = 3
+    FLOAT = 3
+    INT_ENUM = 4
 
 
 class RedisMapper:
@@ -80,6 +81,8 @@ class RedisMapper:
                 typed_dic[model_field] = DataTypes.INT_ENUM
             elif isinstance(default_value, int):
                 typed_dic[model_field] = DataTypes.INT
+            elif isinstance(default_value, float):
+                typed_dic[model_field] = DataTypes.FLOAT
             else:
                 raise NotImplementedError(type(default_value))
         RedisMapper.__cache[type_name] = typed_dic
@@ -111,9 +114,13 @@ class RedisMapper:
         def fn_int(value) -> int:
             return int(value)
 
+        def fn_float(value) -> float:
+            return float(value)
+
         fns[DataTypes.STR] = fn_str
         fns[DataTypes.BOOL] = fn_bool
         fns[DataTypes.INT_ENUM] = fn_int_enum
         fns[DataTypes.INT] = fn_int
+        fns[DataTypes.FLOAT] = fn_float
         logger.warning(f'new cached functions dictionary has been initialized')
         return fns

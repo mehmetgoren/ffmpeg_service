@@ -470,6 +470,13 @@ class SourceState(IntEnum):
     Stopped = 2
 
 
+class MotionDetectionType(IntEnum):
+    NoMotionDetection = 0
+    OpenCV = 1
+    ImageHash = 2
+    Psnr = 3
+
+
 class SourceModel(FFmpegModel):
     def __init__(self, identifier: str = '', brand: str = '', name: str = '', address: str = ''):
         super().__init__(identifier, address)
@@ -489,6 +496,11 @@ class SourceModel(FFmpegModel):
         self.snapshot_frame_rate: int = 1
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
+        self.md_type: MotionDetectionType = MotionDetectionType.OpenCV
+        self.md_opencv_threshold: int = 30
+        self.md_contour_area_limit: int = 10000
+        self.md_imagehash_threshold: int = 3
+        self.md_psnr_threshold: float = 0.2
 
         self.ffmpeg_reader_frame_rate: int = 1
         self.ffmpeg_reader_width: int = 640

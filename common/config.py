@@ -98,13 +98,6 @@ class TensorflowConfig:
         self.cache_folder: str = '/mnt/sdc1/test_projects/tf_cache'
 
 
-class OnceDetectorConfig:
-    def __init__(self):
-        self.imagehash_threshold: int = 3
-        self.psnr_threshold: float = .2
-        self.ssim_threshold: float = .2
-
-
 class SourceReaderConfig:
     def __init__(self):
         self.resize_img: bool = False
@@ -180,13 +173,17 @@ class ArchiveConfig:
         self.move_location: str = ''
 
 
+class SnapshotConfig:
+    def __init__(self):
+        self.process_count: int = 4
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
         self.tensorflow: TensorflowConfig = TensorflowConfig()
-        self.once_detector: OnceDetectorConfig = OnceDetectorConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.general: GeneralConfig = GeneralConfig()
         self.db: DbConfig = DbConfig()
@@ -196,6 +193,7 @@ class Config:
         self.jobs: JobsConfig = JobsConfig()
         self.deep_stack: DeepStackConfig = DeepStackConfig()
         self.archive: ArchiveConfig = ArchiveConfig()
+        self.snapshot: SnapshotConfig = SnapshotConfig()
         self.__connection: Redis = None
 
     @staticmethod
