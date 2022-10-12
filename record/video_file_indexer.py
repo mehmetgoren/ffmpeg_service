@@ -1,4 +1,5 @@
 import os
+import subprocess
 from os import path
 from typing import List
 import ffmpeg
@@ -8,6 +9,7 @@ from common.data.source_model import RecordFileTypes
 from common.event_bus.event_bus import EventBus
 from common.utilities import config, logger
 from record.req_resp import ProbeResult, VfiResponseEvent
+from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
 from utils.dir import get_record_dir_by, get_filename_date_record_dir, create_dir_if_not_exists, get_sorted_valid_files
 from utils.json_serializer import serialize_json
@@ -37,15 +39,25 @@ class VideoFileIndexer:
         return ret
 
     @staticmethod
-    def check_by_ffprobe(filenames: List[str]) -> List[ProbeResult]:
+    def __get_video_file_duration(file_name: str, default: int) -> int:
+        result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_name],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ret = result.stdout
+        return int(float(ret)) if ret != 'N/A' else default
+
+    @staticmethod
+    def check_by_ffprobe(stream_model: StreamModel, filenames: List[str]) -> List[ProbeResult]:
         valid_list: List[ProbeResult] = []
         for filename in filenames:
             try:
-                probe_result = ffmpeg.probe(filename)
-                print(probe_result)
                 pr = ProbeResult()
                 pr.video_filename = filename
-                pr.duration = int(float(probe_result['streams'][0]['duration']))
+                if stream_model.record_file_type == RecordFileTypes.WEBM:
+                    pr.duration = VideoFileIndexer.__get_video_file_duration(filename, stream_model.record_segment_interval)
+                else:
+                    probe_result = ffmpeg.probe(filename)
+                    print(probe_result)
+                    pr.duration = int(float(probe_result['streams'][0]['duration']))
                 valid_list.append(pr)
             except BaseException as ex:
                 try:
@@ -72,7 +84,7 @@ class VideoFileIndexer:
         if len(filenames) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return
-        probe_results = self.check_by_ffprobe(filenames)
+        probe_results = self.check_by_ffprobe(stream_model, filenames)
         if len(probe_results) == 0:
             logger.info(f'no valid record file({ext}) was found on source({source_id}) record parent directory')
             return

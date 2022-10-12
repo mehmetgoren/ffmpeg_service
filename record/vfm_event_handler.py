@@ -28,7 +28,11 @@ class VfmEventHandler(EventHandler):
         response = VfmResponseEvent()
         response.source_id = request.source_id
         response.output_file_name, response.merged_video_filenames = vfm.merge(request.source_id, request.date_str)
-        prs = VideoFileIndexer.check_by_ffprobe([response.output_file_name])
+        stream_model = self.stream_repository.get(request.source_id)
+        if stream_model is None:
+            logger.warning(f'stream({request.source_id}) was not found for VfmEventHandler')
+            return
+        prs = VideoFileIndexer.check_by_ffprobe(stream_model, [response.output_file_name])
         if len(prs) > 0:
             response.merged_video_file_duration = prs[0].duration
 

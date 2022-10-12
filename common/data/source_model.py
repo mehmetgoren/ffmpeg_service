@@ -30,23 +30,23 @@ class RtspTransport(IntEnum):
 
 class AccelerationEngine(IntEnum):
     Auto = 0
-    Vdpau = 1
-    Cuda = 2
-    Vaapi = 3
-    Drm = 4
-    Opencl = 5
-    Cuvid = 6
+    Cuda = 1
+    Cuvid = 2
+    Vdpau = 3
+    Vaapi = 4
+    Drm = 5
+    Opencl = 6
 
     @staticmethod
     def create_dict():
         return {
             AccelerationEngine.Auto: 'auto',
-            AccelerationEngine.Vdpau: 'vdpau',
             AccelerationEngine.Cuda: 'cuda',
+            AccelerationEngine.Cuvid: 'cuvid',
+            AccelerationEngine.Vdpau: 'vdpau',
             AccelerationEngine.Vaapi: 'vaapi',
             AccelerationEngine.Drm: 'drm',
-            AccelerationEngine.Opencl: 'opencl',
-            AccelerationEngine.Cuvid: 'cuvid'
+            AccelerationEngine.Opencl: 'opencl'
         }
 
     @staticmethod
@@ -92,10 +92,10 @@ class StreamVideoCodec(IntEnum):
     libx264 = 1
     libx265 = 2
     copy = 3
-    H264_VAAPI = 4
-    HEVC_VAAPI = 5
-    H264_NVENC = 6
-    HEVC_NVENC = 7
+    H264_NVENC = 4
+    HEVC_NVENC = 5
+    H264_VAAPI = 6
+    HEVC_VAAPI = 7
     H264_QSV = 8
     HEVC_QSV = 9
     MPEG2_QSV = 10
@@ -110,10 +110,10 @@ class StreamVideoCodec(IntEnum):
             StreamVideoCodec.libx264: 'libx264',
             StreamVideoCodec.libx265: 'libx265',
             StreamVideoCodec.copy: 'copy',
-            StreamVideoCodec.H264_VAAPI: 'h264_vaapi',
-            StreamVideoCodec.HEVC_VAAPI: 'hevc_vaapi',
             StreamVideoCodec.H264_NVENC: 'h264_nvenc',
             StreamVideoCodec.HEVC_NVENC: 'hevc_nvenc',
+            StreamVideoCodec.H264_VAAPI: 'h264_vaapi',
+            StreamVideoCodec.HEVC_VAAPI: 'hevc_vaapi',
             StreamVideoCodec.H264_QSV: 'h264_qsv',
             StreamVideoCodec.HEVC_QSV: 'hevc_qsv',
             StreamVideoCodec.MPEG2_QSV: 'mpeg2_qsv',
@@ -330,42 +330,48 @@ class RecordFileTypes(IntEnum):
 
 class RecordVideoCodec(IntEnum):
     Auto = 0
-    LIBVPX = 1
-    LIBVPX_VP9 = 2
-    LIBX265 = 3
-    LIBX264 = 4
-    copy = 5
-    H264_VAAPI = 6
-    H265_VAAPI = 7
-    H264_NVENC = 8
-    HEVC_NVENC = 9
-    H264_QSV = 10
-    HEVC_QSV = 11
-    MPEG2_QSV = 12
-    H264_OMX = 13
-    VP8_CUVID = 14
-    VP9_CUVID = 15
-    VP8_QSV = 16
+    LIBX264 = 1
+    LIBX265 = 2
+    LIBVPX = 3
+    LIBVPX_VP9 = 4
+    LIBSVTAV1 = 5
+    copy = 6
+    H264_NVENC = 7
+    HEVC_NVENC = 8
+    AV1_NVENC = 9
+    H264_VAAPI = 10
+    H265_VAAPI = 11
+    AV1_VAAPI = 12
+    H264_QSV = 13
+    HEVC_QSV = 14
+    VP8_QSV = 15
+    VP9_QSV = 16
+    AV1_QSV = 17
+    MPEG2_QSV = 18
+    H264_OMX = 19
 
     @staticmethod
     def create_dict():
         return {
-            RecordVideoCodec.LIBVPX: 'libvpx',
-            RecordVideoCodec.LIBVPX_VP9: 'libvpx-vp9',
-            RecordVideoCodec.LIBX265: 'libx265',
-            RecordVideoCodec.LIBX264: 'libx264',
-            RecordVideoCodec.copy: 'copy',
-            RecordVideoCodec.H264_VAAPI: 'h264_vaapi',
-            RecordVideoCodec.H265_VAAPI: 'hevc_vaapi',
-            RecordVideoCodec.H264_NVENC: 'h264_nvenc',
-            RecordVideoCodec.HEVC_NVENC: 'hevc_nvenc',
-            RecordVideoCodec.H264_QSV: 'h264_qsv',
-            RecordVideoCodec.HEVC_QSV: 'hevc_qsv',
-            RecordVideoCodec.MPEG2_QSV: 'mpeg2_qsv',
-            RecordVideoCodec.H264_OMX: 'h264_omx',
-            RecordVideoCodec.VP8_CUVID: 'vp8_cuvid',
-            RecordVideoCodec.VP9_CUVID: 'vp9_cuvid',
-            RecordVideoCodec.VP8_QSV: 'vp8_qsv'
+            RecordVideoCodec.LIBX264: 'libx264',  # 1
+            RecordVideoCodec.LIBX265: 'libx265',  # 2
+            RecordVideoCodec.LIBVPX: 'libvpx',  # 3
+            RecordVideoCodec.LIBVPX_VP9: 'libvpx-vp9',  # 4
+            RecordVideoCodec.LIBSVTAV1: 'libsvtav1',  # 5
+            RecordVideoCodec.copy: 'copy',  # 6
+            RecordVideoCodec.H264_NVENC: 'h264_nvenc',  # 7
+            RecordVideoCodec.HEVC_NVENC: 'hevc_nvenc',  # 8
+            RecordVideoCodec.AV1_NVENC: 'av1_nvenc',  # 9
+            RecordVideoCodec.H264_VAAPI: 'h264_vaapi',  # 10
+            RecordVideoCodec.H265_VAAPI: 'hevc_vaapi',  # 11
+            RecordVideoCodec.AV1_VAAPI: 'av1_vaapi',  # 12
+            RecordVideoCodec.H264_QSV: 'h264_qsv',  # 13
+            RecordVideoCodec.HEVC_QSV: 'hevc_qsv',  # 14
+            RecordVideoCodec.VP8_QSV: 'vp8_qsv',  # 15
+            RecordVideoCodec.VP9_QSV: 'vp9_qsv',  # 16
+            RecordVideoCodec.AV1_QSV: 'av1_qsv',  # 17
+            RecordVideoCodec.MPEG2_QSV: 'mpeg2_qsv',  # 18
+            RecordVideoCodec.H264_OMX: 'h264_omx'  # 19
         }
 
     @staticmethod
