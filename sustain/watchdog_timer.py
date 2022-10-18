@@ -43,10 +43,19 @@ class WatchDogTimer:
         self.last_kill_zombie_processes_date = datetime.now()
         self.work_in_progress: bool = False
 
+    def __remove_stream(self, source_id: str):  # if source was deleted, remove it from stream list
+        self.stream_repository.remove(source_id)
+        logger.error(f'a orphan stream({source_id}) has been found and deleted to prevent watchdog error')
+
     def __start_prev_streams(self):
         stream_models = self.stream_repository.get_all()
         for stream_model in stream_models:
-            self.__publish_restart(self.source_repository.get(stream_model.id))
+            source_id = stream_model.id
+            source_model = self.source_repository.get(source_id)
+            if source_model is None:
+                self.__remove_stream(source_id)
+                continue
+            self.__publish_restart(source_model)
             time.sleep(1.)
 
     def start(self):
@@ -96,6 +105,9 @@ class WatchDogTimer:
     def __recover(self, op: WatchDogOperations, stream_model: StreamModel):
         source_id = stream_model.id
         source_model = self.source_repository.get(source_id)  # if it wasn't deleted before.
+        if source_model is None:
+            self.__remove_stream(source_id)
+            return
 
         self.__log_failed_stream(op, source_model)
         self.__publish_restart(source_model)
