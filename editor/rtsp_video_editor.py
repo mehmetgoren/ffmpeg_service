@@ -33,3 +33,7 @@ class RtspVideoEditor:
         image.save(image_bytes, format='JPEG')
         img_str = base64.b64encode(image_bytes.getvalue())
         return img_str.decode('utf-8')
+
+    def probe(self) -> dict:
+        probe_result = ffmpeg.probe(self.address)
+        return probe_result

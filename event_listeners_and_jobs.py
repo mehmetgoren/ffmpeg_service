@@ -10,6 +10,7 @@ from stream.restart_stream_event_handler import RestartStreamEventHandler
 from stream.start_stream_event_handler import StartStreamEventHandler
 from stream.stop_stream_event_handler import StopStreamEventHandler
 from stream.stream_repository import StreamRepository
+from sustain.recurrent_jobs.black_screen_monitor import BlackScreenMonitor
 from sustain.recurrent_jobs.mac_ip_matching import MacIpMatching
 from sustain.scheduler import setup_scheduler
 from utils.utils import start_thread
@@ -81,6 +82,13 @@ def execute_various_jobs():
             time.sleep(1.)
 
     if config.jobs.mac_ip_matching_enabled:
-        fn_check_mac_and_ip_mathing()
+        start_thread(fn_check_mac_and_ip_mathing, [])
     else:
         logger.warning('IP match making is not enabled')
+
+    if config.jobs.black_screen_monitor_enabled:
+        logger.info(f'BlackScreenMonitor.start will be executed at {datetime.now()}')
+        bsm = BlackScreenMonitor(__source_repository, __stream_repository)
+        bsm.run()
+    else:
+        logger.warning('BlackScreenMonitor is not enabled')

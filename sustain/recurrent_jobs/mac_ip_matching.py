@@ -18,8 +18,10 @@ class MacIpMatching:
         self.last_check = datetime.now()
 
     def __parse_ip_address(self, url: str):
-        result = self.ip_pattern.search(url)
-        return result[0]
+        results = self.ip_pattern.search(url)
+        if results is None:
+            return ''
+        return results[0]
 
     # noinspection DuplicatedCode
     @staticmethod

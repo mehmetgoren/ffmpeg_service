@@ -151,6 +151,8 @@ class JobsConfig:
     def __init__(self):
         self.mac_ip_matching_enabled: bool = False
         self.mac_ip_matching_interval: int = 120
+        self.black_screen_monitor_enabled: bool = False
+        self.black_screen_monitor_interval: int = 600
 
 
 class DeepStackConfig:

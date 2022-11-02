@@ -518,6 +518,7 @@ class SourceModel(FFmpegModel):
         self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
 
+        self.black_screen_check_enabled: bool = False
         self.created_at: str = datetime_now()
 
     def get_id(self):

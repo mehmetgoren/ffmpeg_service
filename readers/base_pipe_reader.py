@@ -1,7 +1,6 @@
 import base64
 import json
 from abc import ABC, abstractmethod
-from datetime import datetime
 from enum import IntEnum
 from io import BytesIO
 
@@ -86,13 +85,9 @@ class BasePipeReader(ABC):
         dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id, 'ai_clip_enabled': self.options.ai_clip_enabled}
         if self.options.method == PushMethod.REDIS_PUBSUB:
             self.event_bus.publish_async(serialize_json_dic(dic))
-            logger.info(
-                f'camera ({self.options.name}) -> an image has been send to broker by Redis PubSub at {datetime.now()}')
         else:
             def _post():
                 data = json.dumps(dic).encode("utf-8")
                 requests.post(self.options.api_address, data=data)
-                logger.info(
-                    f'camera ({self.options.name}) -> an image has been send to broker by rest api at {datetime.now()}')
 
             start_thread(_post, [])
