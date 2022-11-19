@@ -5,8 +5,10 @@ import requests
 from abc import ABC, abstractmethod
 from redis.client import Redis
 
+from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
 from stream.stream_model import StreamModel
+from stream.stream_repository import StreamRepository
 
 
 class RtmpServerImages(Enum):
@@ -16,11 +18,13 @@ class RtmpServerImages(Enum):
 
 
 class BaseRtmpModel(ABC):
-    def __init__(self, container_name: str, connection: Redis):
+    def __init__(self, container_name: str, main_connection: Redis):
         self.container_name = container_name
-        self.connection: Redis = connection
+        self.connection: Redis = main_connection
         self.inc_namespace = 'rtmpports'
-        self.inc_starting_port = 1023  # for more info: https://www.thegeekdiary.com/which-network-ports-are-reserved-by-the-linux-operating-system/
+        self.inc_starting_port: int = 0
+        self.max_port_num: int = 0
+        self.__set_ports_values(main_connection)
         self.increment_by = 1
         self.host = '127.0.0.1'
         self.protocol = 'http'
@@ -28,6 +32,22 @@ class BaseRtmpModel(ABC):
         self.rtmp_port: int = 0
         self.flv_port: int = 0
         self.rtmp_server_wait: float = config.ffmpeg.rtmp_server_init_interval  # otherwise, RTMP read will not work
+        self.stream_repository = StreamRepository(main_connection)
+
+    def __set_ports_values(self, main_connection: Redis):
+        f = config.ffmpeg
+        mp = 65535
+        self.inc_starting_port: int = f.rtmp_server_port_start - 1 if f.rtmp_server_port_start - 1 > 1 else 1024
+        self.max_port_num: int = (f.rtmp_server_port_end if f.rtmp_server_port_end > f.rtmp_server_port_start else mp) - self.inc_starting_port
+        self.max_port_num = max(self.max_port_num, 16)
+        if self.max_port_num > mp:
+            self.max_port_num = mp
+        source_repository = SourceRepository(main_connection)
+        source_models = source_repository.get_all()
+        min_port_value = len(source_models) * 5
+        if self.max_port_num < min_port_value:
+            logger.error(f'max port number is lower then source count * 5, the min_port_num is not set to {min_port_value}')
+            self.max_port_num = min_port_value
 
     def map_to(self, stream_model: StreamModel):
         stream_model.rtmp_container_ports = json.dumps(self.get_ports())
@@ -38,10 +58,24 @@ class BaseRtmpModel(ABC):
         stream_model.rtmp_container_commands = ','.join(self.get_commands())
         stream_model.rtmp_server_initialized = True
 
-    def port_inc(self) -> int:
-        max_port_num = 65535
+    def __port_inc(self, ports: set) -> int:
         inc = self.connection.hincrby(self.inc_namespace, 'ports_count', self.increment_by)
-        return (self.inc_starting_port + inc) % max_port_num
+        ret = self.inc_starting_port + (inc % self.max_port_num)
+        if ret in ports:
+            logger.warning(f'port ({ret}) is being used by another container, now trying another one')
+            return self.__port_inc(ports)
+        return ret
+
+    def port_inc(self) -> int:
+        ports = set()
+        stream_models = self.stream_repository.get_all()
+        for stream_model in stream_models:
+            if len(stream_model.rtmp_container_ports) == 0:
+                continue
+            dic = json.loads(stream_model.rtmp_container_ports)
+            for field in dic:
+                ports.add(int(dic[field]))
+        return self.__port_inc(ports)
 
     def get_container_name(self) -> str:
         return self.container_name

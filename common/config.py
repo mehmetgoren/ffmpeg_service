@@ -128,6 +128,9 @@ class FFmpegConfig:
         self.start_task_wait_for_interval: float = 1.
         self.record_concat_limit: int = 1
         self.record_video_file_indexer_interval: int = 60
+        # 1024 - 65535
+        self.rtmp_server_port_start: int = 7000  # for more info: https://www.thegeekdiary.com/which-network-ports-are-reserved-by-the-linux-operating-system/
+        self.rtmp_server_port_end: int = 7100  # should be greater than total camera count
 
 
 class AiConfig:
