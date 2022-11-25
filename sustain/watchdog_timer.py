@@ -42,6 +42,7 @@ class WatchDogTimer:
         self.last_check_running_processes_date = datetime.now()
         self.last_kill_zombie_processes_date = datetime.now()
         self.work_in_progress: bool = False
+        self.check_source_state_conflict: bool = True
 
     def __remove_stream(self, source_id: str):  # if source was deleted, remove it from stream list
         self.stream_repository.remove(source_id)
@@ -169,8 +170,8 @@ class WatchDogTimer:
             if self.__check_record_stuck_process(stream_model, rec_stuck_repository):
                 broken_streams.append(stream_model)
 
-        if len(broken_streams) == 0:  # if everything goes well
-            self.__check_source_state_conflict(stream_models)
+        if self.check_source_state_conflict and len(broken_streams) == 0:  # if everything goes well
+            self.__check_source_state_conflict_fn(stream_models)
         return broken_streams
 
     def __check_rtmp_container(self, stream_model: StreamModel) -> bool:
@@ -185,41 +186,48 @@ class WatchDogTimer:
             return True
         return False
 
-    def __check_process(self, op: WatchDogOperations, stream_model: StreamModel, pid: int) -> bool:
+    def __check_process(self, op: WatchDogOperations, stream_model: StreamModel, pid: int, check_memory_size: bool) -> bool:
         logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
         if not psutil.pid_exists(pid):
-            logger.warning(f'a failed FFmpeg process was detected ({op}) for model {stream_model.name} (pid:{pid}) and will be recovered')
+            logger.warning(f'a failed FFmpeg process was detected ({op}) for source {stream_model.name} (pid:{pid}) and will be recovered')
             self.__recover(op, stream_model)
             return True
+        if check_memory_size:
+            prc = psutil.Process(pid)
+            rss = prc.memory_info().rss
+            if rss == 0:
+                logger.error(f'a N/A memory sized FFmpeg process was detected ({op}) for source {stream_model.name} (pid:{pid}) and will be recovered')
+                self.__recover(op, stream_model)
+                return True
         return False
 
     def __check_rtmp_feeder_process(self, stream_model: StreamModel):
         op = WatchDogOperations.check_rtmp_feeder_process
-        return self.__check_process(op, stream_model, stream_model.rtmp_feeder_pid)
+        return self.__check_process(op, stream_model, stream_model.rtmp_feeder_pid, False)
 
     def __check_hls_process(self, stream_model: StreamModel):
         if not stream_model.is_hls_enabled():
             return False
         op = WatchDogOperations.check_hls_process
-        return self.__check_process(op, stream_model, stream_model.hls_pid)
+        return self.__check_process(op, stream_model, stream_model.hls_pid, False)
 
     def __check_mp_ffmpeg_reader_process(self, stream_model: StreamModel):
         if not stream_model.is_mp_ffmpeg_pipe_reader_enabled():
             return False
         op = WatchDogOperations.check_mp_ffmpeg_reader_process
-        return self.__check_process(op, stream_model, stream_model.mp_ffmpeg_reader_owner_pid)
+        return self.__check_process(op, stream_model, stream_model.mp_ffmpeg_reader_owner_pid, False)
 
     def __check_record_process(self, stream_model: StreamModel):
         if not stream_model.is_record_enabled():
             return False
         op = WatchDogOperations.check_record_process
-        return self.__check_process(op, stream_model, stream_model.record_pid)
+        return self.__check_process(op, stream_model, stream_model.record_pid, False)
 
     def __check_snapshot_process(self, stream_model: StreamModel):
         if not stream_model.is_ffmpeg_snapshot_enabled():
             return False
         op = WatchDogOperations.check_snapshot_process
-        return self.__check_process(op, stream_model, stream_model.snapshot_pid)
+        return self.__check_process(op, stream_model, stream_model.snapshot_pid, True)
 
     def __check_record_stuck_process(self, stream_model: StreamModel, rec_stuck_repository: RecStuckRepository):
         op = WatchDogOperations.check_record_stuck_process
@@ -265,7 +273,7 @@ class WatchDogTimer:
                 return True
         return False
 
-    def __check_source_state_conflict(self, stream_models: List[StreamModel]):
+    def __check_source_state_conflict_fn(self, stream_models: List[StreamModel]):
         source_models = self.source_repository.get_all()
         if len(source_models) > len(stream_models):
             stream_dic = dict()
