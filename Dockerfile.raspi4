@@ -19,6 +19,7 @@ RUN pip3 install requests
 RUN pip3 install rq
 RUN pip3 install schedule
 RUN pip3 install shortuuid
+RUN pip3 install getmac
 
 COPY . .
 
