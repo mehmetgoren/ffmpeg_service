@@ -53,6 +53,7 @@ class StreamModel:
 
         self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
+        self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
 
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
@@ -83,6 +84,7 @@ class StreamModel:
 
         self.flv_player_type = source.flv_player_type
         self.booster_enabled = source.booster_enabled
+        self.live_buffer_latency_chasing = source.live_buffer_latency_chasing
 
         return self
 

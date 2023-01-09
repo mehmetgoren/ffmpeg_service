@@ -516,7 +516,9 @@ class SourceModel(FFmpegModel):
         self.ai_clip_enabled: bool = False
 
         self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
+        # todo: move those two fields to the UI
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
+        self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
 
         self.black_screen_check_enabled: bool = False
         self.created_at: str = datetime_now()
