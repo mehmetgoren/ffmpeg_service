@@ -72,7 +72,7 @@ class StreamModel:
 
         self.snapshot_enabled = source.snapshot_enabled
         self.snapshot_type = source.snapshot_type
-        self.snapshot_frame_rate: source.snapshot_frame_rate
+        self.snapshot_frame_rate: int = source.snapshot_frame_rate
         self.snapshot_width: int = source.snapshot_width
         self.snapshot_height: int = source.snapshot_height
 
