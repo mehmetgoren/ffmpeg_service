@@ -51,6 +51,8 @@ class StreamModel:
         self.concat_demuxer_pid: int = 0
         self.concat_demuxer_args: str = ''
 
+        self.root_dir_path = ''
+
         self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
         self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
@@ -65,7 +67,6 @@ class StreamModel:
         self.stream_type = source.stream_type
         self.rtmp_server_type = source.rtmp_server_type
 
-        # noinspection DuplicatedCode
         self.ffmpeg_reader_frame_rate = source.ffmpeg_reader_frame_rate
         self.ffmpeg_reader_width = source.ffmpeg_reader_width
         self.ffmpeg_reader_height = source.ffmpeg_reader_height
@@ -76,11 +77,14 @@ class StreamModel:
         self.snapshot_width: int = source.snapshot_width
         self.snapshot_height: int = source.snapshot_height
 
+        # noinspection DuplicatedCode
         self.record_enabled = source.record_enabled
         self.record_file_type = source.record_file_type
         self.record_segment_interval = source.record_segment_interval
 
         self.ai_clip_enabled = source.ai_clip_enabled
+
+        self.root_dir_path = source.root_dir_path
 
         self.flv_player_type = source.flv_player_type
         self.booster_enabled = source.booster_enabled

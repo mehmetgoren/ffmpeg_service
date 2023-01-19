@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import os
 import pathlib
+import sys
 from os import path
 from pathlib import Path
 from datetime import datetime
 from typing import List
 
+from common.data.source_model import FFmpegModel
 from common.utilities import config, logger, fix_zero, fix_zero_s
+from stream.stream_model import StreamModel
 
 
 def create_dir_if_not_exists(directory: str):
@@ -13,40 +18,51 @@ def create_dir_if_not_exists(directory: str):
         os.makedirs(directory)
 
 
-def get_record_dir_by(source_id: str) -> str:
-    return path.join(config.general.root_folder_path, 'record', source_id)
+def __get_root_path(model: FFmpegModel | StreamModel) -> str:
+    dir_paths = config.general.dir_paths
+    if len(dir_paths) == 0:
+        logger.fatal('config.general.dir_paths is empty, the program will be terminated')
+        sys.exit('config.general.dir_paths is empty')
+    root_path = dir_paths[0] if len(model.root_dir_path) == 0 else model.root_dir_path
+    return root_path
 
 
-def get_filename_date_record_dir(source_id: str, filename: str) -> str:
+def get_record_dir_by(model: FFmpegModel | StreamModel) -> str:
+    root_path = __get_root_path(model)
+    return path.join(root_path, 'record', model.id)
+
+
+def get_stream_dir(model: FFmpegModel) -> str:
+    root_path = __get_root_path(model)
+    return os.path.join(root_path, 'stream', model.id)
+
+
+def get_ai_clip_dir(ffmpeg_model: FFmpegModel) -> str:
+    return path.join(get_record_dir_by(ffmpeg_model), 'ai')
+
+
+def get_hls_path(ffmpeg_model: FFmpegModel | StreamModel) -> str:
+    return os.path.join(get_stream_dir(ffmpeg_model), 'stream.m3u8')
+
+
+def get_filename_date_record_dir(stream_model: StreamModel, filename: str) -> str:
     dt = filename_to_datetime(filename)
     if dt is None:
         return ''
     ti = TimeIndex()
     ti.set_values(dt)
-    root_path = get_record_dir_by(source_id)
+    root_path = get_record_dir_by(stream_model)
     return ti.get_indexed_path(root_path)
 
 
-def get_given_date_record_dir(source_id: str, date_str: str) -> str:
+def get_given_date_record_dir(stream_model: StreamModel, date_str: str) -> str:
     sep = '_'
     splits = date_str.split(sep)
     if len(splits) != 4:
         return ''
     ti = TimeIndex(splits[0], splits[1], splits[2], splits[3])
-    root_path = get_record_dir_by(source_id)
+    root_path = get_record_dir_by(stream_model)
     return ti.get_indexed_path(root_path)
-
-
-def get_steam_dir(source_id: str) -> str:
-    return os.path.join(config.general.root_folder_path, 'stream', source_id)
-
-
-def get_hls_path(source_id: str) -> str:
-    return os.path.join(get_steam_dir(source_id), 'stream.m3u8')
-
-
-def get_ai_clip_dir(source_id: str):
-    return path.join(get_record_dir_by(source_id), 'ai')
 
 
 class TimeIndex:
@@ -87,7 +103,7 @@ def get_sorted_valid_files(dir_path: str, ext: str) -> List[str]:
     return sort_video_files(ret)
 
 
-def filename_to_datetime(filename: str) -> datetime:
+def filename_to_datetime(filename: str) -> datetime | None:
     try:
         filename = Path(filename).stem
         return str_to_datetime(filename)
@@ -96,7 +112,7 @@ def filename_to_datetime(filename: str) -> datetime:
         return None
 
 
-def str_to_datetime(value: str) -> datetime:
+def str_to_datetime(value: str) -> datetime | None:
     try:
         sep = '_'
         splits = value.split(sep)

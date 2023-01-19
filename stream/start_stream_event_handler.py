@@ -163,7 +163,7 @@ class HlsProcessStarter(SubProcessTemplate):
     def __wait_for(stream_model: StreamModel):
         max_retry = config.ffmpeg.max_operation_retry_count
         retry_count = 0
-        hls_output_path = get_hls_path(stream_model.id)
+        hls_output_path = get_hls_path(stream_model)
         while retry_count < max_retry:
             if os.path.exists(hls_output_path):
                 logger.info(f'HLS stream file created at {datetime.now()}')

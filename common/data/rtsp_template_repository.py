@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 from redis.client import Redis
 
@@ -17,7 +19,7 @@ class RtspTemplateRepository(BaseRepository):
         dic = self.to_redis(model)
         self.connection.hset(key, mapping=dic)
 
-    def get(self, identifier: str) -> RtspTemplateModel:
+    def get(self, identifier: str) -> RtspTemplateModel | None:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:

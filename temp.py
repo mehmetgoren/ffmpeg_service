@@ -118,7 +118,7 @@ def rc_test():
     streams = rep.get_all()
     for stream in streams:
         if stream.record_enabled:
-            dir_path = get_record_dir_by(stream.id)
+            dir_path = get_record_dir_by(stream)
             list_of_files = glob.glob(f'{dir_path}/*')  # * means all if it needs specific format then *.csv
             latest_file = max(list_of_files, key=os.path.getctime)
             size = os.path.getsize(latest_file)
@@ -161,7 +161,7 @@ def config_save():
     print(config.to_json())
 
 
-# config_save()
+config_save()
 
 
 def add_rtsp_templates():
@@ -236,7 +236,7 @@ def test_video_file_indexer():
     stream_model.record_file_type = RecordFileTypes.MP4
     stream_repository.add(stream_model)
     vfi = VideoFileIndexer(stream_repository)
-    vfi.move(source_id)
+    vfi.move(stream_model)
 
 
 # test_video_file_indexer()
@@ -250,7 +250,7 @@ def test_concat_demuxer():
     stream_model.id = source_id
     stream_repository.add(stream_model)
     cd = ConcatDemuxer(stream_repository)
-    root_path = path.join(get_record_dir_by(source_id), '2022', '04', '18', '19')
+    root_path = path.join(get_record_dir_by(stream_model), '2022', '04', '18', '19')
     lds = os.listdir(root_path)
     filenames = []
     for ld in lds:
@@ -267,8 +267,9 @@ def test_video_file_merger():
     conn_main = crate_redis_connection(RedisDb.MAIN)
     stream_repository = StreamRepository(conn_main)
     source_id = 'e5dbkevdg6l'
+    stream_model = stream_repository.get(source_id)
     vfm = VideoFileMerger(stream_repository)
-    vfm.merge(source_id, '2022_04_18_19')
+    vfm.merge(stream_model, '2022_04_18_19')
 
 
 # test_video_file_merger()

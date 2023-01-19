@@ -23,6 +23,10 @@ def main():
     clean_others_previous()
 
     config = Config.create()
+    dir_paths = config.general.dir_paths
+    if dir_paths is None or len(dir_paths) == 0:
+        logger.error('Config.General.DirPaths is empty, the ffmpeg service is now exiting...')
+        return
     config.save()
 
     add_tasks()

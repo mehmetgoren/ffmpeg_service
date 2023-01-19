@@ -457,6 +457,8 @@ class FFmpegModel:
         self.record_audio_sample_rate: AudioSampleRate = AudioSampleRate.Auto
         self.record_audio_volume: int = 100
 
+        self.root_dir_path: str = ''
+
         self.log_level: LogLevel = LogLevel.Warning
 
 
@@ -495,7 +497,7 @@ class SourceModel(FFmpegModel):
 
         self.state: SourceState = SourceState.NotStartedYet
         self.enabled: bool = True  # reserved for future using
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO  # this one is not used by the command builder but StartStreamEventHandler
+        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS_REALTIME  # this one is not used by the command builder but StartStreamEventHandler
 
         self.snapshot_enabled: bool = False
         self.snapshot_type: SnapshotType = SnapshotType.FFmpeg
@@ -515,8 +517,8 @@ class SourceModel(FFmpegModel):
         self.record_enabled: bool = False
         self.ai_clip_enabled: bool = False
 
-        self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         # todo: move those two fields to the UI
+        self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
         self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
 

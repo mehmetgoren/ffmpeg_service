@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 from redis.client import Redis
 
@@ -37,7 +39,7 @@ class RecStuckRepository(BaseRepository):
             models.append(model)
         return models
 
-    def get(self, identifier: str) -> RecStuckModel:
+    def get(self, identifier: str) -> RecStuckModel | None:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:

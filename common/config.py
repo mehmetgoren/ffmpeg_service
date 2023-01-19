@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import argparse
 import json
 import os
 from types import SimpleNamespace
+from typing import List
 from redis import Redis
 from enum import IntEnum
 import platform
@@ -108,7 +111,7 @@ class SourceReaderConfig:
 
 class GeneralConfig:
     def __init__(self):
-        self.root_folder_path: str = '/mnt/sda1'
+        self.dir_paths: List[str] = []
         self.heartbeat_interval: int = 30
 
 
@@ -180,7 +183,7 @@ class ArchiveConfig:
 
 class SnapshotConfig:
     def __init__(self):
-        self.process_count: int = 4
+        self.process_count: int = 1
 
 
 class Config:
@@ -199,7 +202,7 @@ class Config:
         self.deep_stack: DeepStackConfig = DeepStackConfig()
         self.archive: ArchiveConfig = ArchiveConfig()
         self.snapshot: SnapshotConfig = SnapshotConfig()
-        self.__connection: Redis = None
+        self.__connection: Redis | None = None
 
     @staticmethod
     def __get_redis_key():

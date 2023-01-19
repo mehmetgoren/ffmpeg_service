@@ -47,7 +47,7 @@ class StopStreamEventHandler(BaseStreamEventHandler):
 
             if stream_model.is_hls_enabled():
                 try:
-                    self.delete_prev_stream_files(stream_model.id)
+                    self.delete_prev_stream_files(stream_model)
                 except BaseException as e:
                     logger.error(f'Error while deleting stream files for {stream_model.id}, err: {e}')
                 try:

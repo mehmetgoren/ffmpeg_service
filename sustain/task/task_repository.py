@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 from redis.client import Redis
 
@@ -33,7 +35,7 @@ class TaskRepository(BaseRepository):
             models.append(model)
         return models
 
-    def get(self, identifier: TaskOp) -> TaskModel:
+    def get(self, identifier: TaskOp) -> TaskModel | None:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:

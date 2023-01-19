@@ -67,8 +67,9 @@ class VideoFileIndexer:
                     logger.warning(f'an error occurred during the deleting the file name: {filename}, ex: {ex2}')
         return valid_list
 
-    def move(self, source_id: str):
-        source_record_dir = get_record_dir_by(source_id)
+    def move(self, stream_model: StreamModel):
+        source_id = stream_model.id
+        source_record_dir = get_record_dir_by(stream_model)
         stream_model = self.stream_repository.get(source_id)
         if stream_model is None:
             logger.info(f'no stream({source_id}) was found for move operation')
@@ -92,7 +93,7 @@ class VideoFileIndexer:
         valid_list: List[ProbeResult] = []
         for probe_result in probe_results:
             filename = probe_result.video_filename
-            dest_dir = get_filename_date_record_dir(source_id, filename)
+            dest_dir = get_filename_date_record_dir(stream_model, filename)
             create_dir_if_not_exists(dest_dir)
             dest_filename = path.join(dest_dir, path.basename(filename))
             try:

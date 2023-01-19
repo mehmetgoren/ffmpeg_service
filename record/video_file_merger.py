@@ -5,6 +5,7 @@ from typing import List
 from common.data.source_model import RecordFileTypes
 from common.utilities import logger
 from record.concat_demuxer import ConcatDemuxer
+from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
 from utils.dir import get_given_date_record_dir, sort_video_files
 
@@ -44,8 +45,9 @@ class VideoFileMerger:
             values.append(value)
         return '_'.join(values)
 
-    def merge(self, source_id: str, date_str: str) -> (str, List[str]):
-        source_record_dir = get_given_date_record_dir(source_id, date_str)
+    def merge(self, stream_model: StreamModel, date_str: str) -> (str, List[str]):
+        source_id = stream_model.id
+        source_record_dir = get_given_date_record_dir(stream_model, date_str)
         if len(source_record_dir) == 0:
             logger.warning(f'video file merge operation is now exiting since the source_id({source_id}) and/or date_str({date_str}) is invalid')
             return '', []

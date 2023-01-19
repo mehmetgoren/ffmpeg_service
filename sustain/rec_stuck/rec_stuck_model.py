@@ -28,7 +28,7 @@ class RecStuckModel:
         self.name = stream_model.name
         self.address = stream_model.address
         self.record_segment_interval = stream_model.record_segment_interval
-        self.record_output_dir = get_record_dir_by(stream_model.id)
+        self.record_output_dir = get_record_dir_by(stream_model)
         self.file_ext = '.' + RecordFileTypes.str(stream_model.record_file_type)
 
         first_file = ''

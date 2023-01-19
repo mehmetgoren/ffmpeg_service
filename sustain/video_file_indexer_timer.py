@@ -17,4 +17,4 @@ def __check():
     stream_models = __stream_repository.get_all()
     for stream_model in stream_models:
         if stream_model.is_record_enabled():
-            __vfi.move(stream_model.id)
+            __vfi.move(stream_model)

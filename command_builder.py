@@ -110,7 +110,7 @@ class CommandBuilder:
         args.extend(['-start_number', '0'])
         args.extend(['-hls_allow_cache', '0'])
         args.extend(['-hls_flags', '+delete_segments+omit_endlist'])
-        args.append(self.__add_double_quotes(get_hls_path(f.id)))
+        args.append(self.__add_double_quotes(get_hls_path(f)))
         return args
 
     def __build_record(self, duration: int, output_path: str) -> List[str]:
@@ -167,8 +167,8 @@ class CommandBuilder:
 
     def build_record(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        return self.__build_record(f.record_segment_interval * 60, get_record_dir_by(f.id))  # in minutes
+        return self.__build_record(f.record_segment_interval * 60, get_record_dir_by(f))  # in minutes
 
     def build_ai_clip(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        return self.__build_record(config.ai.video_clip_duration, get_ai_clip_dir(f.id))  # in seconds
+        return self.__build_record(config.ai.video_clip_duration, get_ai_clip_dir(f))  # in seconds

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from redis.client import Redis
 
 from common.data.base_repository import BaseRepository
@@ -23,7 +25,7 @@ class FailedStreamRepository(BaseRepository):
             count += r.delete(key)
         return count
 
-    def get(self, identifier: str) -> FailedStreamModel:
+    def get(self, identifier: str) -> FailedStreamModel | None:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:

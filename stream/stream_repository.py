@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from redis import Redis
 from typing import List
 
@@ -24,7 +26,7 @@ class StreamRepository(BaseRepository):
         key = self._get_key(identifier)
         return self.connection.delete(key)
 
-    def get(self, identifier: str) -> StreamModel:
+    def get(self, identifier: str) -> StreamModel | None:
         key = self._get_key(identifier)
         dic = self.connection.hgetall(key)
         if not dic:

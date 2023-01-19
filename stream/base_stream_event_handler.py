@@ -35,8 +35,8 @@ class BaseStreamEventHandler(EventHandler, ABC):
         return True, prev_stream_model, source_model
 
     @staticmethod
-    def delete_prev_stream_files(source_id: str):
-        hls_output_dir = get_hls_path(source_id)
+    def delete_prev_stream_files(stream_model: StreamModel):
+        hls_output_dir = get_hls_path(stream_model)
         directory: str = os.path.dirname(hls_output_dir)
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)

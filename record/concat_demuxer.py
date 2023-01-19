@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 import subprocess
@@ -13,7 +15,7 @@ class ConcatDemuxer:
     def __init__(self, stream_repository: StreamRepository):
         self.stream_repository = stream_repository
 
-    def concatenate(self, source_id: str, filenames: List[str], output_filename: str) -> subprocess.Popen:
+    def concatenate(self, source_id: str, filenames: List[str], output_filename: str) -> subprocess.Popen | None:
         if len(filenames) == 0:
             return None
 
