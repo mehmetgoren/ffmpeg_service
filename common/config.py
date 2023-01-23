@@ -138,7 +138,6 @@ class FFmpegConfig:
 
 class AiConfig:
     def __init__(self):
-        self.overlay: bool = True
         self.video_clip_duration: int = 10
         self.face_recog_mtcnn_threshold: float = .86
         self.face_recog_prob_threshold: float = .98
@@ -184,6 +183,10 @@ class ArchiveConfig:
 class SnapshotConfig:
     def __init__(self):
         self.process_count: int = 1
+        self.overlay: bool = True
+        self.meta_color_enabled: bool = False
+        self.meta_color_count: int = 5
+        self.meta_color_quality: int = 1
 
 
 class Config:
