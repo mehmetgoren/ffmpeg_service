@@ -189,6 +189,15 @@ class SnapshotConfig:
         self.meta_color_quality: int = 1
 
 
+class HubConfig:
+    def __init__(self):
+        self.enabled: bool = False
+        self.address: str = 'http://localhost:5268'
+        self.token: str = ''
+        self.web_app_address: str = 'http://localhost:8080'
+        self.max_retry: int = 100
+
+
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
@@ -205,6 +214,7 @@ class Config:
         self.deep_stack: DeepStackConfig = DeepStackConfig()
         self.archive: ArchiveConfig = ArchiveConfig()
         self.snapshot: SnapshotConfig = SnapshotConfig()
+        self.hub: HubConfig = HubConfig()
         self.__connection: Redis | None = None
 
     @staticmethod
