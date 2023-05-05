@@ -17,7 +17,7 @@ from sustain.failed_stream.zombie_repository import ZombieRepository
 from sustain.rec_stuck.rec_stuck_repository import RecStuckRepository
 from sustain.task.task_model import TaskModel, TaskOp
 from sustain.task.task_repository import TaskRepository
-from sustain.kill_prevs import kill_all_mp_ffmpeg_reader_owner_procs, kill_all_prev_ffmpeg_procs, reset_rtmp_container_ports, remove_all_prev_rtmp_containers
+from sustain.kill_prevs import kill_all_mp_ffmpeg_reader_owner_procs, kill_all_prev_ffmpeg_procs, reset_ms_container_ports, remove_all_prev_ms_containers
 from sustain.video_file_indexer_timer import schedule_video_file_indexer
 from sustain.watchdog_timer import WatchDogTimer
 
@@ -131,8 +131,8 @@ def __kill_all_previous_jobs():
 def clean_others_previous():
     kill_all_mp_ffmpeg_reader_owner_procs(__connection_main)
     kill_all_prev_ffmpeg_procs()
-    reset_rtmp_container_ports(__connection_main)
-    remove_all_prev_rtmp_containers(__connection_main)
+    reset_ms_container_ports(__connection_main)
+    remove_all_prev_ms_containers(__connection_main)
 
 
 def clean_my_previous():

@@ -1,4 +1,4 @@
-from common.data.source_model import RmtpServerType, SourceModel, StreamType, RecordFileTypes, SnapshotType, FlvPlayerType
+from common.data.source_model import MediaServerType, SourceModel, StreamType, RecordFileTypes, SnapshotType, FlvPlayerType, Go2RtcPlayerMode
 from common.utilities import datetime_now
 
 
@@ -10,22 +10,22 @@ class StreamModel:
         self.name: str = ''
         self.address: str = ''
 
-        self.rtmp_feeder_pid: int = 0
-        self.rtmp_feeder_args: str = ''
+        self.ms_feeder_pid: int = 0  # ms prefix is for media server.
+        self.ms_feeder_args: str = ''
         self.hls_pid: int = 0
         self.hls_args: str = ''
         self.created_at: str = datetime_now()
 
         # extended
+        self.ms_type: MediaServerType = MediaServerType.GO_2_RTC
         self.stream_type: StreamType = StreamType.FLV
-        self.rtmp_server_initialized: bool = False
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.LIVEGO
-        self.rtmp_image_name: str = ''
-        self.rtmp_container_name: str = ''
-        self.rtmp_address: str = ''
-        self.rtmp_flv_address: str = ''
-        self.rtmp_container_ports: str = ''
-        self.rtmp_container_commands: str = ''
+        self.ms_initialized: bool = False
+        self.ms_image_name: str = ''
+        self.ms_container_name: str = ''
+        self.ms_address: str = ''
+        self.ms_stream_address: str = ''  # i.e http://127.0.0.1:7008/live/livestream.flv or http://127.0.0.1:1985/api/ws?src=camera1
+        self.ms_container_ports: str = ''
+        self.ms_container_commands: str = ''
 
         self.mp_ffmpeg_reader_owner_pid: int = 0
         self.ffmpeg_reader_frame_rate: int = 1
@@ -57,6 +57,8 @@ class StreamModel:
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
         self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
 
+        self.go2rtc_player_mode = Go2RtcPlayerMode.Mse
+
     def map_from_source(self, source: SourceModel):
         # noinspection DuplicatedCode
         self.id = source.id
@@ -64,8 +66,8 @@ class StreamModel:
         self.name = source.name
         self.address = source.address
 
+        self.ms_type = source.ms_type
         self.stream_type = source.stream_type
-        self.rtmp_server_type = source.rtmp_server_type
 
         self.ffmpeg_reader_frame_rate = source.ffmpeg_reader_frame_rate
         self.ffmpeg_reader_width = source.ffmpeg_reader_width
@@ -89,6 +91,8 @@ class StreamModel:
         self.flv_player_type = source.flv_player_type
         self.booster_enabled = source.booster_enabled
         self.live_buffer_latency_chasing = source.live_buffer_latency_chasing
+
+        self.go2rtc_player_mode = source.go2rtc_player_mode
 
         return self
 

@@ -7,14 +7,14 @@ from typing import List
 import psutil
 
 from command_builder import CommandBuilder
-from common.data.source_model import SourceModel, RmtpServerType, SourceState
+from common.data.source_model import SourceModel, MediaServerType, SourceState
 from common.data.source_repository import SourceRepository
 from common.utilities import logger, config
 
 from readers.base_pipe_reader import PipeReaderOptions
 from readers.ffmpeg_pipe_reader import FFmpegPipeReader
 from readers.mp_ffmpeg_pipe_reader import MpFFmpegPipeReader
-from rtmp.docker_manager import DockerManager
+from media_server.docker_manager import DockerManager
 from stream.base_stream_event_handler import BaseStreamEventHandler
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
@@ -41,11 +41,11 @@ class StartStreamEventHandler(BaseStreamEventHandler):
             logger.warning(f'streaming will not be started for source (id:{source_model.id}, name: {source_model.name}) since it is not enabled')
             return
         logger.info(f'StartStreamEventHandler handle called {datetime.now()}')
-        need_reload = stream_model is None or not psutil.pid_exists(stream_model.rtmp_feeder_pid)
+        need_reload = stream_model is None or not psutil.pid_exists(stream_model.ms_feeder_pid)
         if need_reload:
             stream_model = StreamModel().map_from_source(source_model)
             self.stream_repository.add(stream_model)  # to prevent missing fields because of the update operation.
-            starters: List[ProcessStarter] = [RtmpProcessStarter(self.source_repository, self.stream_repository)]
+            starters: List[ProcessStarter] = [MediaServerProcessStarter(self.source_repository, self.stream_repository)]
             if stream_model.is_hls_enabled():
                 starters.append(HlsProcessStarter(self.stream_repository))
             if stream_model.is_record_enabled():
@@ -76,8 +76,8 @@ class ProcessStarter(ABC):
 
     @staticmethod
     def _wait_extra(stream_model: StreamModel):
-        if stream_model.rtmp_server_type == RmtpServerType.LIVEGO:
-            time.sleep(config.ffmpeg.rtmp_server_init_interval)  # otherwise, rtmp won't work for LIVEGO
+        if stream_model.ms_type == MediaServerType.GO_2_RTC or stream_model.ms_type == MediaServerType.LIVE_GO:
+            time.sleep(config.ffmpeg.ms_init_interval)  # otherwise, media_server won't work for Go2Rtc and livego
 
     def start_process(self, source_model: SourceModel, stream_model: StreamModel):
         try:
@@ -113,21 +113,21 @@ class SubProcessTemplate(ProcessStarter, ABC):
         proc.terminate()
 
 
-class RtmpProcessStarter(SubProcessTemplate):
+class MediaServerProcessStarter(SubProcessTemplate):
     def __init__(self, source_repository: SourceRepository, stream_repository: StreamRepository):
         super().__init__(stream_repository)
         self.source_repository = source_repository
         self.docker_manager = DockerManager(stream_repository.connection)
 
     @staticmethod
-    def __wait_for(rtmp_model):
-        rtmp_model.init_channel_key()
+    def __wait_for(ms_model):
+        ms_model.on_media_server_initialized()
 
     def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
-        rtmp_model, _ = self.docker_manager.run(stream_model.rtmp_server_type, stream_model.id)
-        self.__wait_for(rtmp_model)
-        rtmp_model.map_to(stream_model)
-        source_model.rtmp_address = stream_model.rtmp_address
+        ms_model, _ = self.docker_manager.run(stream_model.ms_type, stream_model.id)
+        self.__wait_for(ms_model)
+        ms_model.map_to(stream_model)
+        source_model.ms_address = stream_model.ms_address
         self.source_repository.add(source_model)
 
         cmd_builder = CommandBuilder(source_model)
@@ -135,23 +135,23 @@ class RtmpProcessStarter(SubProcessTemplate):
         args.extend(cmd_builder.build_output())
         if not stream_model.is_mp_ffmpeg_pipe_reader_enabled():
             proc = subprocess.Popen(args)  # do not use PIPE, otherwise FFmpeg recording process will be stuck.
-            logger.info(f'stream RTMP feeder subprocess has been opened at {datetime.now()}')
-            stream_model.rtmp_feeder_pid = proc.pid
+            logger.info(f'stream Media Server feeder subprocess has been opened at {datetime.now()}')
+            stream_model.ms_feeder_pid = proc.pid
         else:
             options = PipeReaderOptions()
             options.id = stream_model.id
             options.name = stream_model.name
-            options.address = stream_model.rtmp_address
+            options.address = stream_model.ms_address
             options.frame_rate = stream_model.ffmpeg_reader_frame_rate
             options.width = stream_model.ffmpeg_reader_width
             options.height = stream_model.ffmpeg_reader_height
             options.pubsub_channel = f'ffrs{stream_model.id}'
 
             dr = MpFFmpegPipeReader(options, args)
-            stream_model.rtmp_feeder_pid = dr.get_pid()
+            stream_model.ms_feeder_pid = dr.get_pid()
             logger.info(f'starting Direct Reader process at {datetime.now()}')
             proc = dr.create_process_proxy()
-        stream_model.rtmp_feeder_args = ' '.join(args)
+        stream_model.ms_feeder_args = ' '.join(args)
         return proc
 
 
@@ -214,10 +214,11 @@ class SnapshotProcessStarter(ProcessStarter):
         ffmpeg_reader.close()
 
     def _create_process(self, source_model: SourceModel, stream_model: StreamModel) -> any:
+        self._wait_extra(stream_model)
         options = PipeReaderOptions()
         options.id = stream_model.id
         options.name = stream_model.name
-        options.address = stream_model.rtmp_address
+        options.address = stream_model.ms_address
         options.frame_rate = stream_model.snapshot_frame_rate
         options.width = stream_model.snapshot_width
         options.height = stream_model.snapshot_height

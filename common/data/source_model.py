@@ -3,10 +3,10 @@ from enum import IntEnum
 from common.utilities import datetime_now
 
 
-class RmtpServerType(IntEnum):
-    SRS = 0
-    SRS_REALTIME = 1
-    LIVEGO = 2
+class MediaServerType(IntEnum):
+    GO_2_RTC = 0
+    SRS = 1
+    LIVE_GO = 2
     NODE_MEDIA_SERVER = 3
 
 
@@ -425,8 +425,9 @@ class FFmpegModel:
         self.video_decoder: VideoDecoder = VideoDecoder.Auto
         self.hwaccel_device = ''
 
+        self.ms_type: MediaServerType = MediaServerType.GO_2_RTC
         self.stream_type: StreamType = StreamType.FLV
-        self.rtmp_address: str = ''  # this one is meant to be set from stream model.
+        self.ms_address: str = ''  # this one is meant to be set from stream model.
         self.stream_video_codec: StreamVideoCodec = StreamVideoCodec.copy
         self.hls_time: int = 2
         self.hls_list_size: int = 3
@@ -472,6 +473,11 @@ class FlvPlayerType(IntEnum):
     FlvJs = 1
 
 
+class Go2RtcPlayerMode(IntEnum):
+    Mse = 0
+    WebRtc = 1
+
+
 class SourceState(IntEnum):
     NotStartedYet = 0
     Started = 1
@@ -497,7 +503,6 @@ class SourceModel(FFmpegModel):
 
         self.state: SourceState = SourceState.NotStartedYet
         self.enabled: bool = True  # reserved for future using
-        self.rtmp_server_type: RmtpServerType = RmtpServerType.SRS_REALTIME  # this one is not used by the command builder but StartStreamEventHandler
 
         self.snapshot_enabled: bool = False
         self.snapshot_type: SnapshotType = SnapshotType.FFmpeg
@@ -521,6 +526,8 @@ class SourceModel(FFmpegModel):
         self.flv_player_type: FlvPlayerType = FlvPlayerType.MpegTsJs
         self.booster_enabled: bool = False  # this one is used by FLV and HLS player
         self.live_buffer_latency_chasing: bool = True  # this one is used by mpegts player
+        # Go2RtcPlayerMode
+        self.go2rtc_player_mode: Go2RtcPlayerMode = Go2RtcPlayerMode.Mse
 
         self.black_screen_check_enabled: bool = False
         self.created_at: str = datetime_now()

@@ -25,7 +25,7 @@ class BlackScreenMonitor:
         self.restart_stream_event_bus.publish(serialize_json_dic(source_model.__dict__))
 
     def __publish_failed_notification(self, stream_model: StreamModel):
-        model = NotifyFailedStreamModel().map_from(WatchDogOperations.check_rtmp_feeder_process, stream_model)
+        model = NotifyFailedStreamModel().map_from(WatchDogOperations.check_ms_feeder_process, stream_model)
         self.notify_failed_event_bus.publish_async(serialize_json_dic(model.__dict__))
         logger.warning(f'BlackScreenMonitor: a failed source ({model.name}) has been notified at {model.created_at}')
 
@@ -43,7 +43,7 @@ class BlackScreenMonitor:
                 if not source_model.black_screen_check_enabled:
                     continue
 
-                editor = RtspVideoEditor(stream_model.address)  # can't use rtmp_address since it causes timeout.
+                editor = RtspVideoEditor(stream_model.address)  # can't use ms_address since it causes timeout.
                 logger.info(f'BlackScreenMonitor: ({source_id}/{stream_model.name}) is now probing')
                 try:
                     editor.probe()

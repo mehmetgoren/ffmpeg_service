@@ -5,8 +5,8 @@ from common.utilities import datetime_now
 
 
 class WatchDogOperations(str, Enum):
-    check_rtmp_container = 'check_rtmp_container'
-    check_rtmp_feeder_process = 'check_rtmp_feeder_process'
+    check_ms_container = 'check_ms_container'
+    check_ms_feeder_process = 'check_ms_feeder_process'
     check_hls_process = 'check_hls_process'
     check_mp_ffmpeg_reader_process = 'check_mp_ffmpeg_reader_process'
     check_record_process = 'check_record_process'
@@ -22,8 +22,8 @@ class FailedStreamModel:
         self.name: str = ''
         self.address: str = ''
 
-        self.rtmp_container_failed_count: int = 0
-        self.rtmp_feeder_failed_count: int = 0
+        self.ms_container_failed_count: int = 0
+        self.ms_feeder_failed_count: int = 0
         self.hls_failed_count: int = 0
         self.mp_ffmpeg_reader_failed_count: int = 0
         self.record_failed_count: int = 0
@@ -41,10 +41,10 @@ class FailedStreamModel:
         return self
 
     def set_failed_count(self, op: WatchDogOperations):
-        if op == WatchDogOperations.check_rtmp_container:
-            self.rtmp_container_failed_count += 1
-        elif op == WatchDogOperations.check_rtmp_feeder_process:
-            self.rtmp_feeder_failed_count += 1
+        if op == WatchDogOperations.check_ms_container:
+            self.ms_container_failed_count += 1
+        elif op == WatchDogOperations.check_ms_feeder_process:
+            self.ms_feeder_failed_count += 1
         elif op == WatchDogOperations.check_hls_process:
             self.hls_failed_count += 1
         elif op == WatchDogOperations.check_record_process:

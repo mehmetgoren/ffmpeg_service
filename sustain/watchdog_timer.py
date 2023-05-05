@@ -10,7 +10,7 @@ from common.data.source_model import SourceModel, SourceState
 from common.data.source_repository import SourceRepository
 from common.event_bus.event_bus import EventBus
 from common.utilities import logger, config, datetime_now
-from rtmp.docker_manager import DockerManager
+from media_server.docker_manager import DockerManager
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
 from sustain.failed_stream.notify_failed_stream_model import NotifyFailedStreamModel
@@ -137,14 +137,14 @@ class WatchDogTimer:
         rec_stuck_repository = RecStuckRepository(self.conn)
         self.__remove_zombie_rec_stuck_models(stream_models, rec_stuck_repository)
         for stream_model in stream_models:
-            if self.__check_rtmp_container(stream_model):
+            if self.__check_ms_container(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for RTMP Container, waiting for {self.failed_process_interval} seconds')
+                logger.warning(f'a broken stream has been found for Media Server Container, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
-            if self.__check_rtmp_feeder_process(stream_model):
+            if self.__check_ms_feeder_process(stream_model):
                 broken_streams.append(stream_model)
-                logger.warning(f'a broken stream has been found for RTMP Feeder, waiting for {self.failed_process_interval} seconds')
+                logger.warning(f'a broken stream has been found for Media Server Feeder, waiting for {self.failed_process_interval} seconds')
                 time.sleep(self.failed_process_interval)
                 continue
             if self.__check_hls_process(stream_model):
@@ -174,14 +174,14 @@ class WatchDogTimer:
             self.__check_source_state_conflict_fn(stream_models)
         return broken_streams
 
-    def __check_rtmp_container(self, stream_model: StreamModel) -> bool:
-        op = WatchDogOperations.check_rtmp_container
+    def __check_ms_container(self, stream_model: StreamModel) -> bool:
+        op = WatchDogOperations.check_ms_container
         logger.info(f'{op.value} is being executed for {stream_model.id} at {datetime.now()}')
         docker_manager = DockerManager(self.conn)
         container = docker_manager.get_container(stream_model)
         if container is None or container.status != 'running':
             logger.warning(
-                f'a failed RTMP container was detected for model {stream_model.name} (container name:{stream_model.rtmp_container_name}) and will be recovered')
+                f'a failed MS container was detected for model {stream_model.name} (container name:{stream_model.ms_container_name}) and will be recovered')
             self.__recover(op, stream_model)
             return True
         return False
@@ -201,9 +201,9 @@ class WatchDogTimer:
                 return True
         return False
 
-    def __check_rtmp_feeder_process(self, stream_model: StreamModel):
-        op = WatchDogOperations.check_rtmp_feeder_process
-        return self.__check_process(op, stream_model, stream_model.rtmp_feeder_pid, False)
+    def __check_ms_feeder_process(self, stream_model: StreamModel):
+        op = WatchDogOperations.check_ms_feeder_process
+        return self.__check_process(op, stream_model, stream_model.ms_feeder_pid, False)
 
     def __check_hls_process(self, stream_model: StreamModel):
         if not stream_model.is_hls_enabled():
@@ -295,7 +295,7 @@ class WatchDogTimer:
         stream_models = self.stream_repository.get_all()
         stream_models.extend(broken_streams)
         self.__check_zombie_ffmpeg_processes(stream_models)
-        self.__check_unstopped_rtmp_server_containers(stream_models)
+        self.__check_unstopped_media_server_containers(stream_models)
 
     def __check_zombie_ffmpeg_processes(self, stream_models: List[StreamModel]):
         logger.info(f'check_zombie_ffmpeg_processes is being executed at {datetime.now()}')
@@ -306,7 +306,7 @@ class WatchDogTimer:
                 models_pid_dic[pid] = pid
 
         for stream_model in stream_models:
-            add_pid(stream_model.rtmp_feeder_pid)
+            add_pid(stream_model.ms_feeder_pid)
             add_pid(stream_model.hls_pid)
             add_pid(stream_model.mp_ffmpeg_reader_owner_pid)
             add_pid(stream_model.record_pid)
@@ -342,13 +342,13 @@ class WatchDogTimer:
             except BaseException as e:
                 logger.error(f'an error occurred during killing a PARENT zombie FFmpeg process, ex: {e} at {datetime.now()}')
 
-    def __check_unstopped_rtmp_server_containers(self, stream_models: List[StreamModel]):
-        logger.info(f'check_unstopped_rtmp_server_containers is being executed at {datetime.now()}')
+    def __check_unstopped_media_server_containers(self, stream_models: List[StreamModel]):
+        logger.info(f'check_unstopped_media_server_containers is being executed at {datetime.now()}')
         valid_containers_name_dic = {}
         count = 0
         for stream_model in stream_models:
-            if len(stream_model.rtmp_container_name) > 0:
-                valid_containers_name_dic[stream_model.rtmp_container_name] = stream_model.rtmp_container_name
+            if len(stream_model.ms_container_name) > 0:
+                valid_containers_name_dic[stream_model.ms_container_name] = stream_model.ms_container_name
                 count += 1
         if count == 0:
             return
@@ -360,6 +360,6 @@ class WatchDogTimer:
                 try:
                     self.zombie_repository.add('docker', container.name)
                     docker_manager.stop_container(container)
-                    logger.warning(f'an unstopped rtmp server container has been detected and stopped, container name: {container.name}')
+                    logger.warning(f'an unstopped media server container has been detected and stopped, container name: {container.name}')
                 except BaseException as e:
-                    logger.error(f'an error occurred during stopping a zombie rtmp server container, ex: {e} at {datetime.now()}')
+                    logger.error(f'an error occurred during stopping a zombie media server container, ex: {e} at {datetime.now()}')

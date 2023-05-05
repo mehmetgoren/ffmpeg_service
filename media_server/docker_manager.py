@@ -2,8 +2,9 @@ from typing import List, Any
 import docker
 from redis.client import Redis
 
-from stream.stream_model import StreamModel, RmtpServerType
-from rtmp.rtmp_models import BaseRtmpModel, SrsRtmpModel, SrsRealtimeRtmpServer, LiveGoRtmpModel, NodeMediaServerRtmpModel
+from stream.stream_model import StreamModel, MediaServerType
+from media_server.media_server_models import BaseMediaServerModel, Go2RtcMediaServerModel, SrsRealtimeMediaServerModel, LiveGoMediaServerModel, \
+    NodeMediaServerModel
 
 
 # for more info: https://docker-py.readthedocs.io/en/stable/containers.html
@@ -12,41 +13,41 @@ class DockerManager:
         self.connection: Redis = connection
         self.client = docker.from_env()
 
-    def __create_rtmp_model(self, rtmp_server_type: RmtpServerType, stream_id: str) -> BaseRtmpModel:
-        if rtmp_server_type == RmtpServerType.SRS:
-            rtmp_model = SrsRtmpModel(stream_id, self.connection)
-        elif rtmp_server_type == RmtpServerType.SRS_REALTIME:
-            rtmp_model = SrsRealtimeRtmpServer(stream_id, self.connection)
-        elif rtmp_server_type == RmtpServerType.LIVEGO:
-            rtmp_model = LiveGoRtmpModel(stream_id, self.connection)
-        elif rtmp_server_type == RmtpServerType.NODE_MEDIA_SERVER:
-            rtmp_model = NodeMediaServerRtmpModel(stream_id, self.connection)
+    def __create_media_server_model(self, ms_type: MediaServerType, stream_id: str) -> BaseMediaServerModel:
+        if ms_type == MediaServerType.GO_2_RTC:
+            ms_model = Go2RtcMediaServerModel(stream_id, self.connection)
+        elif ms_type == MediaServerType.SRS:
+            ms_model = SrsRealtimeMediaServerModel(stream_id, self.connection)
+        elif ms_type == MediaServerType.LIVE_GO:
+            ms_model = LiveGoMediaServerModel(stream_id, self.connection)
+        elif ms_type == MediaServerType.NODE_MEDIA_SERVER:
+            ms_model = NodeMediaServerModel(stream_id, self.connection)
         else:
-            raise NotImplementedError('RmtpServerType was not match')
+            raise NotImplementedError('MediaServerType was not match')
 
-        rtmp_model.int_ports()
+        ms_model.int_ports()
 
-        return rtmp_model
+        return ms_model
 
-    def __init_container(self, rtmp_model: BaseRtmpModel, all_containers: List):
-        container_name = rtmp_model.get_container_name()
+    def __init_container(self, ms_model: BaseMediaServerModel, all_containers: List):
+        container_name = ms_model.get_container_name()
         for container in all_containers:
             if container.name == container_name:
                 self.stop_container(container)
                 break
-        container = self.client.containers.run(rtmp_model.get_image_name(), detach=True,
-                                               command=rtmp_model.get_commands(),
+        container = self.client.containers.run(ms_model.get_image_name(), detach=True,
+                                               command=ms_model.get_commands(),
                                                # auto_remove=True, remove=True,
                                                restart_policy={'Name': 'unless-stopped'},
                                                name=container_name,
-                                               ports=rtmp_model.get_ports())
+                                               ports=ms_model.get_ports())
         return container
 
-    def run(self, rtmp_server_type: RmtpServerType, stream_id: str) -> (BaseRtmpModel, Any):
-        rtmp_model = self.__create_rtmp_model(rtmp_server_type, stream_id)
+    def run(self, ms_type: MediaServerType, stream_id: str) -> (BaseMediaServerModel, Any):
+        ms_model = self.__create_media_server_model(ms_type, stream_id)
         all_containers = self.client.containers.list(all=True)
-        container = self.__init_container(rtmp_model, all_containers)
-        return rtmp_model, container
+        container = self.__init_container(ms_model, all_containers)
+        return ms_model, container
 
     def remove(self, model: StreamModel):
         container = self.get_container(model)
@@ -59,7 +60,7 @@ class DockerManager:
         return containers[0] if len(containers) > 0 else None
 
     def get_container(self, model: StreamModel):
-        container_name = model.rtmp_container_name
+        container_name = model.ms_container_name
         containers = self.client.containers.list(all=True)
         for container in containers:
             if container.name == container_name:

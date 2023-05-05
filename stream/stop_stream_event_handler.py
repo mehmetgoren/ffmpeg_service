@@ -4,7 +4,7 @@ from signal import SIGKILL
 from common.data.source_model import SourceState
 from common.data.source_repository import SourceRepository
 from common.utilities import logger
-from rtmp.docker_manager import DockerManager
+from media_server.docker_manager import DockerManager
 from stream.stream_model import StreamModel
 from stream.stream_repository import StreamRepository
 from stream.base_stream_event_handler import BaseStreamEventHandler
@@ -58,11 +58,11 @@ class StopStreamEventHandler(BaseStreamEventHandler):
                     logger.error(f'Error while killing a FFmpeg HLS stream process, pid: {stream_model.hls_pid}, err: {e}')
 
             try:
-                if stream_model.rtmp_feeder_pid > 0:
-                    os.kill(stream_model.rtmp_feeder_pid, SIGKILL)
-                    logger.info(f'a FFMpeg RTMP feeder process has been killed, pid: {stream_model.rtmp_feeder_pid}')
+                if stream_model.ms_feeder_pid > 0:
+                    os.kill(stream_model.ms_feeder_pid, SIGKILL)
+                    logger.info(f'a FFMpeg Media Server feeder process has been killed, pid: {stream_model.ms_feeder_pid}')
             except BaseException as e:
-                logger.error(f'Error while killing process, pid: {stream_model.rtmp_feeder_pid}, err: {e}')
+                logger.error(f'Error while killing process, pid: {stream_model.ms_feeder_pid}, err: {e}')
 
             if stream_model.is_mp_ffmpeg_pipe_reader_enabled():
                 try:
@@ -75,9 +75,9 @@ class StopStreamEventHandler(BaseStreamEventHandler):
             try:
                 docker_manager = DockerManager(self.stream_repository.connection)
                 docker_manager.remove(stream_model)
-                logger.info(f'a FFMpeg RTMP feeder container has been stopped and removed, pid: {stream_model.rtmp_feeder_pid}')
+                logger.info(f'a FFMpeg Media Server feeder container has been stopped and removed, pid: {stream_model.ms_feeder_pid}')
             except BaseException as e:
-                logger.error(f'Error while removing RTMP container for {stream_model.id}, err: {e}')
+                logger.error(f'Error while removing Media Server container for {stream_model.id}, err: {e}')
 
         self.set_source_state(source_model.id, SourceState.Stopped)
 

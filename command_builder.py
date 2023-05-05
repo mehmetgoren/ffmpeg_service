@@ -2,7 +2,7 @@ import os
 from typing import List
 
 from common.data.source_model import FFmpegModel, RtspTransport, VideoDecoder, StreamType, StreamVideoCodec, Preset, Rotate, AudioCodec, \
-    LogLevel, AudioChannel, AudioQuality, AudioSampleRate, RecordFileTypes, RecordVideoCodec, AccelerationEngine
+    LogLevel, AudioChannel, AudioQuality, AudioSampleRate, RecordFileTypes, RecordVideoCodec, AccelerationEngine, MediaServerType
 from common.utilities import config
 from utils.dir import get_record_dir_by, get_ai_clip_dir, get_hls_path
 
@@ -89,15 +89,15 @@ class CommandBuilder:
                 args.extend(['-vf', vf_str])
         # video ends
 
-        args.extend(['-f', 'flv'])
-        args.append(self.__add_double_quotes(f.rtmp_address))
+        args.extend(['-f', 'rtsp' if f.ms_type == MediaServerType.GO_2_RTC else 'flv'])
+        args.append(self.__add_double_quotes(f.ms_address))
         return args
 
     def build_hls_stream(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
         if f.stream_type != StreamType.HLS:
             return []
-        args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.rtmp_address)]
+        args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.ms_address)]
 
         args.extend(['-c:a', 'copy', '-c:v', 'copy'])
         if f.record_file_type == RecordFileTypes.MP4 and f.record_preset != Preset.Auto:
@@ -115,7 +115,7 @@ class CommandBuilder:
 
     def __build_record(self, duration: int, output_path: str) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.rtmp_address)]
+        args: List[str] = ['ffmpeg', '-i', self.__add_double_quotes(f.ms_address)]
 
         if f.record_width != 0 and f.record_height != 0:
             args.extend(['-s', f'{f.record_width}x{f.record_height}'])
