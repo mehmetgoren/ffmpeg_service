@@ -101,6 +101,12 @@ class TensorflowConfig:
         self.cache_folder: str = '/mnt/sdc1/test_projects/tf_cache'
 
 
+class CoralTPUConfig:
+    def __init__(self):
+        self.model_path = './models/edgetpu_model.tflite'
+        self.labels_path = './models/edgetpu_labels.txt'
+
+
 class SourceReaderConfig:
     def __init__(self):
         self.resize_img: bool = False
@@ -204,6 +210,7 @@ class Config:
         self.jetson: JetsonConfig = JetsonConfig()
         self.torch: TorchConfig = TorchConfig()
         self.tensorflow: TensorflowConfig = TensorflowConfig()
+        self.coral: CoralTPUConfig = CoralTPUConfig()
         self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.general: GeneralConfig = GeneralConfig()
         self.db: DbConfig = DbConfig()
