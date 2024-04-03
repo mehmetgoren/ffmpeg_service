@@ -53,23 +53,9 @@ class DbType(IntEnum):
     MongoDB = 1
 
 
-class DeviceType(IntEnum):
-    PC = 0
-    IOT = 1
-
-
-class DeepStackPerformanceMode(IntEnum):
-    Low = 0
-    Medium = 1
-    High = 2
-
-
-class DeepStackDockerType(IntEnum):
-    CPU = 0
-    GPU = 1
-    NVIDIA_JETSON = 2
-    ARM64 = 3
-    ARM64_SERVER = 4
+class DeviceArch(IntEnum):
+    X86 = 0
+    ARM = 1
 
 
 class ArchiveActionType(IntEnum):
@@ -77,48 +63,24 @@ class ArchiveActionType(IntEnum):
     MoveToNewLocation = 1
 
 
+class SenseAiImage(IntEnum):
+    CPU = 0
+    GPU_CUDA_11_7 = 1
+    GPU_CUDA_12_2 = 2
+    ARM64 = 3
+    RPI64 = 4
+
+
 class DeviceConfig:
     def __init__(self):
         self.device_name = platform.node()
         _, _, _, _, machine, _ = platform.uname()
-        self.device_type = DeviceType.PC if 'x86' in machine else DeviceType.IOT
-
-
-class JetsonConfig:
-    def __init__(self):
-        self.model_name: str = 'ssd-mobilenet-v2'
-
-
-class TorchConfig:
-    def __init__(self):
-        self.model_name = 'ultralytics/yolov5'
-        self.model_name_specific = 'yolov5x6'
-
-
-class TensorflowConfig:
-    def __init__(self):
-        self.model_name = 'efficientdet/lite4/detection'
-        self.cache_folder: str = '/mnt/sdc1/test_projects/tf_cache'
-
-
-class CoralTPUConfig:
-    def __init__(self):
-        self.model_path = './models/edgetpu_model.tflite'
-        self.labels_path = './models/edgetpu_labels.txt'
-
-
-class SourceReaderConfig:
-    def __init__(self):
-        self.resize_img: bool = False
-        self.buffer_size: int = 2
-        self.max_retry: int = 150
-        self.max_retry_in: int = 6  # hours
+        self.device_arch = DeviceArch.X86 if 'x86' in machine else DeviceArch.ARM
 
 
 class GeneralConfig:
     def __init__(self):
         self.dir_paths: List[str] = []
-        self.heartbeat_interval: int = 30
 
 
 class DbConfig:
@@ -145,17 +107,13 @@ class FFmpegConfig:
 class AiConfig:
     def __init__(self):
         self.video_clip_duration: int = 10
-        self.face_recog_mtcnn_threshold: float = .86
-        self.face_recog_prob_threshold: float = .98
-        self.plate_recog_instance_count: int = 2
 
 
-class UiConfig:
+class SenseAIConfig:
     def __init__(self):
-        self.gs_width: int = 4
-        self.gs_height: int = 2
-        self.booster_interval: float = .3
-        self.seek_to_live_edge_internal: int = 30
+        self.image: SenseAiImage = SenseAiImage.GPU_CUDA_12_2
+        self.host: str = '127.0.0.1'
+        self.port: int = 32168
 
 
 class JobsConfig:
@@ -164,19 +122,6 @@ class JobsConfig:
         self.mac_ip_matching_interval: int = 120
         self.black_screen_monitor_enabled: bool = False
         self.black_screen_monitor_interval: int = 600
-
-
-class DeepStackConfig:
-    def __init__(self):
-        self.server_url: str = 'http://127.0.0.1'
-        self.server_port: int = 1009
-        self.performance_mode: DeepStackPerformanceMode = DeepStackPerformanceMode.Medium
-        self.api_key: str = ''
-        self.od_enabled: bool = True
-        self.od_threshold: float = .45
-        self.fr_enabled: bool = True
-        self.fr_threshold: float = .7
-        self.docker_type: DeepStackDockerType = DeepStackDockerType.GPU
 
 
 class ArchiveConfig:
@@ -190,9 +135,6 @@ class SnapshotConfig:
     def __init__(self):
         self.process_count: int = 1
         self.overlay: bool = True
-        self.meta_color_enabled: bool = False
-        self.meta_color_count: int = 5
-        self.meta_color_quality: int = 1
 
 
 class HubConfig:
@@ -207,18 +149,12 @@ class HubConfig:
 class Config:
     def __init__(self):
         self.device: DeviceConfig = DeviceConfig()
-        self.jetson: JetsonConfig = JetsonConfig()
-        self.torch: TorchConfig = TorchConfig()
-        self.tensorflow: TensorflowConfig = TensorflowConfig()
-        self.coral: CoralTPUConfig = CoralTPUConfig()
-        self.source_reader: SourceReaderConfig = SourceReaderConfig()
         self.general: GeneralConfig = GeneralConfig()
         self.db: DbConfig = DbConfig()
         self.ffmpeg: FFmpegConfig = FFmpegConfig()
         self.ai: AiConfig = AiConfig()
-        self.ui: UiConfig = UiConfig()
+        self.sense_ai: SenseAIConfig = SenseAIConfig()
         self.jobs: JobsConfig = JobsConfig()
-        self.deep_stack: DeepStackConfig = DeepStackConfig()
         self.archive: ArchiveConfig = ArchiveConfig()
         self.snapshot: SnapshotConfig = SnapshotConfig()
         self.hub: HubConfig = HubConfig()

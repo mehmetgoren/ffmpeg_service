@@ -82,7 +82,7 @@ class BasePipeReader(ABC):
 
     def send(self, img_data):
         img_str = self.__create_base64_img(img_data)
-        dic = {'name': self.options.name, 'img': img_str, 'source': self.options.id, 'ai_clip_enabled': self.options.ai_clip_enabled}
+        dic = {'name': self.options.name, 'base64_image': img_str, 'source_id': self.options.id, 'ai_clip_enabled': self.options.ai_clip_enabled}
         if self.options.method == PushMethod.REDIS_PUBSUB:
             self.event_bus.publish_async(serialize_json_dic(dic))
         else:

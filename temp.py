@@ -44,7 +44,7 @@ def _create_base64_img(numpy_img: np.array) -> str:
 
 def _send(img_data):
     img_str = _create_base64_img(img_data)
-    dic = {'name': 'eufy', 'img': img_str, 'source': 'xxx_test'}
+    dic = {'name': 'eufy', 'base64_image': img_str, 'source_id': 'xxx_test'}
     __event_bus.publish_async(serialize_json_dic(dic))
 
 

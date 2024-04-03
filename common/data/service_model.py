@@ -34,7 +34,6 @@ class ServiceModel:
         self.instance_type: InstanceType = InstanceType.Container
         self.instance_name: str = instance_name
         self.created_at: str = ''
-        self.heartbeat: str = ''
 
     @staticmethod
     def __get_ip_addr() -> str:
@@ -55,4 +54,3 @@ class ServiceModel:
         self.redis_host_port = f'{config_redis.host}:{config_redis.port}'
         self.pid = os.getpid()
         self.created_at = datetime_now()
-        self.heartbeat = datetime_now()
