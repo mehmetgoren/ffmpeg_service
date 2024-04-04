@@ -1,4 +1,4 @@
-from common.data.source_model import MediaServerType, SourceModel, StreamType, RecordFileTypes, SnapshotType, FlvPlayerType, Go2RtcPlayerMode
+from common.data.source_model import MediaServerType, SourceModel, StreamType, RecordFileTypes, FlvPlayerType, Go2RtcPlayerMode
 from common.utilities import datetime_now
 
 
@@ -41,7 +41,6 @@ class StreamModel:
         # FFmpeg snapshot for AI.
         self.snapshot_enabled: bool = False
         self.snapshot_pid: int = 0
-        self.snapshot_type: SnapshotType = SnapshotType.FFmpeg
         self.snapshot_frame_rate: int = 1
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
@@ -74,7 +73,6 @@ class StreamModel:
         self.ffmpeg_reader_height = source.ffmpeg_reader_height
 
         self.snapshot_enabled = source.snapshot_enabled
-        self.snapshot_type = source.snapshot_type
         self.snapshot_frame_rate: int = source.snapshot_frame_rate
         self.snapshot_width: int = source.snapshot_width
         self.snapshot_height: int = source.snapshot_height
@@ -103,10 +101,7 @@ class StreamModel:
         return self.record_enabled
 
     def is_ffmpeg_snapshot_enabled(self) -> bool:
-        return self.snapshot_enabled and self.snapshot_type == SnapshotType.FFmpeg
-
-    def is_opencv_persistent_snapshot_enabled(self) -> bool:
-        return self.snapshot_enabled and self.snapshot_type == SnapshotType.OpenCVPersistent
+        return self.snapshot_enabled
 
     def is_ai_clip_enabled(self) -> bool:
         return self.snapshot_enabled and self.ai_clip_enabled

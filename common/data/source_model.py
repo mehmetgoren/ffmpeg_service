@@ -463,11 +463,6 @@ class FFmpegModel:
         self.log_level: LogLevel = LogLevel.Warning
 
 
-class SnapshotType(IntEnum):
-    FFmpeg = 0
-    OpenCVPersistent = 1
-
-
 class FlvPlayerType(IntEnum):
     MpegTsJs = 0
     FlvJs = 1
@@ -505,7 +500,6 @@ class SourceModel(FFmpegModel):
         self.enabled: bool = True  # reserved for future using
 
         self.snapshot_enabled: bool = False
-        self.snapshot_type: SnapshotType = SnapshotType.FFmpeg
         self.snapshot_frame_rate: int = 1
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
