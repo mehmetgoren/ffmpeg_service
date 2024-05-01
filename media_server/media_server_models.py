@@ -17,7 +17,7 @@ ports_count = 'ports_count'
 
 class MediaServerImages(Enum):
     GO_RTC = 'alexxit/go2rtc:1.8.1'
-    SRS = 'ossrs/srs:4'
+    SRS = 'ossrs/srs:5'
     LIVE_GO = 'gokalpgoren/livego_local'  # original one is 'gwuhaolin/livego'
     NMS = 'illuspas/node-media-server'
 
