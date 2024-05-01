@@ -19,7 +19,7 @@ class CommandBuilder:
 
     def build_input(self) -> List[str]:
         f: FFmpegModel = self.ffmpeg_model
-        args: List[str] = ['ffmpeg', '-progress', 'pipe:5']
+        args: List[str] = ['ffmpeg']
 
         if f.use_camera_timestamp:
             args.extend(['-use_wallclock_as_timestamps', '1'])  # cause delay, check it
@@ -157,8 +157,7 @@ class CommandBuilder:
         args.extend(['-strict', '-2'])
         if f.record_file_type == RecordFileTypes.MP4:
             args.extend(['-movflags', '+faststart'])
-        args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1',
-                     '-segment_list', 'pipe:8'])
+        args.extend(['-f', 'segment', '-segment_atclocktime', '1', '-reset_timestamps', '1', '-strftime', '1'])
         if duration < 1:
             duration = 10
         args.extend(['-segment_time', str(duration)])

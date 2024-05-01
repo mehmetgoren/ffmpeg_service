@@ -16,7 +16,7 @@ ports_count = 'ports_count'
 
 
 class MediaServerImages(Enum):
-    GO_RTC = 'alexxit/go2rtc:1.8.1'
+    GO_RTC = 'alexxit/go2rtc:1.8.5'
     SRS = 'ossrs/srs:5'
     LIVE_GO = 'gokalpgoren/livego_local'  # original one is 'gwuhaolin/livego'
     NMS = 'illuspas/node-media-server'
@@ -238,7 +238,6 @@ class Go2RtcMediaServerModel(BaseMediaServerModel):
     def __init__(self, unique_name: str, connection: Redis):
         super().__init__(f'go2rtc_{unique_name}', connection)
         self.webrtc_port: int = 0
-        self.srtp_port: int = 0
 
     def get_image_name(self) -> str:
         return MediaServerImages.GO_RTC.value
@@ -251,19 +250,17 @@ class Go2RtcMediaServerModel(BaseMediaServerModel):
             """
             INF [api] listen addr=:1984
             INF [rtsp] listen addr=:8554
-            INF [srtp] listen addr=:8443
             INF [webrtc] listen addr=:8555/tcp
             """
             self.stream_port = self.port_inc()  # api  http://127.0.0.1:1985/api/ws?src=camera1
             self.media_server_port = self.port_inc()  # rtsp ffmpeg -f rtsp rtsp://127.0.0.1:8564/camera1
-            self.srtp_port = self.port_inc()  # srtp is not used now
-            self.webrtc_port = self.port_inc()  # webrtc  ıt is not used now
+            self.webrtc_port = self.port_inc()  # webrtc  it is not used now
             self.port_dic = {'1984': str(self.stream_port), '8554': str(self.media_server_port),
-                             '8443': str(self.srtp_port), '8555': str(self.webrtc_port)}
+                             '8555': str(self.webrtc_port)}
 
     def on_media_server_initialized(self) -> str:
         config_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/config'
-        exit_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/exit'
+        restart_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/restart'
         yml = f'streams:{os.linesep}    camera1:{os.linesep}api:{os.linesep}    origin: "*"'
         try:
             result = requests.post(config_url, data=yml)
@@ -271,7 +268,7 @@ class Go2RtcMediaServerModel(BaseMediaServerModel):
                 time.sleep(self.media_server_wait)
 
                 try:
-                    requests.post(exit_url)
+                    requests.post(restart_url)
                 except BaseException as e:
                     logger.error(e)
 
