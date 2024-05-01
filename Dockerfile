@@ -7,6 +7,11 @@ RUN apt-get install -y apt-utils
 RUN apt-get install -y tzdata
 RUN apt-get install -y curl
 RUN apt-get -qq install --no-install-recommends -y python3-pip
+RUN apt remove ffmpeg -y
+RUN apt update
+RUN apt-get install software-properties-common -y
+RUN add-apt-repository ppa:ubuntuhandbook1/ffmpeg6 -y
+RUN apt update
 RUN apt install ffmpeg --no-install-recommends -y
 RUN apt-get -y install net-tools
 
