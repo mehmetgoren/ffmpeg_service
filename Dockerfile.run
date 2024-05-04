@@ -3,8 +3,8 @@ docker run -it --restart unless-stopped --name ffmpeg_service-instance --net hos
 
 gokalpgoren
     amd64:
-        docker build -t gokalpgoren/ffmpeg_service:v1.0.2-amd64 .
-        docker run -it --restart unless-stopped --name ffmpeg_service-instance --net host -e TZ=Europe/Istanbul -v /mnt/sdc1/feniks_data_docker:/mnt/sdc1/feniks_data_docker -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.2-amd64
+        docker build -t gokalpgoren/ffmpeg_service:v1.0.3-amd64 .
+        docker run -it --restart unless-stopped --name ffmpeg_service-instance --net host -e TZ=Europe/Istanbul -v /mnt/sdc1/feniks_data_docker:/mnt/sdc1/feniks_data_docker -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.3-amd64
 
         with nvidia container toolkit (cuda enabled)
         docker run -it --restart unless-stopped --name ffmpeg_service-instance --gpus all -e NVIDIA_DRIVER_CAPABILITIES=all --net host -e TZ=Europe/Istanbul -v /mnt/sdc1/feniks_data_docker:/mnt/sdc1/feniks_data_docker -v /var/run/docker.sock:/var/run/docker.sock gokalpgoren/ffmpeg_service:v1.0.2-amd64
