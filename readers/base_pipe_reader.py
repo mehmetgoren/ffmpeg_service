@@ -26,7 +26,7 @@ class PipeReaderOptions:
     method: PushMethod = PushMethod.REDIS_PUBSUB
     pubsub_channel: str = 'read_service'
     api_address: str = 'http://localhost:2072/ffmpegreader'
-    frame_rate: int = 1
+    frame_rate: float = 1.0
     address: str = ''
     width: int = 0
     height: int = 0

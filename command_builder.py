@@ -23,7 +23,7 @@ class CommandBuilder:
 
         if f.use_camera_timestamp:
             args.extend(['-use_wallclock_as_timestamps', '1'])  # cause delay, check it
-        if f.input_frame_rate > 0:
+        if f.input_frame_rate > 0.0:
             args.extend(['-r', str(f.input_frame_rate)])
         args.extend(['-analyzeduration', str(f.analyzation_duration), '-probesize', str(f.probe_size)])
         args.extend(['-fflags', '+igndts'])
@@ -76,7 +76,7 @@ class CommandBuilder:
                 args.extend(['-q:v', str(f.stream_quality)])
 
             vf_commands = []
-            if f.stream_frame_rate > 0:
+            if f.stream_frame_rate > 0.0:
                 vf_commands.append(f'fps={f.stream_frame_rate}')
             if f.stream_rotate != Rotate.No:
                 vf_commands.append(Rotate.str(f.stream_rotate))
@@ -143,7 +143,7 @@ class CommandBuilder:
         if f.record_video_codec != RecordVideoCodec.Auto:
             args.extend(['-vcodec', RecordVideoCodec.str(f.record_video_codec)])
             vf_commands = []
-            if f.record_frame_rate > 0:
+            if f.record_frame_rate > 0.0:
                 vf_commands.append(f'fps={f.record_frame_rate}')
             if f.record_rotate != Rotate.No:
                 vf_commands.append(Rotate.str(f.record_rotate))

@@ -418,7 +418,7 @@ class FFmpegModel:
 
         self.analyzation_duration: int = 1000000
         self.probe_size: int = 1000000
-        self.input_frame_rate: int = 0
+        self.input_frame_rate: float = 0.0
         self.use_camera_timestamp: bool = False
         self.use_hwaccel: bool = True
         self.hwaccel_engine: AccelerationEngine = AccelerationEngine.Auto
@@ -433,7 +433,7 @@ class FFmpegModel:
         self.hls_list_size: int = 3
         self.preset: Preset = Preset.Auto
         self.stream_quality: int = 0
-        self.stream_frame_rate: int = 0
+        self.stream_frame_rate: float = 0.0
         self.stream_width: int = 0
         self.stream_height: int = 0
         self.stream_rotate: Rotate = Rotate.No
@@ -447,7 +447,7 @@ class FFmpegModel:
         self.record_video_codec: RecordVideoCodec = RecordVideoCodec.copy
         self.record_quality: int = 0
         self.record_preset: Preset = Preset.Auto
-        self.record_frame_rate: int = 0
+        self.record_frame_rate: float = 0.0
         self.record_width: int = 0
         self.record_height: int = 0
         self.record_segment_interval: int = 15
@@ -500,7 +500,7 @@ class SourceModel(FFmpegModel):
         self.enabled: bool = True  # reserved for future using
 
         self.snapshot_enabled: bool = False
-        self.snapshot_frame_rate: int = 1
+        self.snapshot_frame_rate: float = 1.0
         self.snapshot_width: int = 640
         self.snapshot_height: int = 360
         self.md_type: MotionDetectionType = MotionDetectionType.OpenCV
@@ -509,7 +509,7 @@ class SourceModel(FFmpegModel):
         self.md_imagehash_threshold: int = 3
         self.md_psnr_threshold: float = 0.2
 
-        self.ffmpeg_reader_frame_rate: int = 1
+        self.ffmpeg_reader_frame_rate: float = 1.0
         self.ffmpeg_reader_width: int = 640
         self.ffmpeg_reader_height: int = 360
 

@@ -135,7 +135,7 @@ def read_test():
     opts.name = 'eufy'
     opts.address = 'rtsp://Admin1:Admin1@192.168.1.183/live0'
     opts.method = PushMethod.REDIS_PUBSUB
-    opts.frame_rate = 1
+    opts.frame_rate = 1.0
     opts.width = 640
     opts.height = 360
     opts.pubsub_channel = 'read_service'
