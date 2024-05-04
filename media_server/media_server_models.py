@@ -261,6 +261,7 @@ class Go2RtcMediaServerModel(BaseMediaServerModel):
     def on_media_server_initialized(self) -> str:
         config_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/config'
         restart_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/restart'
+        exit_url = f'{self.protocol}://{self.host}:{self.stream_port}/api/exit'
         yml = f'streams:{os.linesep}    camera1:{os.linesep}api:{os.linesep}    origin: "*"'
         try:
             result = requests.post(config_url, data=yml)
@@ -269,6 +270,12 @@ class Go2RtcMediaServerModel(BaseMediaServerModel):
 
                 try:
                     requests.post(restart_url)
+                except BaseException as e:
+                    logger.error(e)
+
+                time.sleep(self.media_server_wait)
+                try:
+                    requests.post(exit_url)
                 except BaseException as e:
                     logger.error(e)
 

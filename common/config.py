@@ -137,7 +137,7 @@ class SnapshotConfig:
         self.overlay: bool = True
 
 
-class HubConfig:
+class DesimaConfig:
     def __init__(self):
         self.enabled: bool = False
         self.address: str = 'http://localhost:5268'
@@ -157,7 +157,7 @@ class Config:
         self.jobs: JobsConfig = JobsConfig()
         self.archive: ArchiveConfig = ArchiveConfig()
         self.snapshot: SnapshotConfig = SnapshotConfig()
-        self.hub: HubConfig = HubConfig()
+        self.desima: DesimaConfig = DesimaConfig()
         self.__connection: Redis | None = None
 
     @staticmethod
