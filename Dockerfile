@@ -26,6 +26,7 @@ RUN pip3 install rq
 RUN pip3 install schedule
 RUN pip3 install shortuuid
 RUN pip3 install getmac
+RUN pip3 install pybase64
 
 COPY . .
 

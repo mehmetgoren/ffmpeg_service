@@ -1,4 +1,4 @@
-import base64
+import pybase64
 import json
 import ffmpeg
 from datetime import datetime
@@ -39,5 +39,5 @@ class ProbeEventHandler(EventHandler):
 
         pre = ProbeResponseEvent()
         pre.address = request.address
-        pre.result_b64 = base64.b64encode(barr).decode('utf-8')
+        pre.result_b64 = pybase64.b64encode(barr).decode('utf-8')
         self.event_bus.publish_async(serialize_json(pre))

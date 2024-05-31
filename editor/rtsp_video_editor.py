@@ -1,4 +1,4 @@
-import base64
+import pybase64
 import io
 import ffmpeg
 import PIL.Image as Image
@@ -23,7 +23,7 @@ class RtspVideoEditor:
         image = self.__take_screenshot()
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='JPEG')
-        img_str = base64.b64encode(image_bytes.getvalue())
+        img_str = pybase64.b64encode(image_bytes.getvalue())
         return img_str.decode('utf-8')
 
     def generate_thumbnail(self) -> str:
@@ -31,7 +31,7 @@ class RtspVideoEditor:
         image.thumbnail((300, 300), Image.LANCZOS)
         image_bytes = io.BytesIO()
         image.save(image_bytes, format='JPEG')
-        img_str = base64.b64encode(image_bytes.getvalue())
+        img_str = pybase64.b64encode(image_bytes.getvalue())
         return img_str.decode('utf-8')
 
     def probe(self) -> dict:

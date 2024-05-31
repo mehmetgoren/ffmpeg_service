@@ -1,4 +1,4 @@
-import base64
+import pybase64
 import time
 from datetime import datetime
 import glob
@@ -38,7 +38,7 @@ def _create_base64_img(numpy_img: np.array) -> str:
     img = Image.fromarray(numpy_img)
     buffered = BytesIO()
     img.save(buffered, format="JPEG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
+    img_str = pybase64.b64encode(buffered.getvalue()).decode()
     return img_str
 
 

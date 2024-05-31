@@ -1,4 +1,4 @@
-import base64
+import pybase64
 import json
 from abc import ABC, abstractmethod
 from enum import IntEnum
@@ -77,7 +77,7 @@ class BasePipeReader(ABC):
         img = Image.fromarray(numpy_img)
         buffered = BytesIO()
         img.save(buffered, format="JPEG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
+        img_str = pybase64.b64encode(buffered.getvalue()).decode()
         return img_str
 
     def send(self, img_data):
